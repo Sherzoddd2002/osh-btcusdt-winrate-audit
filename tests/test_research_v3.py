@@ -34,7 +34,7 @@ class ResearchV3DataTests(unittest.TestCase):
 
     def test_gap_is_rejected_instead_of_silently_dropping_rows(self):
         frame = market_frame()
-        frame.loc[20, "candle_time"] += pd.Timedelta(minutes=15)
+        frame = frame.drop(index=20).reset_index(drop=True)
         with self.assertRaisesRegex(ValueError, "Non-contiguous"):
             rv.validate_market_data(frame)
 
