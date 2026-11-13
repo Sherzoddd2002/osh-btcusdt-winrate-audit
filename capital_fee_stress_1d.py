@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import time
 import urllib.error
 import urllib.parse
@@ -943,8 +944,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--db-url",
-        default="postgresql+psycopg2://postgres@127.0.0.1:5433/osh",
-        help="SQLAlchemy PostgreSQL URL; OSH_DB_URL overrides this default.",
+        default=os.getenv(
+            "OSH_DB_URL",
+            "postgresql+psycopg2://postgres@127.0.0.1:5433/osh",
+        ),
+        help="SQLAlchemy PostgreSQL URL; defaults to OSH_DB_URL when set.",
     )
     parser.add_argument("--table", default="public.btcusdt_15m")
     parser.add_argument("--funding-csv", default="binance_btcusdt_funding_history.csv")
@@ -989,9 +993,7 @@ def main(argv: list[str] | None = None) -> None:
     if maker_fee < 0 or taker_fee < 0 or not 0 <= bnb_discount <= 100:
         raise SystemExit("Fee inputs are invalid")
 
-    import os
-    db_url = os.getenv("OSH_DB_URL", args.db_url)
-    candles = rv.load_btc(db_url, args.table)
+    candles = rv.load_btc(args.db_url, args.table)
 
     funding_path = Path(args.funding_csv)
     if args.fetch_funding:
