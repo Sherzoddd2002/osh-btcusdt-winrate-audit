@@ -63,5 +63,58 @@ class SelectivityThresholdTests(unittest.TestCase):
         self.assertEqual(result["win_rate_wilson95_pct"], [None, None])
 
 
+class SelectivitySweepFlowTests(unittest.TestCase):
+    def test_three_thresholds_share_one_fold_model_and_are_reported_separately(self):
+        from unittest.mock import patch
+        import pandas as pd
+        import selectivity_sweep_1d as sweep
+
+        n = 1500
+        frame = pd.DataFrame({
+            "candle_time": pd.date_range("2023-01-01", periods=n, freq="15min", tz="UTC"),
+            "open": np.full(n, 100.0),
+            "high": np.full(n, 100.1),
+            "low": np.full(n, 99.9),
+            "close": np.full(n, 100.0),
+            "volume": np.full(n, 1000.0),
+            "trade_count": np.full(n, 100.0),
+            "quote_volume": np.full(n, 100000.0),
+            "taker_buy_base_volume": np.full(n, 500.0),
+            "taker_buy_quote_volume": np.full(n, 50000.0),
+        })
+        labels = pd.DataFrame({
+            "label3": np.zeros(n, dtype=np.int8),
+            "exit_ret": np.full(n, 0.005),
+            "sample_weight": np.ones(n),
+            "valid": np.ones(n, dtype=bool),
+        })
+        probabilities = np.tile(np.array([0.05, 0.15, 0.80]), (n, 1))
+
+        with (
+            patch.object(sweep.pv, "make_features",
+                         return_value=(pd.DataFrame({"feature": np.ones(n)}), ["feature"])),
+            patch.object(sweep.rv, "barrier_labels", return_value=labels),
+            patch.object(sweep.pv, "make_folds", return_value=[(0, 500, 502, 900)]),
+            patch.object(sweep.rv, "fit_model", return_value=object()) as fit_mock,
+            patch.object(sweep.rv, "predict_proba_3class",
+                         side_effect=lambda model, X: probabilities[:len(X)]),
+        ):
+            result = sweep.run_selectivity_sweep(
+                frame, selection_pcts=(0.02, 0.05, 0.10),
+                cost_bps=10, folds_count=1, train_days=4,
+                test_days=2, holdout_days=2,
+            )
+
+        self.assertEqual(set(result["selections"]), {"2%", "5%", "10%"})
+        self.assertEqual(fit_mock.call_count, 1)
+        for selection in result["selections"].values():
+            self.assertEqual(len(selection["folds"]), 1)
+            self.assertEqual(selection["calibrated_top_pct_per_side"] in (2.0, 5.0, 10.0), True)
+            self.assertGreater(selection["total_oos_trades"], 0)
+            self.assertEqual(selection["untouched_holdout"]["trades"], 1)
+        self.assertFalse(result["metadata"]["live_orders"])
+
+
+
 if __name__ == "__main__":
     unittest.main()
