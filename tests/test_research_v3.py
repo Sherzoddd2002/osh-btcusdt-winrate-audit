@@ -124,6 +124,21 @@ class ResearchV3CausalityTests(unittest.TestCase):
         features = rv.align_external_features(btc, external, source_bar_minutes=2)
         self.assertEqual(int(features.loc[0, "GLD_stale"]), 1)
 
+    def test_external_return_does_not_span_a_long_source_gap(self):
+        btc = pd.DataFrame({
+            "candle_time": pd.to_datetime([
+                "2024-01-01T10:00:00Z", "2024-01-01T11:00:00Z"
+            ])
+        })
+        external = pd.DataFrame({
+            "datetime": pd.to_datetime([
+                "2024-01-01T10:12:00Z", "2024-01-01T11:12:00Z"
+            ]),
+            "GLD_Close": [100.0, 101.0],
+        })
+        features = rv.align_external_features(btc, external, source_bar_minutes=2)
+        self.assertTrue(np.isnan(features.loc[1, "GLD_ret1"]))
+
     def test_probability_columns_are_aligned_by_class_label(self):
         class FakeModel:
             classes_ = np.array([2, 0, 1])
