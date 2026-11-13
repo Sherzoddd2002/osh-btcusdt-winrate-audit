@@ -119,13 +119,57 @@ To'liq nazariy qo'llanma: [`QOLLANMA.md`](QOLLANMA.md).
 
 ## Jonli sayt
 
-**https://sherzoddd2002.github.io/osh-btcusdt-winrate-audit/**
+- **Asosiy dashboard:** https://sherzoddd2002.github.io/osh-btcusdt-winrate-audit/
+- **Tashqi ma'lumotlar auditi:** https://sherzoddd2002.github.io/osh-btcusdt-winrate-audit/external-audit.html
 
 GitHub Pages allaqachon yoqilgan: source `gh-pages` branch / `/ (root)`, status `built`.
 `main` va `gh-pages` branch'lari bir xil fayllarni saqlaydi; o'zgartirish kiritganda
 ikkalasini ham yangilang (yoki Settings → Pages'da source'ni `main / root` ga o'tkazing).
 
 `.nojekyll` fayli `_` bilan boshlanuvchi papkalarning o'tkazib yuborilishining oldini oladi.
+
+---
+
+## Tashqi ma'lumotlar auditi (2026-11-13)
+
+["Ma'lumotlarimiz to'g'rimi? Oltin bilan bog'liqlik bormi? Yangiliklarni sonli feature qilib qo'shsak yordam beradimi?"](external-audit.html)
+savollariga javob — o'lchov bilan, taxmin bilan emas:
+
+| Savol | Javob |
+|---|---|
+| BTC shamlar tozami | **Ha**: 240 672 qator, 0 ta OHLC/VWAP/dublikat xatosi, 0 ta haqiqiy uzilish, 16 ta nol-hajmli sham. `open = oldingi close` 46.9% (sintetik emas), lag-1 avtokorr −0.00241 → real bozor. So'ngi close 73 980 USDT (2026-11-11 23:45 UTC). |
+| Yangiliklar bazasi | **Yo'q, 100% sintetik**: `macro_data/news_raw.csv` — 2 703 qator, manba `SyntheticNewsAPI`, URL `synthetic-news.com`, 224 ta noyob sarlavha, 42% shablon. So'rov ham `gold OR federal reserve...`, BTC emas. |
+| Oltin bilan bog'liqlik | **Bor, lekin faqat bir vaqtda**: GLD 15m korr +0.098, kunlik +0.128, SLV +0.131/+0.211, VIXY −0.336/−0.391. 30 kunlik rolling GLD oralig'i **−0.456…+0.583** — juda beqaror. |
+| Oldindan aytadimi | **Yo'q**: 1h oldinga IC barcha 6 aktivda \|IC\| < 0.015 (mezon \|IC\| > 0.03). Eng yaxshisi VIXY +0.0126, IR 0.712, lekin IC eshigidan o'tmaydi. |
+| Yangilik feature'lari | **Yo'q**: barcha IC \|<0.007\|, tasodifiy nazorat (`control_random` = −0.00124) bilan bir xil; 24h kechikishli varianti yana yomon. |
+| Nazoratli 6-fold ablatsiya | Baza −11.24 bps → **+oltin/makro −8.26 bps (+2.98)**, **+yangiliklar −12.07 bps (−0.83)**, ikkalasi −11.19 bps. **Barcha konfiguratsiyalarda 0/6 musbat davr, NO-GO.** |
+| Sizning eski makro sinovingiz | `edge_pnl_daily.csv` (1 925 kun): `ML_price` +0.0054%/kun (Sharpe 0.095) → `ML_all(+macro)` −0.0243%/kun (Sharpe −0.422); farq **t = −2.44**, ya'ni makro qo'shish sezilarli yomonlashtirgan. |
+
+**Xulosa:** xasset feature'lari kichik, haqiqiy yaxshilanish berdi (+3 bps), lekin 10 bps
+xarajatni yopish uchun yana +8 bps kerak; yangiliklar esa yomonlashtirdi. Birinchi navbatda
+**kripto-native** ma'lumot (funding rate, open interest, taker long/short, likvidatsiyalar,
+basis, order book) va **haqiqiy BTC yangiliklari** (UTC + `available_at`, dedup, manba og'irligi)
+kerak. Yangiliklarni yo'nalish emas, **volatillik/rejim** bashorati uchun sinash oqilona.
+
+### Qayta hisoblash
+
+```bash
+# xom ma'lumotlar E:\OSH da; boshqa joyda OSH_DATA_DIR ni o'rnating
+set OSH_DATA_DIR=E:\OSH
+python audit_btc_integrity.py       # -> integrity_report.json
+python external_analysis.py         # -> external_analysis.json
+python ablation_experiment.py       # -> ablation_results.json (pipeline_v2.py ni import qiladi)
+python build_dashboard.py --report report.json --out .
+```
+
+`external-audit.html` ichiga natijalar JSON ko'rinishida joylashtirilgan (fetch yo'q, oflayn ishlaydi;
+faqat grafiklar uchun ECharts CDN — yuklanmasa jadval tugmasi bilan barcha aniq raqamlar ochiladi).
+
+**Manba va cheklovlar:** barcha hisob-kitoblar lokal OSH ma'lumotlari bo'yicha 2026-11-13 da
+qilingan. Bu muhitdan `api.binance.com` / `fapi.binance.com` (502) va GDELT (SSL timeout) ga
+ulanib bo'lmadi, shuning uchun **birja bilan to'g'ridan-to'g'ri solishtirish qilinmadi**; narx
+darajasi faqat ikkilamchi ommaviy xulosalar bilan mosligi tekshirildi. Tashqi adabiyot/korrelyasiya
+raqamlari ikkilamchi manba bo'lib, asl matni tekshirilmagan.
 
 ---
 
