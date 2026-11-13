@@ -414,6 +414,7 @@ def run_research(
     max_ext_age_min: int = MAX_EXT_AGE_MIN,
     horizons: list[tuple[int, str]] | None = None,
     source: str = "provided DataFrame",
+    source_bar_minutes: int = SOURCE_BAR_MINUTES,
 ) -> dict:
     if cost_bps < 0 or not 0 < top_pct < 1:
         raise ValueError("cost_bps must be non-negative and top_pct must be in (0, 1)")
@@ -425,7 +426,7 @@ def run_research(
     X_base, base_features = pv.make_features(df)
     X_ext = align_external_features(
         df, external, max_age_min=max_ext_age_min,
-        source_bar_minutes=SOURCE_BAR_MINUTES,
+        source_bar_minutes=source_bar_minutes,
     ) if external is not None else pd.DataFrame(index=df.index)
 
     configs = {"BASE": X_base}
@@ -453,7 +454,7 @@ def run_research(
             "folds": int(folds_count), "train_days": int(train_days),
             "test_days": int(test_days), "holdout_days": int(holdout_days),
             "max_external_age_min": int(max_ext_age_min),
-            "source_bar_minutes": SOURCE_BAR_MINUTES,
+            "source_bar_minutes": int(source_bar_minutes),
             "barrier_rule": "same-bar double touch => stop; stop gaps fill at worse open",
             "threshold_rule": "quantile calibrated on train tail and frozen for test",
         },
@@ -494,8 +495,12 @@ def run_research(
             last_model, last_thresholds = None, None
 
             for fold_no, (tr0, tr1, te0, te1) in enumerate(fold_list, 1):
-                model = fit_model(Xi.iloc[tr0:tr1], yi[tr0:tr1], wi[tr0:tr1], h)
-                cal0 = max(tr0, tr1 - BARS_PER_DAY * min(90, train_days))
+                # The final calibration tail is excluded from both fitting and
+                # early stopping, preventing threshold-selection feedback.
+                cal0 = max(tr0 + 100, tr1 - BARS_PER_DAY * min(90, train_days))
+                if cal0 >= tr1:
+                    raise ValueError("Train fold is too short for an untouched calibration tail.")
+                model = fit_model(Xi.iloc[tr0:cal0], yi[tr0:cal0], wi[tr0:cal0], h)
                 p_cal = predict_proba_3class(model, Xi.iloc[cal0:tr1])
                 thr_up = float(np.quantile(p_cal[:, 2], 1.0 - top_pct))
                 thr_dn = float(np.quantile(p_cal[:, 0], 1.0 - top_pct))
@@ -645,15 +650,12 @@ def main(argv: list[str] | None = None) -> None:
     elif not args.no_external:
         print(f"[external] file not found; running BASE only: {args.external_csv}")
 
-    # This parameter is explicit so timestamp semantics can be audited.
-    global SOURCE_BAR_MINUTES
-    SOURCE_BAR_MINUTES = args.source_bar_minutes
-
     results = run_research(
         df, external=external, cost_bps=args.cost_bps, top_pct=args.top_pct,
         folds_count=args.folds, train_days=args.train_days,
         test_days=args.test_days, holdout_days=args.holdout_days,
         max_ext_age_min=args.max_ext_age_min, source=f"PostgreSQL {args.table}",
+        source_bar_minutes=args.source_bar_minutes,
     )
     output = Path(args.out)
     output.parent.mkdir(parents=True, exist_ok=True)
