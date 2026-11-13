@@ -75,6 +75,7 @@ def validate_funding_history(
     mark_col = cols.get("markprice") or cols.get("mark_price")
     interval_col = cols.get("funding_interval_hours")
     symbol_col = cols.get("symbol")
+    mark_source_col = cols.get("mark_price_source")
     missing = [
         label for label, col in (
             ("fundingTime/calc_time", time_col), ("fundingRate/last_funding_rate", rate_col)
@@ -116,6 +117,12 @@ def validate_funding_history(
         if has_mark.any() and not has_mark.all():
             raise ValueError("Funding markPrice column is only partially populated")
         mark_price_source = "binance_api" if has_mark.all() else "needs_15m_candle_proxy"
+    if mark_source_col is not None:
+        supplied_sources = raw[mark_source_col].dropna().astype(str).unique()
+        if len(supplied_sources) > 1:
+            raise ValueError("Funding CSV mixes multiple mark_price_source values")
+        if len(supplied_sources) == 1:
+            mark_price_source = supplied_sources[0]
     if interval_col is not None:
         out["funding_interval_hours"] = pd.to_numeric(raw[interval_col], errors="coerce")
         if out["funding_interval_hours"].isna().any() or (
@@ -912,6 +919,7 @@ def run_capital_fee_stress(
 
     candles = rv.validate_market_data(candles)
     funding = validate_funding_history(funding)
+    funding = attach_funding_mark_price_proxy(funding, candles)
     funding_coverage = check_funding_coverage(funding, candles)
     funding_times_ns = np.fromiter(
         (pd.Timestamp(value).value for value in funding["funding_time"]),
@@ -1170,8 +1178,13 @@ def run_capital_fee_stress(
             "horizon_bars": HORIZON_BARS,
             "funding": funding_coverage,
             "funding_method": (
-                "Actual fundingTime/fundingRate/markPrice records. Funding events within "
-                "entry or exit boundary candles count payments but ignore potential receipts."
+                "Actual Binance funding settlement timestamps and rates. API markPrice is "
+                "used when available; Binance Vision archive rows use the previous completed "
+                "BTCUSDT 15m close as an explicit causal proxy. Funding events within entry "
+                "or exit boundary candles count payments but ignore potential receipts."
+            ),
+            "funding_mark_price_source": str(
+                funding.attrs.get("mark_price_source", "unknown")
             ),
             "label_cost_components": (
                 "Model barriers are calibrated to commission plus slippage; variable "
@@ -1244,7 +1257,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--funding-csv", default="binance_btcusdt_funding_history.csv")
     parser.add_argument(
         "--fetch-funding", action="store_true",
-        help="Download historical funding rows from Binance's public USD-M endpoint.",
+        help="Download historical funding rows from Binance REST or Vision archives.",
+    )
+    parser.add_argument(
+        "--funding-source", choices=("auto", "api", "vision"), default="auto",
+        help="auto tries REST then Vision archives; vision bypasses the REST host.",
     )
     parser.add_argument("--symbol", default="BTCUSDT")
     parser.add_argument("--maker-fee-bps", type=float, default=2.0)
@@ -1293,10 +1310,35 @@ def main(argv: list[str] | None = None) -> None:
              + pd.Timedelta(minutes=rv.TF_MINUTES)).timestamp() * 1000
         )
         print("[funding] Fetching public historical funding records from Binance...")
-        funding = fetch_binance_funding_history(args.symbol, start_ms, end_ms)
+        funding = None
+        if args.funding_source in ("auto", "api"):
+            try:
+                funding = fetch_binance_funding_history(args.symbol, start_ms, end_ms)
+                funding.attrs["funding_source"] = "binance_rest_api"
+                print("[funding] Source: USD-M REST API (actual API markPrice).")
+            except RuntimeError as exc:
+                if args.funding_source == "api":
+                    raise
+                print(f"[funding] REST API unavailable: {exc}")
+                print("[funding] Switching to Binance Vision monthly/daily funding archives.")
+        if funding is None:
+            funding = fetch_binance_vision_funding_history(
+                args.symbol, start_ms, end_ms,
+            )
+            print(
+                "[funding] Source: Binance Vision archive; markPrice will be proxied "
+                "from the previous completed BTC 15m candle."
+            )
+        funding = attach_funding_mark_price_proxy(funding, candles)
+        funding["mark_price_source"] = str(
+            funding.attrs.get("mark_price_source", "unknown")
+        )
         funding_path.parent.mkdir(parents=True, exist_ok=True)
         funding.to_csv(funding_path, index=False)
-        print(f"[funding] Saved {len(funding):,} settlement rows to {funding_path.resolve()}")
+        print(
+            f"[funding] Saved {len(funding):,} settlement rows to {funding_path.resolve()} "
+            f"(mark-price source: {funding.attrs.get('mark_price_source', 'unknown')})"
+        )
     else:
         funding = load_funding_history(funding_path, symbol=args.symbol)
 
