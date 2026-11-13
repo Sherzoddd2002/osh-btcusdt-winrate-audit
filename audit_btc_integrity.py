@@ -122,10 +122,16 @@ def audit_frame(frame: pd.DataFrame, interval_minutes: int = 15) -> dict:
     age_days = (pd.Timestamp.now(tz="UTC") - times.max()).total_seconds() / 86_400
     res["data_age_days"] = round(float(age_days), 3)
 
+    negative_rows = int((df[NUMERIC] < 0).any(axis=1).sum())
+    res["negative_numeric_rows"] = negative_rows
     structural_errors = (
         res["duplicate_candle_time"] + res["non_interval_gaps"]
         + res["nonpositive_price_rows"] + res["ohlc_violations"]
-        + sum(res["non_numeric_or_missing"].values())
+        + sum(res["non_numeric_or_missing"].values()) + negative_rows
+        + res["taker_base_gt_volume_rows"]
+        + res["taker_quote_gt_quote_volume_rows"]
+        + (res["close_time_width_wrong"] or 0)
+        + (res["duplicate_open_time"] or 0)
     )
     res["structural_verdict"] = "PASS" if structural_errors == 0 else "FAIL"
     res["authenticity_note"] = (
