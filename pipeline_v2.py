@@ -55,7 +55,7 @@ REQUIRED = [
 def load_from_db(db_url: str, table: str) -> pd.DataFrame:
     from sqlalchemy import create_engine
 
-    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*\\.[A-Za-z_][A-Za-z0-9_]*", table):
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*[.][A-Za-z_][A-Za-z0-9_]*", table):
         raise ValueError("Unsafe table name. Expected schema.table.")
     engine = create_engine(db_url, pool_pre_ping=True)
     try:
