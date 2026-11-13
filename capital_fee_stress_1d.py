@@ -98,6 +98,8 @@ def validate_funding_history(
     if out[["funding_time", "funding_rate", "mark_price"]].isna().any().any():
         counts = out[["funding_time", "funding_rate", "mark_price"]].isna().sum()
         raise ValueError(f"Funding history contains invalid fields: {counts.to_dict()}")
+    if not np.isfinite(out[["funding_rate", "mark_price"]].to_numpy(dtype=float)).all():
+        raise ValueError("Funding rates and mark prices must all be finite numeric values")
     if (out["mark_price"] <= 0).any():
         raise ValueError("Funding markPrice must be strictly positive")
     if out["funding_time"].duplicated().any():
