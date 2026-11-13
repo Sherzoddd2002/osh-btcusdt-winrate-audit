@@ -1046,29 +1046,34 @@ def main(argv: list[str] | None = None) -> None:
 
     print("\n=== OSH BTCUSDT 1D CAPITAL / COST STRESS — PAPER ONLY ===")
     print(
-        "Fee mode | Slippage | Selectivity | OOS N | OOS win% | OOS PF | "
-        "OOS exp bps | Holdout N | Holdout win% | Holdout exp bps | "
-        "$25 PnL | $50 PnL | $100 cap PnL | Verdict"
+        "Fee mode | Slip | Sel | OOS N | OOS win% | OOS PF | OOS exp | "
+        "Hold N | Hold win% | Hold exp | "
+        "OOS $25 | OOS $50 | OOS $100 | "
+        "Hold $25 | Hold $50 | Hold $100 | Verdict"
     )
     for scenario_name, scenario in result["scenarios"].items():
         for selection_name, selection in scenario["selections"].items():
             oos = selection["oos"]
             hold = selection["untouched_holdout"]
             caps_oos = oos["capital_scenarios"]
+            caps_hold = hold["capital_scenarios"]
             print(
                 f"{scenario_name:<28} | "
                 f"{scenario['slippage_round_trip_bps']:>4.1f} | "
-                f"{selection_name:>4} | "
+                f"{selection_name:>3} | "
                 f"{oos['trades']:>5} | "
-                f"{oos['win_rate_pct'] if oos['win_rate_pct'] is not None else 'n/a':>8} | "
-                f"{oos['profit_factor'] if oos['profit_factor'] is not None else 'n/a':>7} | "
-                f"{oos['expectancy_bps'] if oos['expectancy_bps'] is not None else 'n/a':>11} | "
-                f"{hold['trades']:>9} | "
-                f"{hold['win_rate_pct'] if hold['win_rate_pct'] is not None else 'n/a':>11} | "
-                f"{hold['expectancy_bps'] if hold['expectancy_bps'] is not None else 'n/a':>14} | "
-                f"{caps_oos.get('25', {}).get('net_pnl_usdt', 0):>8.2f} | "
-                f"{caps_oos.get('50', {}).get('net_pnl_usdt', 0):>8.2f} | "
-                f"{caps_oos.get('100', {}).get('net_pnl_usdt', 0):>11.2f} | "
+                f"{oos['win_rate_pct'] if oos['win_rate_pct'] is not None else 'n/a':>7} | "
+                f"{oos['profit_factor'] if oos['profit_factor'] is not None else 'n/a':>6} | "
+                f"{oos['expectancy_bps'] if oos['expectancy_bps'] is not None else 'n/a':>8} | "
+                f"{hold['trades']:>6} | "
+                f"{hold['win_rate_pct'] if hold['win_rate_pct'] is not None else 'n/a':>9} | "
+                f"{hold['expectancy_bps'] if hold['expectancy_bps'] is not None else 'n/a':>9} | "
+                f"{caps_oos.get('25', {}).get('net_pnl_usdt', 0):>7.2f} | "
+                f"{caps_oos.get('50', {}).get('net_pnl_usdt', 0):>7.2f} | "
+                f"{caps_oos.get('100', {}).get('net_pnl_usdt', 0):>8.2f} | "
+                f"{caps_hold.get('25', {}).get('net_pnl_usdt', 0):>8.2f} | "
+                f"{caps_hold.get('50', {}).get('net_pnl_usdt', 0):>8.2f} | "
+                f"{caps_hold.get('100', {}).get('net_pnl_usdt', 0):>9.2f} | "
                 f"{selection['verdict']}"
             )
     print(f"[report] {output.resolve()}")
