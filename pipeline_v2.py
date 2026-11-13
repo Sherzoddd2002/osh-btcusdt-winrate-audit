@@ -503,14 +503,16 @@ def main() -> None:
 
     rows = []
     for i, (tr0, tr1, te0, te1) in enumerate(folds, 1):
+        # Reserve the train tail exclusively for threshold calibration.
+        # It is not used for fitting or early stopping.
+        cal0 = max(tr0 + 100, tr1 - test_len)
+        if cal0 >= tr1:
+            raise ValueError("Training fold is too short for a separate calibration tail.")
         model = build_model()
         model = fit_with_early_stop(
-            model, X.iloc[tr0:tr1], y.iloc[tr0:tr1], w.iloc[tr0:tr1],
+            model, X.iloc[tr0:cal0], y.iloc[tr0:cal0], w.iloc[tr0:cal0],
             embargo=args.horizon + 2,
         )
-
-        # threshold from the TRAIN tail only (calibration), never from test
-        cal0 = tr1 - test_len
         p_cal = model.predict_proba(X.iloc[cal0:tr1])[:, 1]
         thr = float(np.quantile(p_cal, 1 - args.top_pct))
 
