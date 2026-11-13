@@ -902,6 +902,15 @@ def run_capital_fee_stress(
                 "No leverage assumed. Position notional is capped by $25/$50/$100 and "
                 "90% of current equity by default; no upward sizing above the selected cap."
             ),
+            "capital_comparison_rule": (
+                "OOS and untouched-holdout portfolio simulations each start from the "
+                "initial capital independently; their PnL values must not be added together."
+            ),
+            "multiple_comparison_warning": (
+                "Fee, slippage and selection grids create multiple candidate results. "
+                "Choose candidates on development folds only, then confirm once on a "
+                "new forward period; do not select a winner from the holdout table."
+            ),
             "risk_limitations": (
                 "No exchange maintenance-margin or liquidation engine, order-book queue/fill "
                 "probability, exact intrabar exit seconds, taxes, or withdrawal costs."
