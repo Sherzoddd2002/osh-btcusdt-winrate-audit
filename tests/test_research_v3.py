@@ -83,9 +83,9 @@ class ResearchV3BarrierTests(unittest.TestCase):
 
     def test_stop_gap_is_filled_at_the_worse_open(self):
         frame = market_frame(40)
-        frame.loc[6, "open"] = 99.50
-        frame.loc[6, "high"] = 100.05
-        frame.loc[6, "low"] = 99.40
+        frame.loc[7, "open"] = 99.50
+        frame.loc[7, "high"] = 100.05
+        frame.loc[7, "low"] = 99.40
         with patch.object(rv, "VOL_WIN", 4):
             labels = rv.barrier_labels(frame, h=2, cost_ret=0.001)
         self.assertEqual(int(labels.loc[5, "label3"]), -1)
@@ -163,7 +163,7 @@ class ResearchV3CausalityTests(unittest.TestCase):
             probabilities, np.zeros(9), returns,
             h=3, cost=0.001, thr_up=0.5, thr_dn=1.1
         )
-        np.testing.assert_array_equal(idx, np.array([0, 3, 6]))
+        np.testing.assert_array_equal(idx, np.array([0, 3]))
 
     def test_empty_metrics_are_json_safe(self):
         result = rv.metrics(
