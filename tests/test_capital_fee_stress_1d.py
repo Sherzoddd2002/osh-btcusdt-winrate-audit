@@ -101,6 +101,12 @@ class BinanceVisionArchiveTests(unittest.TestCase):
             attached.attrs["mark_price_source"],
             "previous_completed_15m_close_proxy",
         )
+        attached["mark_price_source"] = attached.attrs["mark_price_source"]
+        reloaded = stress.validate_funding_history(attached)
+        self.assertEqual(
+            reloaded.attrs["mark_price_source"],
+            "previous_completed_15m_close_proxy",
+        )
 
 
 class FundingValidationTests(unittest.TestCase):
