@@ -205,5 +205,18 @@ class FullPipelineSmokeTests(unittest.TestCase):
         self.assertFalse(result["metadata"]["live_orders"])
 
 
+class BarrierDurationTests(unittest.TestCase):
+    def test_barrier_labels_retain_holding_bars_and_path_extrema(self):
+        frame = candles_frame(40)
+        frame.loc[6, "high"] = 100.30
+        frame.loc[6, "low"] = 99.90
+        with patch.object(rv, "VOL_WIN", 4):
+            labels = rv.barrier_labels(frame, h=2, cost_ret=0.001)
+        self.assertEqual(int(labels.loc[5, "holding_bars"]), 1)
+        self.assertAlmostEqual(float(labels.loc[5, "entry_price"]), 100.0)
+        self.assertAlmostEqual(float(labels.loc[5, "path_high"]), 100.30)
+        self.assertAlmostEqual(float(labels.loc[5, "path_low"]), 99.90)
+
+
 if __name__ == "__main__":
     unittest.main()
