@@ -305,30 +305,41 @@ def _vision_funding_urls(
     end: pd.Timestamp,
     today: pd.Timestamp | None = None,
 ) -> list[tuple[str, str]]:
-    """Plan monthly archives for completed months and daily archives for current month."""
+    """Plan completed monthly funding archives only (no daily fundingRate files)."""
     symbol = symbol.upper()
     today = today or pd.Timestamp.now(tz="UTC").normalize()
     current_month = pd.Timestamp(year=today.year, month=today.month, day=1, tz="UTC")
     plan: list[tuple[str, str]] = []
     for month_start in _month_range(start, end):
-        if month_start < current_month:
-            period = month_start.strftime("%Y-%m")
-            url = (
-                f"{BINANCE_VISION_BASE}/monthly/fundingRate/{symbol}/"
-                f"{symbol}-fundingRate-{period}.zip"
-            )
-            plan.append((f"monthly {period}", url))
-        else:
-            first_day = max(month_start, start.normalize())
-            last_day = min(month_start + pd.offsets.MonthEnd(0), end.normalize())
-            for day in pd.date_range(first_day, last_day, freq="D", tz="UTC"):
-                period = day.strftime("%Y-%m-%d")
-                url = (
-                    f"{BINANCE_VISION_BASE}/daily/fundingRate/{symbol}/"
-                    f"{symbol}-fundingRate-{period}.zip"
-                )
-                plan.append((f"daily {period}", url))
+        # Binance Vision publishes fundingRate as monthly archives. The
+        # incomplete current month is intentionally not treated as a daily
+        # archive family; its settlements must come from REST or a user CSV.
+        if month_start >= current_month:
+            continue
+        period = month_start.strftime("%Y-%m")
+        url = (
+            f"{BINANCE_VISION_BASE}/monthly/fundingRate/{symbol}/"
+            f"{symbol}-fundingRate-{period}.zip"
+        )
+        plan.append((f"monthly {period}", url))
     return plan
+
+
+def vision_monthly_coverage(
+    end_ms: int,
+    today: pd.Timestamp | None = None,
+) -> tuple[bool, pd.Timestamp]:
+    """Return whether monthly-only Vision coverage needs a current-month truncation.
+
+    The returned timestamp is the latest 15m candle open that can be kept
+    when the current UTC month has no completed monthly funding archive.
+    """
+    end = pd.to_datetime(end_ms, unit="ms", utc=True)
+    today = today or pd.Timestamp.now(tz="UTC").normalize()
+    current_month = pd.Timestamp(year=today.year, month=today.month, day=1, tz="UTC")
+    if end >= current_month:
+        return True, current_month - pd.Timedelta(minutes=rv.TF_MINUTES)
+    return False, end
 
 
 def fetch_binance_vision_funding_history(
@@ -338,12 +349,13 @@ def fetch_binance_vision_funding_history(
     timeout: int = 45,
     workers: int = 4,
 ) -> pd.DataFrame:
-    """Download historical USD-M funding archives when the REST API is unreachable.
+    """Download completed monthly USD-M funding archives when REST is unreachable.
 
     Binance Vision funding CSVs carry calc_time, funding_interval_hours, and
     last_funding_rate, but not the API's settlement markPrice. Mark-price proxy
     attachment is therefore a separate, explicit step using only completed
-    BTCUSDT 15m candles.
+    BTCUSDT 15m candles. The incomplete current month is not present in the
+    monthly archive and must be fetched from REST or supplied separately.
     """
     if start_ms < 0 or end_ms <= start_ms:
         raise ValueError("Funding archive start/end timestamps are invalid")
@@ -355,7 +367,7 @@ def fetch_binance_vision_funding_history(
     if not plan:
         raise ValueError("No Binance Vision funding archives were planned for this date range")
     print(
-        f"[funding] Binance Vision fallback: {len(plan)} monthly/daily archive file(s), "
+        f"[funding] Binance Vision fallback: {len(plan)} completed monthly archive file(s), "
         f"up to {workers} concurrent downloads."
     )
 
@@ -393,6 +405,17 @@ def fetch_binance_vision_funding_history(
         "calc_time": "fundingTime",
         "last_funding_rate": "fundingRate",
     })
+    # Monthly ZIPs contain the entire month. Keep only the requested time
+    # window; do not let later rows from the final ZIP leak beyond the sample.
+    raw_time_ms = pd.to_numeric(raw["fundingTime"], errors="coerce")
+    needs_truncation, coverage_end = vision_monthly_coverage(end_ms)
+    archive_end_ms = (
+        int((coverage_end + pd.Timedelta(minutes=rv.TF_MINUTES)).timestamp() * 1000) - 1
+        if needs_truncation else int(end_ms)
+    )
+    raw = raw.loc[
+        raw_time_ms.between(int(start_ms), archive_end_ms)
+    ].copy()
     raw = raw.drop_duplicates(subset=["fundingTime"], keep="last")
     result = validate_funding_history(raw, symbol=symbol)
     result.attrs["funding_source"] = "binance_vision_archive"
@@ -402,6 +425,8 @@ def fetch_binance_vision_funding_history(
         bool(downloaded[label].attrs.get("checksum_verified"))
         for label, _ in plan
     ))
+    result.attrs["archive_truncation_required"] = bool(needs_truncation)
+    result.attrs["archive_coverage_end_utc"] = coverage_end.isoformat()
     return result
 
 
@@ -1192,6 +1217,12 @@ def run_capital_fee_stress(
             "funding_mark_price_source": str(
                 funding.attrs.get("mark_price_source", "unknown")
             ),
+            "funding_archive_coverage_end_utc": funding.attrs.get(
+                "archive_coverage_end_utc"
+            ),
+            "btc_candles_truncated_for_monthly_funding_archive": bool(
+                funding.attrs.get("archive_truncation_required", False)
+            ),
             "label_cost_components": (
                 "Model barriers are calibrated to commission plus slippage; variable "
                 "historical funding is applied only to post-prediction trade PnL."
@@ -1263,11 +1294,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--funding-csv", default="binance_btcusdt_funding_history.csv")
     parser.add_argument(
         "--fetch-funding", action="store_true",
-        help="Download historical funding rows from Binance REST or Vision archives.",
+        help="Download historical funding rows from Binance REST or completed monthly Vision archives.",
     )
     parser.add_argument(
         "--funding-source", choices=("auto", "api", "vision"), default="auto",
-        help="auto tries REST then Vision archives; vision bypasses the REST host.",
+        help="auto tries REST then monthly Vision archives; vision bypasses the REST host.",
     )
     parser.add_argument("--symbol", default="BTCUSDT")
     parser.add_argument("--maker-fee-bps", type=float, default=2.0)
@@ -1282,6 +1313,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--train-days", type=int, default=365)
     parser.add_argument("--test-days", type=int, default=90)
     parser.add_argument("--holdout-days", type=int, default=180)
+    parser.add_argument(
+        "--allow-vision-monthly-truncate",
+        action="store_true",
+        help=(
+            "When Vision is used and REST is unavailable, explicitly truncate BTC candles "
+            "to the last completed UTC month covered by the monthly funding archive."
+        ),
+    )
     parser.add_argument("--out", default="capital_fee_stress_1d.json")
     return parser
 
@@ -1328,12 +1367,34 @@ def main(argv: list[str] | None = None) -> None:
                 print(f"[funding] REST API unavailable: {exc}")
                 print("[funding] Switching to Binance Vision monthly/daily funding archives.")
         if funding is None:
+            needs_truncation, archive_cutoff = vision_monthly_coverage(end_ms)
+            if needs_truncation and not args.allow_vision_monthly_truncate:
+                cutoff_text = archive_cutoff.isoformat()
+                raise RuntimeError(
+                    "Binance Vision fundingRate fallback has completed monthly archives only; "
+                    "the current UTC month is not yet archived. Restore Binance REST access or "
+                    "supply a funding CSV for the current month. To run a clearly truncated "
+                    f"research sample ending at {cutoff_text}, rerun with "
+                    "--allow-vision-monthly-truncate."
+                )
             funding = fetch_binance_vision_funding_history(
                 args.symbol, start_ms, end_ms,
             )
+            if needs_truncation:
+                candles = candles.loc[
+                    pd.to_datetime(candles["candle_time"], utc=True) <= archive_cutoff
+                ].copy().reset_index(drop=True)
+                if candles.empty:
+                    raise RuntimeError(
+                        "Monthly funding archive cutoff leaves no BTC candles to test."
+                    )
+                print(
+                    "[funding] WARNING: current-month candles excluded because their "
+                    f"funding archive is not yet published. Last candle kept: {archive_cutoff}."
+                )
             print(
-                "[funding] Source: Binance Vision archive; markPrice will be proxied "
-                "from the previous completed BTC 15m candle."
+                "[funding] Source: Binance Vision completed monthly archives; markPrice "
+                "will be proxied from the previous completed BTC 15m candle."
             )
         funding = attach_funding_mark_price_proxy(funding, candles)
         funding["mark_price_source"] = str(
