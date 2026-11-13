@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import unittest
+import hashlib
+import io
+import zipfile
 from unittest.mock import patch
 
 import numpy as np
@@ -37,6 +40,69 @@ def funding_frame(start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     })
 
 
+class BinanceVisionArchiveTests(unittest.TestCase):
+    def test_monthly_and_current_month_daily_url_plan(self):
+        start = pd.Timestamp("2026-10-30T00:00:00Z")
+        end = pd.Timestamp("2026-11-02T23:45:00Z")
+        today = pd.Timestamp("2026-11-14T00:00:00Z")
+        plan = stress._vision_funding_urls("BTCUSDT", start, end, today=today)
+        self.assertEqual(len(plan), 3)
+        self.assertIn(
+            "/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-10.zip",
+            plan[0][1],
+        )
+        self.assertIn(
+            "/daily/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-11-01.zip",
+            plan[1][1],
+        )
+        self.assertIn(
+            "/daily/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-11-02.zip",
+            plan[2][1],
+        )
+
+    def test_archive_csv_zip_checksum_and_schema_are_verified(self):
+        csv_bytes = (
+            "calc_time,funding_interval_hours,last_funding_rate\n"
+            "1760000000000,8,0.00010000\n"
+            "1760028800000,8,-0.00010000\n"
+        ).encode("utf-8")
+        zipped = io.BytesIO()
+        with zipfile.ZipFile(zipped, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("BTCUSDT-fundingRate-2025-10.csv", csv_bytes)
+        payload = zipped.getvalue()
+        checksum = (hashlib.sha256(payload).hexdigest() + "  archive.zip\n").encode("ascii")
+        with patch.object(
+            stress, "_download_vision_bytes", side_effect=[payload, checksum]
+        ) as download:
+            frame = stress._read_vision_funding_zip(
+                "https://data.binance.vision/example.zip"
+            )
+        self.assertIsNotNone(frame)
+        self.assertEqual(len(frame), 2)
+        self.assertTrue(frame.attrs["checksum_verified"])
+        self.assertEqual(download.call_count, 2)
+
+    def test_mark_price_proxy_uses_only_completed_candle_close(self):
+        candles = candles_frame(5)
+        candles["close"] = [100.0, 101.0, 102.0, 103.0, 104.0]
+        funding = pd.DataFrame({
+            "calc_time": [
+                int(pd.Timestamp("2023-01-01T00:15:00Z").timestamp() * 1000),
+                int(pd.Timestamp("2023-01-01T00:30:00Z").timestamp() * 1000),
+            ],
+            "funding_interval_hours": [8, 8],
+            "last_funding_rate": [0.0001, 0.0002],
+        })
+        normalized = stress.validate_funding_history(funding)
+        attached = stress.attach_funding_mark_price_proxy(normalized, candles)
+        self.assertAlmostEqual(float(attached.loc[0, "mark_price"]), 100.0)
+        self.assertAlmostEqual(float(attached.loc[1, "mark_price"]), 101.0)
+        self.assertEqual(
+            attached.attrs["mark_price_source"],
+            "previous_completed_15m_close_proxy",
+        )
+
+
 class FundingValidationTests(unittest.TestCase):
     def test_api_shaped_funding_history_is_normalized(self):
         raw = pd.DataFrame({
@@ -60,12 +126,17 @@ class FundingValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Duplicate"):
             stress.validate_funding_history(duplicate)
 
-        missing = pd.DataFrame({
-            "fundingTime": [1760000000000],
-            "fundingRate": [0.0001],
+        archive_schema = pd.DataFrame({
+            "calc_time": [1760000000000],
+            "funding_interval_hours": [8],
+            "last_funding_rate": [0.0001],
         })
-        with self.assertRaisesRegex(ValueError, "markPrice"):
-            stress.validate_funding_history(missing)
+        normalized = stress.validate_funding_history(archive_schema)
+        self.assertAlmostEqual(float(normalized.loc[0, "funding_rate"]), 0.0001)
+        self.assertTrue(np.isnan(normalized.loc[0, "mark_price"]))
+        self.assertEqual(
+            normalized.attrs["mark_price_source"], "needs_15m_candle_proxy"
+        )
 
     def test_infinite_funding_rate_is_rejected(self):
         raw = pd.DataFrame({
