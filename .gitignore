@@ -28,4 +28,6 @@ report.local.json
 v3_results.local.json
 integrity_report.local.json
 selectivity_sweep_1d.json
+capital_fee_stress_1d.json
+binance_btcusdt_funding_history.csv
 *.log
