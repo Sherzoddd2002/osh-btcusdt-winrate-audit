@@ -115,7 +115,8 @@ def barrier_labels(df: pd.DataFrame, h: int, cost_ret: float) -> pd.DataFrame:
 
     Same-bar double hits are pessimistically treated as stop-losses. Stop gaps
     fill at the worse opening price; take-profit gaps do not assume price
-    improvement. Timeout trades exit at the horizon close.
+    improvement. Timeout trades exit at the horizon close. Holding duration
+    and path extrema are retained for funding and trade-risk accounting.
     """
     if h < 1 or cost_ret < 0:
         raise ValueError("h must be >= 1 and cost_ret must be >= 0")
@@ -135,6 +136,9 @@ def barrier_labels(df: pd.DataFrame, h: int, cost_ret: float) -> pd.DataFrame:
     labels = np.zeros(n, dtype=np.int8)
     exit_ret = np.full(n, np.nan)
     exit_reason = np.full(n, "invalid", dtype=object)
+    holding_bars = np.full(n, np.nan)
+    path_high = np.full(n, np.nan)
+    path_low = np.full(n, np.nan)
 
     for i in range(n - h):
         if not np.isfinite(entry[i]) or entry[i] <= 0 or not np.isfinite(barrier[i]):
@@ -159,6 +163,9 @@ def barrier_labels(df: pd.DataFrame, h: int, cost_ret: float) -> pd.DataFrame:
                 labels[i] = 1
                 exit_reason[i] = "take_profit"
             exit_ret[i] = fill / entry[i] - 1.0
+            holding_bars[i] = j
+            path_high[i] = float(np.max(hi[i + 1:k + 1]))
+            path_low[i] = float(np.min(lo[i + 1:k + 1]))
             resolved = True
             break
 
@@ -166,7 +173,10 @@ def barrier_labels(df: pd.DataFrame, h: int, cost_ret: float) -> pd.DataFrame:
             exit_ret[i] = c[i + h] / entry[i] - 1.0
             labels[i] = 0
             exit_reason[i] = "time"
-            
+            holding_bars[i] = h
+            path_high[i] = float(np.max(hi[i + 1:i + h + 1]))
+            path_low[i] = float(np.min(lo[i + 1:i + h + 1]))
+
     valid = np.isfinite(exit_ret) & np.isfinite(sigma) & np.isfinite(entry) & (entry > 0)
     weight = (1.0 / h) * np.clip(np.abs(exit_ret) / (sigma + EPS), 0.25, 3.0)
     weight[~valid] = np.nan
@@ -176,6 +186,10 @@ def barrier_labels(df: pd.DataFrame, h: int, cost_ret: float) -> pd.DataFrame:
         "sigma": sigma,
         "sample_weight": weight,
         "exit_reason": exit_reason,
+        "holding_bars": holding_bars,
+        "path_high": path_high,
+        "path_low": path_low,
+        "entry_price": entry,
         "valid": valid,
     }, index=df.index)
 
