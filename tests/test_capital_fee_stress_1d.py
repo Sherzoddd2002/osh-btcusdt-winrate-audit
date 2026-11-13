@@ -156,7 +156,7 @@ class ExecutionAndCapitalTests(unittest.TestCase):
 
 
 class FullPipelineSmokeTests(unittest.TestCase):
-    def test_one_cost_scenario_runs_shared_model_and_builds_capital_tables(self):
+    def test_fee_scenarios_share_fold_models_across_three_selectivity_thresholds(self):
         n = 1500
         frame = candles_frame(n)
         labels = pd.DataFrame({
@@ -194,8 +194,8 @@ class FullPipelineSmokeTests(unittest.TestCase):
                 folds_count=1, train_days=4, test_days=2, holdout_days=2,
             )
 
-        self.assertEqual(fit_mock.call_count, 1)
-        self.assertEqual(len(result["scenarios"]), 1)
+        self.assertEqual(fit_mock.call_count, 3)  # maker/maker, maker/taker, taker/taker
+        self.assertEqual(len(result["scenarios"]), 3)
         scenario = next(iter(result["scenarios"].values()))
         self.assertEqual(set(scenario["selections"]), {"2%", "5%", "10%"})
         for selection in scenario["selections"].values():
