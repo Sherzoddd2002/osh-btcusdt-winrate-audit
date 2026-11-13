@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OSH · BTCUSDT 15m — win rate hisoboti (paper mode)</title>
+<meta name="description" content="Tuzatilgan ML pipeline'ning purged walk-forward natijalari. Faqat tarixiy paper-backtest, real buyurtma yo'q.">
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#ffffff; --ink:#16181d; --muted:#6b7280; --line:#e3e6eb;
+    --blue:#2563eb; --blue-soft:#eaf0fe; --amber:#b45309; --amber-soft:#fff5e6;
+    --red:#b91c1c; --red-soft:#fdecec; --teal:#0f766e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:15px;line-height:1.6}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 64px}
+  header{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:22px}
+  h1{font-size:26px;font-weight:600;margin:0 0 4px;letter-spacing:-.02em}
+  h2{font-size:18px;font-weight:600;margin:36px 0 14px;letter-spacing:-.01em}
+  h3{font-size:15px;font-weight:600;margin:0 0 8px}
+  p{margin:0 0 12px}
+  .sub{color:var(--muted);font-size:14px}
+  .badge{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:6px 13px;
+    font-size:12px;font-weight:600;letter-spacing:.02em}
+  .badge-safe{background:var(--blue-soft);color:var(--blue);border:1px solid #c9d9fb}
+  .dot{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
+  .safety{background:var(--blue-soft);border:1px solid #c9d9fb;border-left:4px solid var(--blue);
+    border-radius:10px;padding:15px 18px;margin-bottom:24px}
+  .safety strong{color:var(--blue)}
+  .safety ul{margin:8px 0 0;padding-left:20px;font-size:14px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+  .kpi .lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px}
+  .kpi .val{font-size:27px;font-weight:600;line-height:1.15;font-variant-numeric:tabular-nums}
+  .kpi .hint{font-size:12px;color:var(--muted);margin-top:5px}
+  .kpi.good .val{color:var(--blue)} .kpi.bad .val{color:var(--red)}
+  .verdict{border-radius:12px;padding:18px 20px;margin:8px 0 4px;border:1px solid}
+  .verdict.nogo{background:var(--red-soft);border-color:#f2b8b8}
+  .verdict.go{background:var(--blue-soft);border-color:#c9d9fb}
+  .verdict .tag{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+  .verdict.nogo .tag{color:var(--red)} .verdict.go .tag{color:var(--blue)}
+  .verdict .txt{font-size:16px;font-weight:600;margin-top:5px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+  .chart-note{font-size:13px;color:var(--muted);margin-top:10px}
+  svg{display:block;width:100%;height:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+  th,td{text-align:right;padding:9px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  thead th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+  tbody tr:hover{background:#fafbfc}
+  .neg{color:var(--red);font-weight:600} .pos{color:var(--blue);font-weight:600}
+  .minibar{display:inline-block;height:7px;border-radius:4px;background:var(--blue);vertical-align:middle;margin-right:6px;min-width:2px}
+  .minibar.zero{background:var(--amber)}
+  .scroll{overflow-x:auto}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.two{grid-template-columns:1fr}.wrap{padding:22px 14px 48px}h1{font-size:22px}}
+  ul.clean{padding-left:20px;margin:0} ul.clean li{margin-bottom:7px}
+  code{background:#eef1f5;padding:2px 6px;border-radius:5px;font-size:13px}
+  footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+  .legend{display:flex;flex-wrap:wrap;gap:18px;font-size:12px;color:var(--muted);margin-bottom:12px}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <h1>OSH · BTCUSDT 15m — win rate hisoboti</h1>
+    <div class="sub" id="subtitle">Tuzatilgan ML pipeline · purged walk-forward · real xarajatlar bilan</div>
+  </div>
+  <span class="badge badge-safe"><span class="dot"></span> PAPER / SHADOW MODE</span>
+</header>
+
+<div class="safety">
+  <strong>Xavfsiz rejim — hech qanday tavakkal yo'q</strong>
+  <ul>
+    <li>Bu sahifadagi barcha raqamlar <strong>tarixiy qog'oz savdo (backtest)</strong> natijalari. Birorta ham real buyurtma yuborilmagan.</li>
+    <li>Sayt butunlay statik: API kalit, Birja ulanishi, order joylash kodi, backend va hisob ma'lumotlari <strong>yo'q</strong>.</li>
+    <li>Hech qanday kapital xavf ostida emas. Model faqat tadqiqot uchun; jonli savdo o'chirilgan.</li>
+  </ul>
+</div>
+
+<h2>Asosiy ko'rsatkichlar</h2>
+<div class="grid" id="kpis"></div>
+<div class="verdict" id="verdict"></div>
+
+<h2>Win rate xarajatga bog'liq</h2>
+<div class="card">
+  <div class="legend">
+    <span><i style="background:#2563eb"></i> Win rate (xarajatdan keyin)</span>
+    <span><i style="background:#b45309"></i> 50% — tasodifiy tanlov chegarasi</span>
+  </div>
+  <svg id="costChart" viewBox="0 0 680 260" role="img" aria-label="Win rate versus round-trip cost chart"></svg>
+  <div class="chart-note" id="costNote"></div>
+</div>
+
+<h2>Har bir davr (fold) bo'yicha barqarorlik</h2>
+<div class="card">
+  <div class="legend">
+    <span><i style="background:#2563eb"></i> Musbat net</span>
+    <span><i style="background:#b91c1c"></i> Manfiy net</span>
+  </div>
+  <svg id="foldChart" viewBox="0 0 680 240" role="img" aria-label="Net bps per walk-forward fold"></svg>
+  <p class="chart-note">Bitta yaxshi davr emas, <strong>barcha davrlarning taqsimoti</strong> muhim. Qaror: median net &gt; 0 va musbat fold'lar ≥ 75%.</p>
+</div>
+
+<div class="two">
+  <div class="card">
+    <h3>Xarajat sezgirligi</h3>
+    <div class="scroll"><table id="costTable"></table></div>
+    <p class="chart-note">Binance USDⓈ-M futures taker 0.02% / 0.04% → ~8 bps round-trip; spot 0.1% / 0.1% → ~20 bps. Bunga slippage va funding qo'shiladi.</p>
+  </div>
+  <div class="card">
+    <h3>Nima tuzatildi</h3>
+    <ul class="clean" style="font-size:14px">
+      <li>Absolyut narx/volume o'rniga <strong>stasionar</strong> log-return va rolling z-score</li>
+      <li>Bitta sham o'rniga 1–96 shamlik lag, volatillik va oqim konteksti</li>
+      <li>"Keyingi sham yashilmi?" o'rniga <strong>triple-barrier</strong> + xarajatli target</li>
+      <li>Bitta split o'rniga <strong>purged walk-forward</strong> (eng so'nggi 10 davr)</li>
+      <li>Threshold faqat train qismidan kalibrlanadi, testga tegilmaydi</li>
+      <li>Ustma-ust tushmaydigan savdolar + barrier-exit PnL</li>
+      <li>0–2 bps emas, <strong>real 10 bps</strong> round-trip xarajat</li>
+      <li>Win rate uchun <strong>Wilson 95% ishonch oralig'i</strong></li>
+    </ul>
+  </div>
+</div>
+
+<h2>Davrlar jadvali</h2>
+<div class="card scroll"><table id="foldTable"></table></div>
+
+<h2>Nega AUC yaxshi ko'rinadi, lekin foyda yo'q?</h2>
+<div class="card">
+  <p>Triple-barrier label <strong>yo'nalishni emas, "to'siq uriladimi" ehtimolini</strong> bashorat qiladi. Model bunda asosan volatillik rejimini o'rganadi: volatillik yuqori bo'lganda to'siqlar tezroq uriladi, shuning uchun AUC ko'tariladi. Bu <em>statistik</em> mahorat, lekin <em>iqtisodiy</em> edge emas.</p>
+  <ul class="clean" style="font-size:14px">
+    <li><strong>AUC</strong> — bashoratlarning tartibi (ranking). U savdo foydasini o'lchamaydi.</li>
+    <li><strong>Brier</strong> doimiy baseline'dan yomon bo'lsa, ehtimollar kalibrlanmagan — ularni "ehtimol" sifatida ishlatib bo'lmaydi.</li>
+    <li><strong>Win rate</strong> va <strong>net bps</strong> — haqiqiy savdo natijasi. Qaror shu ikkisidan chiqadi.</li>
+    <li>Konservativ qoida: agar ikkala to'siq bitta sham ichida urilsa, <strong>zarar</strong> deb hisoblanadi (intrabar ma'lumot yo'q).</li>
+  </ul>
+  <p style="margin-top:10px">Shuning uchun yuqori AUC bilan ham barcha davrlar manfiy chiqishi mumkin — bu xato emas, bozor haqidagi halol signal.</p>
+</div>
+
+<h2>Metodologiya va ogohlantirish</h2>
+<div class="card">
+  <p>Ma'lumot: <span id="metaData"></span>. Har bir davrda model faqat o'zidan oldingi ma'lumotda o'rgatiladi, keyingi 90 kun sinovdan o'tkaziladi, 6 shamlik embargo qo'yiladi. Savdolar ustma-ust tushmaydi; kirish keyingi sham ochilishida, chiqish to'siq yoki gorizont bo'yicha. Barcha natijalar <strong>yalpi (gross)</strong> va <strong>xarajatdan keyingi (net)</strong> alohida ko'rsatilgan.</p>
+  <p><strong>Bu investitsiya maslahati emas.</strong> Hech bir model foyda kafolatlamaydi. O'tmishdagi natija kelajakdagi natijani kafolatlamaydi. Ushbu hisobot tadqiqot maqsadida, jonli savdoga ulash uchun emas. Qaror eshigidan o'tilmaguncha <code>live_orders = false</code> saqlanadi.</p>
+</div>
+
+<footer>
+  <div id="footMeta"></div>
+  <div style="margin-top:6px">OSH research · statik hisobot · real buyurtma yo'q · <span id="genTime"></span></div>
+</footer>
+
+</div>
+
+<script id="report-data" type="application/json">__REPORT_JSON__</script>
+<script>
+(function(){
+  const R = JSON.parse(document.getElementById('report-data').textContent);
+  const S = R.summary || {}, F = R.folds || [], C = R.cost_sensitivity || [];
+  const f1 = (x,d=2)=> (x===undefined||x===null||isNaN(x)) ? '—' : Number(x).toFixed(d);
+  const n0 = x => (x===undefined||x===null||isNaN(x)) ? '—' : Math.round(x).toLocaleString('en-US');
+  const cls = x => (x===undefined||isNaN(x))?'':(x>0?'pos':(x<0?'neg':''));
+  const SVGNS='http://www.w3.org/2000/svg';
+  function el(name,attrs,text){
+    const e=document.createElementNS(SVGNS,name);
+    for(const k in attrs) e.setAttribute(k,attrs[k]);
+    if(text!==undefined) e.textContent=text;
+    return e;
+  }
+
+  document.getElementById('subtitle').textContent =
+    (S.data_source||'')+' · '+(S.folds||0)+' purged fold · '+(S.cost_bps||0)+' bps round-trip xarajat';
+  document.getElementById('metaData').textContent =
+    (S.data_source||'—')+', '+n0(S.rows)+' ta 15m sham, '+(S.first_candle||'—')+' → '+(S.last_candle||'—')+
+    ', '+n0(S.usable_rows)+' yaroqli qator, '+(S.feature_count||0)+' ta stasionar feature.';
+  document.getElementById('footMeta').textContent =
+    'Jami '+n0(S.total_paper_trades)+' ta qog\'oz savdo · '+n0(S.folds)+' davr · median AUC '+f1(S.median_auc,4)+
+    ' · Brier '+f1(S.median_brier,4)+' (doimiy baseline '+f1(S.brier_constant,4)+')';
+  document.getElementById('genTime').textContent = new Date().toISOString().slice(0,16).replace('T',' ')+' UTC';
+
+  const kpis = [
+    {lbl:'Win rate (xarajatdan keyin)', val:f1(S.win_rate_pct)+'%',
+     hint:'95% CI '+f1(S.win_rate_ci95&&S.win_rate_ci95[0])+'–'+f1(S.win_rate_ci95&&S.win_rate_ci95[1])+'%',
+     cls:(S.win_rate_pct>=50?'good':'bad')},
+    {lbl:'Yalpi win rate (0 bps)', val:f1(S.gross_win_rate_pct)+'%', hint:'xarajat hisobga olinmaganda',cls:''},
+    {lbl:'Jami qog\'oz savdo', val:n0(S.total_paper_trades), hint:'10 ta sinov davri',cls:''},
+    {lbl:'Median net / savdo', val:f1(S.median_net_bps)+' bps', hint:'o\'rtacha '+f1(S.mean_net_bps)+' bps',cls:cls(S.median_net_bps)},
+    {lbl:'Musbat davrlar', val:f1(S.positive_folds_pct,0)+'%', hint:'talab: ≥ 75%',cls:(S.positive_folds_pct>=75?'good':'bad')},
+    {lbl:'Median ROC AUC', val:f1(S.median_auc,4), hint:'0.5000 = tanga tashlash',cls:''}
+  ];
+  document.getElementById('kpis').innerHTML = kpis.map(k =>
+    '<div class="kpi '+k.cls+'"><div class="lbl">'+k.lbl+'</div><div class="val">'+k.val+'</div><div class="hint">'+k.hint+'</div></div>'
+  ).join('');
+
+  const isGo = (S.verdict||'').toUpperCase().indexOf('GO TO')===0;
+  const v=document.getElementById('verdict');
+  v.className='verdict '+(isGo?'go':'nogo');
+  v.innerHTML='<div class="tag">'+(isGo?'GO — shadow/paper bosqichiga o\'tish mumkin':'NO-GO — jonli savdo yo\'q')+'</div>'+
+    '<div class="txt">'+(S.verdict||'—')+'</div>'+
+    '<p style="margin:8px 0 0;font-size:14px;font-weight:400">'+
+    (isGo ? 'Keyingi qadam: 6–8 hafta real vaqtda paper/shadow kuzatuv, keyin juda kichik hajm.'
+          : 'Gross edge '+f1(S.median_net_bps+(S.cost_bps||0))+' bps atrofida, real xarajat '+(S.cost_bps||0)+
+            ' bps. Xarajatdan keyin barqaror foyda yo\'q — sayt analytics vositasi sifatida qoladi.')+'</p>';
+
+  /* ---------- cost sensitivity line chart ---------- */
+  const svg=document.getElementById('costChart'), W=680,H=260, L=52,Rr=18,T=18,B=42;
+  const pw=W-L-Rr, ph=H-T-B;
+  const xs=C.map((c,i)=> L + (C.length>1 ? i*pw/(C.length-1) : pw/2));
+  const yv=v=> T + ph*(1-v/100);
+  svg.appendChild(el('rect',{x:L,y:T,width:pw,height:ph,fill:'#fbfcfe',stroke:'#e3e6eb','stroke-width':1}));
+  [0,25,50,75,100].forEach(g=>{
+    svg.appendChild(el('line',{x1:L,x2:W-Rr,y1:yv(g),y2:yv(g),stroke:g===50?'#b45309':'#eceff3',
+      'stroke-width':g===50?1.5:1,'stroke-dasharray':g===50?'5 4':'0'}));
+    svg.appendChild(el('text',{x:L-9,y:yv(g)+4,'text-anchor':'end','font-size':11,fill:'#6b7280'},g+'%'));
+  });
+  C.forEach((c,i)=> svg.appendChild(el('text',{x:xs[i],y:H-B+19,'text-anchor':'middle','font-size':11,fill:'#6b7280'},c.cost_bps)));
+  svg.appendChild(el('text',{x:L+pw/2,y:H-6,'text-anchor':'middle','font-size':12,fill:'#6b7280'},'Round-trip xarajat (bps)'));
+  const pts=C.map((c,i)=> xs[i]+','+yv(c.win_rate_pct)).join(' ');
+  svg.appendChild(el('polyline',{points:pts,fill:'none',stroke:'#2563eb','stroke-width':2.5,'stroke-linejoin':'round'}));
+  C.forEach((c,i)=>{
+    const focus = c.cost_bps===(S.cost_bps||10);
+    svg.appendChild(el('circle',{cx:xs[i],cy:yv(c.win_rate_pct),r:focus?6:4,
+      fill:focus?'#b45309':'#2563eb',stroke:'#fff','stroke-width':2}));
+    svg.appendChild(el('text',{x:xs[i],y:yv(c.win_rate_pct)-13,'text-anchor':'middle','font-size':11,
+      fill:focus?'#b45309':'#2563eb','font-weight':600},f1(c.win_rate_pct,1)+'%'));
+  });
+  document.getElementById('costNote').innerHTML = 'Win rate xarajat oshishi bilan tushadi. '+
+    'Asosiy stsenariy <strong>'+(S.cost_bps||10)+' bps</strong> (binance futures taker). '+
+    '0 bps dagi ko\'rsatkich real savdoda erishib bo\'lmaydigan yuqori chegara.';
+
+  /* ---------- per-fold net bps diverging bars ---------- */
+  const sv=document.getElementById('foldChart'), W2=680,H2=240,L2=52,R2=18,T2=16,B2=42;
+  const pw2=W2-L2-R2, ph2=H2-T2-B2, zero=T2+ph2/2;
+  const vals=F.map(f=>f.mean_net_bps||0);
+  const mx=Math.max(1,...vals.map(Math.abs))*1.25;
+  const sc=v=> (v/mx)*(ph2/2);
+  sv.appendChild(el('rect',{x:L2,y:T2,width:pw2,height:ph2,fill:'#fbfcfe',stroke:'#e3e6eb','stroke-width':1}));
+  [1,0.5,0,-0.5,-1].forEach(k=>{
+    const yy=zero-sc(mx*k);
+    sv.appendChild(el('line',{x1:L2,x2:W2-R2,y1:yy,y2:yy,stroke:k===0?'#9aa3af':'#eceff3','stroke-width':k===0?1.5:1}));
+    sv.appendChild(el('text',{x:L2-9,y:yy+4,'text-anchor':'end','font-size':11,fill:'#6b7280'},f1(mx*k,0)));
+  });
+  const bw=Math.min(38,pw2/Math.max(F.length,1)*0.62);
+  F.forEach((f,i)=>{
+    const cx=L2 + (i+0.5)*pw2/F.length, v=f.mean_net_bps||0;
+    const y=v>=0? zero-sc(v): zero, h=Math.max(2,Math.abs(sc(v)));
+    sv.appendChild(el('rect',{x:cx-bw/2,y:y,width:bw,height:h,rx:3,fill:v>=0?'#2563eb':'#b91c1c',opacity:.88}));
+    sv.appendChild(el('text',{x:cx,y:v>=0? y-6 : y+h+14,'text-anchor':'middle','font-size':10,fill:v>=0?'#2563eb':'#b91c1c','font-weight':600},f1(v,1)));
+    sv.appendChild(el('text',{x:cx,y:H2-B2+18,'text-anchor':'middle','font-size':10,fill:'#6b7280'},(f.test_start||'').slice(0,7)));
+  });
+  sv.appendChild(el('text',{x:L2+pw2/2,y:H2-5,'text-anchor':'middle','font-size':12,fill:'#6b7280'},'Sinov davri (oy) · net bps / savdo'));
+
+  /* ---------- tables ---------- */
+  let ct='<thead><tr><th>Xarajat</th><th>Win rate</th><th>95% CI</th><th>Net bps</th><th>Compounded</th></tr></thead><tbody>';
+  C.forEach(c=>{
+    ct+='<tr'+(c.cost_bps===(S.cost_bps||10)?' style="background:#fff8ec"':'')+'><td>'+c.cost_bps+' bps</td><td class="'+cls(c.win_rate_pct-50)+'">'+f1(c.win_rate_pct)+'%</td>'+
+      '<td style="color:#6b7280">'+f1(c.ci_low_pct)+'–'+f1(c.ci_high_pct)+'</td><td class="'+cls(c.mean_net_bps)+'">'+f1(c.mean_net_bps)+'</td>'+
+      '<td class="'+cls(c.compounded_net_pct)+'">'+f1(c.compounded_net_pct,1)+'%</td></tr>';
+  });
+  document.getElementById('costTable').innerHTML=ct+'</tbody>';
+
+  let ft='<thead><tr><th>Fold / davr</th><th>Savdo</th><th>Win rate</th><th>AUC</th><th>Brier</th><th>Gross bps</th><th>Net bps</th><th>Benchmark farqi</th></tr></thead><tbody>';
+  F.forEach(f=>{
+    const wr=f.win_rate_after_cost_pct||0;
+    ft+='<tr><td>#'+f.fold+' · '+(f.test_start||'').slice(0,10)+'</td><td>'+n0(f.trades)+'</td>'+
+      '<td><span class="minibar'+(wr<50?' zero':'')+'" style="width:'+Math.max(2,Math.min(60,wr*.6))+'px"></span>'+f1(wr,1)+'%</td>'+
+      '<td>'+f1(f.roc_auc,4)+'</td><td>'+f1(f.brier,4)+'</td>'+
+      '<td class="'+cls(f.mean_gross_bps)+'">'+f1(f.mean_gross_bps)+'</td>'+
+      '<td class="'+cls(f.mean_net_bps)+'">'+f1(f.mean_net_bps)+'</td>'+
+      '<td class="'+cls(f.edge_vs_benchmark_bps)+'">'+f1(f.edge_vs_benchmark_bps)+'</td></tr>';
+  });
+  document.getElementById('foldTable').innerHTML=ft+'</tbody>';
+})();
+</script>
+</body>
+</html>
