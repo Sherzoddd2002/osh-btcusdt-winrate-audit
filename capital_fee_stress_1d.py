@@ -792,9 +792,12 @@ def run_capital_fee_stress(
             valid_fold_expectancies = [
                 x for x in fold_expectancies if x is not None
             ]
+            positive_fold_count = sum(
+                x is not None and x > 0 for x in fold_expectancies
+            )
+            # A fold with no executed trades is not counted as a positive fold.
             positive_fold_pct = (
-                float(np.mean(np.asarray(valid_fold_expectancies) > 0) * 100.0)
-                if valid_fold_expectancies else 0.0
+                float(positive_fold_count / max(1, len(fold_expectancies)) * 100.0)
             )
             median_fold_exp = (
                 float(np.median(valid_fold_expectancies))
@@ -823,6 +826,10 @@ def run_capital_fee_stress(
                 ),
                 "holdout_profit_factor_above_1": bool(
                     hold_pf is not None and hold_pf > 1.0
+                ),
+                "holdout_bootstrap_lower_bound_positive": bool(
+                    hold_stats["bootstrap_ci95_expectancy_bps"][0] is not None
+                    and hold_stats["bootstrap_ci95_expectancy_bps"][0] > 0
                 ),
                 "holdout_at_least_30_trades": bool(hold_stats["trades"] >= 30),
             }
