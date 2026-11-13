@@ -49,6 +49,8 @@
   @media(max-width:780px){.two{grid-template-columns:1fr}.wrap{padding:20px 13px 48px}h1{font-size:22px}}
   code{background:#eef1f5;padding:2px 6px;border-radius:5px;font-size:13px}
   footer{margin-top:42px;padding-top:18px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+  .archive-warning{background:#fff5e6;border:1px solid #f0d9ad;border-left:5px solid #b45309;border-radius:10px;padding:15px 18px;margin:16px 0}
+  .archive-warning strong{color:#92400e}
 </style>
 </head>
 <body>
@@ -59,6 +61,14 @@
   <div class="sub">BTCUSDT 15m · 2026-11-13 · barcha raqamlar lokal hisoblangan, paper-backtest, real buyurtma yo'q</div>
   <div style="margin-top:12px"><span class="badge"><span class="dot"></span> PAPER / SHADOW · tadqiqot rejimi</span></div>
 </header>
+
+<div class="archive-warning" role="alert">
+  <strong>TARIXIY MA'LUMOT AUDITI — yangi v3 bilan qayta tekshirilmagan.</strong>
+  Ushbu sahifadagi korrelyatsiya, feature va ablation ko'rsatkichlari avvalgi data snapshot
+  va eski non-causal experimentdan olingan. News korpusi sintetik deb belgilangan; eski
+  ablation natijasi alpha dalili emas. Yangi cross-asset feature'lar faqat availability-time
+  alignment va PostgreSQL qayta hisobi tugagandan keyin baholanishi kerak.
+</div>
 
 <div class="tldr">
   <strong>Xulosa (avval javob, keyin dalil)</strong>
