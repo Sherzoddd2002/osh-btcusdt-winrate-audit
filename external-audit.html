@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OSH · tashqi ma'lumotlar auditi va signalga qo'shimcha qiymati</title>
+<meta name="description" content="BTCUSDT 15m ma'lumot yaxlitligi, oltin/DXY/makro korrelyasiyasi, yangiliklar korpusi va boshqariladigan feature ablatsiyasi.">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<style>
+  :root{--bg:#f7f8fa;--card:#fff;--ink:#16181d;--muted:#6b7280;--line:#e3e6eb;
+    --blue:#2563eb;--blue-soft:#eaf0fe;--amber:#b45309;--amber-soft:#fff5e6;
+    --red:#b91c1c;--red-soft:#fdecec;--green:#0f766e}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;font-size:15px;line-height:1.65}
+  .wrap{max-width:1080px;margin:0 auto;padding:30px 20px 70px}
+  h1{font-size:26px;font-weight:600;margin:0 0 5px;letter-spacing:-.02em}
+  h2{font-size:19px;font-weight:600;margin:38px 0 12px;letter-spacing:-.01em}
+  h3{font-size:15px;font-weight:600;margin:0 0 8px}
+  p{margin:0 0 11px}
+  .sub{color:var(--muted);font-size:14px}
+  .badge{display:inline-flex;gap:7px;align-items:center;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:600;background:var(--blue-soft);color:var(--blue);border:1px solid #c9d9fb}
+  .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .tldr{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:12px;padding:18px 20px;margin:20px 0 8px}
+  .tldr .q{font-weight:600;color:var(--blue);margin-top:9px}
+  .tldr .q:first-child{margin-top:0}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;margin:18px 0}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+  .kpi .v{font-size:25px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+  .kpi .h{font-size:12px;color:var(--muted);margin-top:5px}
+  .kpi.ok .v{color:var(--green)} .kpi.bad .v{color:var(--red)} .kpi.warn .v{color:var(--amber)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+  .card.alert{background:var(--red-soft);border-color:#f2b8b8;border-left:4px solid var(--red)}
+  .card.note{background:var(--amber-soft);border-color:#f0d9ad;border-left:4px solid var(--amber)}
+  .chart{width:100%;height:330px}
+  .toggle{border:0.5px solid var(--line);background:#fff;border-radius:7px;padding:5px 11px;font-size:12px;color:var(--muted);cursor:pointer;margin:0 4px 10px 0}
+  .toggle.on{background:var(--blue-soft);color:var(--blue);border-color:#c9d9fb}
+  .hidden{display:none}
+  table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+  th,td{text-align:right;padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  thead th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+  .scroll{overflow-x:auto}
+  .neg{color:var(--red);font-weight:600}.pos{color:var(--green);font-weight:600}
+  ul{margin:0;padding-left:20px}li{margin-bottom:7px}
+  .src{font-size:12px;color:var(--muted);margin-top:9px}
+  .src a{color:var(--blue)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:780px){.two{grid-template-columns:1fr}.wrap{padding:20px 13px 48px}h1{font-size:22px}}
+  code{background:#eef1f5;padding:2px 6px;border-radius:5px;font-size:13px}
+  footer{margin-top:42px;padding-top:18px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Tashqi ma'lumotlar auditi: oltin, makro va yangiliklar signalga yordam beradimi?</h1>
+  <div class="sub">BTCUSDT 15m · 2026-11-13 · barcha raqamlar lokal hisoblangan, paper-backtest, real buyurtma yo'q</div>
+  <div style="margin-top:12px"><span class="badge"><span class="dot"></span> PAPER / SHADOW · tadqiqot rejimi</span></div>
+</header>
+
+<div class="tldr">
+  <strong>Xulosa (avval javob, keyin dalil)</strong>
+  <div class="q">1. Ma'lumotlaringiz to'g'rimi? — <strong>BTC shamlar: ha, asosan toza.</strong> Lekin <strong>yangiliklar bazasi 100% sintetik</strong> (soxta manba, 224 ta noyob sarlavha, 2 703 qator). Uni o'qitish befoyda.</div>
+  <div class="q">2. Oltin bilan bog'liqlik bormi? — <strong>Bor, lekin faqat bir vaqtda.</strong> GLD bilan 15m korr +0.098, kunlik +0.128; 30 kunlik oynada −0.456…+0.583 oralig'ida qalqiydi. <strong>Oldindan aytish kuchi (IC) atigi +0.001</strong> — signal emas.</div>
+  <div class="q">3. Yangiliklarni sonli feature qilib qo'shsak yordam beradimi? — <strong>Yo'q.</strong> Barcha news feature'larining ICsi |0.007| dan kichik, tasodifiy sonlarnikiga teng; nazoratli 6-fold ablatsiyada natijani <strong>yomonlashtirdi</strong> (−0.83 bps).</div>
+  <div class="q">4. Nima haqiqatan yordam berdi? — <strong>Oltin/makro ETF'lari</strong>: median net −11.24 → −8.26 bps (+2.98 bps), win rate 40.55% → 44.28%. Lekin <strong>0/6 davr musbat</strong>, 10 bps xarajatdan keyin baribir zarar. Bu yaxshilanish, lekin yechim emas.</div>
+</div>
+
+<div class="grid">
+  <div class="kpi ok"><div class="l">BTC yaxlitligi</div><div class="v">0 xato</div><div class="h">240 672 sham, OHLC/VWAP/taker tekshirildi</div></div>
+  <div class="kpi bad"><div class="l">Yangiliklar korpusi</div><div class="v">100% soxta</div><div class="h">SyntheticNewsAPI, synthetic-news.com</div></div>
+  <div class="kpi warn"><div class="l">GLD → BTC (IC)</div><div class="v">+0.0010</div><div class="h">kerak: |IC| &gt; 0.03</div></div>
+  <div class="kpi warn"><div class="l">Eng yaxshi qo'shimcha</div><div class="v">+2.98 bps</div><div class="h">xasset, lekin 0/6 davr musbat</div></div>
+  <div class="kpi bad"><div class="l">Makro qo'shish (eski sinov)</div><div class="v">t = −2.44</div><div class="h">1 925 kun, sezilarli yomonlashgan</div></div>
+</div>
+
+<h2>1. BTC shamlar haqiqatan tozami?</h2>
+<div class="card">
+  <p>Manba: lokal <code>public.btcusdt_15m</code> (PostgreSQL), audit 2026-11-13. 240 672 qator, 2020-01-01 → 2026-11-11 23:45 UTC, ma'lumot 1 kunlik kechikish bilan.</p>
+  <div class="scroll"><table id="tIntegrity"></table></div>
+  <p class="src">Manba: OSH lokal bazasi, hisoblangan 2026-11-13. E'tibor: to'g'ridan-to'g'ri Binance API bilan solishtirib bo'lmadi — bu muhitda <code>api.binance.com</code> / <code>fapi.binance.com</code> 502 / SSL timeout berdi. Shuning uchun xulosa <strong>ichki izchillik</strong> va narx darajasining tashqi (ikkilamchi) manbalarga mosligiga asoslangan, birja bilan to'liq reconciliasiya emas.</p>
+</div>
+<div class="card note">
+  <strong>Narx darajasi tashqi manba bilan mos keladi.</strong> Bazadagi so'ngi close = <strong>73 980 USDT</strong> (2026-11-11 23:45 UTC). Tashqi (ikkilamchi, <em>asl manbasini tekshirish kerak</em>) xabarlarda BTC 2026-11-13 da ~71 000–71 400 atrofida, 10-13 noyabr CPI/Fed kayfiyati tufayli pasaygani aytiladi. Ikki kun ichida ~4% lik tushish izchil. Notebook'dagi 2026-10-28 yopilishi 81 460 edi → ikki haftada −9%. Demak ma'lumot "boshqa sayyoradan" emas.
+  <p class="src">Manba: OSH bazasi (2026-11-11) + domain_search / ommaviy axborot xulosalari (2026-11-13, ikkilamchi manba, asl matn tekshirilmagan).</p>
+</div>
+<div class="card">
+  <strong>Dastlabki "katta xatolik" alarmi noto'g'ri chiqdi.</strong> <code>trade_count</code> ustuni Decimal (object dtype) bo'lgani uchun pandas <code>groupby().mean()</code> ichida minglab xonali satr hosil qilgan; qayta tekshiruvda barcha 9 ta sonli ustunda noodatiy qiymat 0, maksimal satr uzunligi 7. Demak bu pandas xususiyati, ma'lumot buzilishi emas — xulosani tuzatdim.
+</div>
+
+<h2>2. Oltin / dollar / makro bilan bog'liqlik</h2>
+<div class="card">
+  <p>Sizda allaqachon <code>WIDE_GLD_AUX_2MIN.csv</code> bor: 172 168 qator 2 daqiqalik <strong>GLD, UUP (dollar), USO, TLT, SLV, VIXY</strong>, 2024-02-20 → 2026-02-19. GLD birinchi close 187.35 (2024-02 bozoriga mos), oxirgi 456.02 (2026-02) — real ko'rinadi. Lekin <strong>UUP 38.4%, VIXY 19.4%, USO 12.7% bo'sh</strong> va ma'lumot 2026-02 da tugagan (bugungacha ~9 oy yetishmaydi).</p>
+  <div class="toggle" data-target="cCorr" data-table="tCorr">Jadvalni ko'rsat</div>
+  <div id="cCorr" class="chart"></div>
+  <div id="tCorr" class="scroll hidden"><table id="tCorrTab"></table></div>
+  <p class="src">Manba: OSH <code>WIDE_GLD_AUX_2MIN.csv</code> + <code>btcusdt_15m</code>, 15m UTC birlashtirish, faqat o'tmish ma'lumoti (ffill/backward), hisoblangan 2026-11-13. Kundalik korr = 15m log-daromadlarning kunlik yig'indisi.</p>
+</div>
+<div class="card">
+  <h3>Asosiy farq: "birga yuradi" ≠ "oldindan aytadi"</h3>
+  <p>Same-bar korr — bir vaqtdagi harakat (savdo uchun juda kech). <strong>IC</strong> — feature'ning <em>keyingi 1 soatlik</em> BTC daromadi bilan Spearman bog'liqligi, ya'ni haqiqiy bashorat kuchi. Faktor tadqiqoti mezoni: <code>|IC| &gt; 0.03</code> va <code>IR &gt; 0.5</code>. Hech bir aktiv bu eshikdan o'tmadi.</p>
+  <div class="toggle" data-target="cIC" data-table="tIC">Jadvalni ko'rsat</div>
+  <div id="cIC" class="chart"></div>
+  <div id="tIC" class="scroll hidden"><table id="tICTab"></table></div>
+  <p class="src">Manba: yuqoridagi ikki lokal fayl, choraklik IC bo'yicha IR, 2024-02 → 2026-02. Tashqi adabiyot bilan solishtirish: BTC–oltin uzoq muddatli o'rtacha korr ≈ +0.10…+0.13, 2026 da 30 kunlik korr −0.88…+0.82 oralig'ida (Bitwise / CryptoQuant / KuCoin xulosalari, <em>ikkilamchi manba, asl matn tekshirilmagan</em>) — bizning 30 kunlik GLD oralig'i −0.456…+0.583 shu beqarorlikni mustaqil tasdiqlaydi. BTC–DXY uchun tashqi manbalar −0.72 deydi, bizning UUP (dollar ETF) bilan −0.111 chiqdi: aktiv, davr va o'lchov farqi bor, to'g'ridan taqqoslamang.</p>
+</div>
+
+<h2>3. Yangiliklar: avval ma'lumot, keyin model</h2>
+<div class="card alert">
+  <strong>Yangiliklar bazasi soxta.</strong> <code>macro_data/news_raw.csv</code>: 2 703 qator, manba <strong>100% "SyntheticNewsAPI"</strong>, 100% URL <code>synthetic-news.com</code>, faqat <strong>224 ta noyob sarlavha</strong> (91.7% takror), 42% shablon iboralar ("sees a bullish today amidst strong market signals"). Sarlavhalar oltin/Fed/inflatsiya haqida, <strong>BTC haqida emas</strong> — <code>collectors/news_collector.py</code> so'rovi <code>gold OR federal reserve OR inflation OR treasury yields</code>. Ustiga free tier 24 soatlik kechikish bilan ishlaydi.
+</div>
+<div class="card">
+  <p>Shunga qaramay, matnni sonli feature'ga aylantirib, <strong>qat'iy oldinga qaramasdan</strong> (faqat shu vaqtgacha nashr etilgan yangiliklar, UTC, <code>merge_asof backward</code>) IC o'lchadim. Natija: barcha feature'lar tasodifiy nazorat bilan bir xil kattalikda.</p>
+  <div class="scroll"><table id="tNews"></table></div>
+  <p class="src">Manba: OSH <code>news_raw.csv</code> + BTC 15m, hisoblangan 2026-11-13. <code>control_random</code> — ataylab kiritilgan tasodifiy son (haqiqiy bozor ma'lumoti emas, statistik nazorat). Tashqi adabiyot (ikkilamchi, asl matn tekshirilmagan): ChatGPT/FinBERT sentimenti <em>sample-in</em> yaxshilaydi, <em>sample-out</em> sezilarli emas; ≤15 daqiqalik effekt bor, lekin xarajatni qoplamaydi; asosiy tuzoq — look-ahead bias va manba takrori.</p>
+</div>
+<div class="card">
+  <h3>Sizning eski tajribangiz ham shuni aytadi</h3>
+  <p><code>edge_pnl_daily.csv</code> (1 925 kun): faqat narx feature'lari bilan model <strong>+0.0054%/kun, Sharpe 0.095</strong>; funding qo'shilganda <strong>−0.0214%/kun</strong>; barcha makro qo'shilganda <strong>−0.0243%/kun, Sharpe −0.422</strong>. Makro − narx farqi <strong>−0.0297%/kun, t = −2.44</strong> — ya'ni qo'shimcha ma'lumot statistik jihatdan sezilarli <em>yomonlashtirgan</em>. Ko'p feature = ko'p overfit.</p>
+  <div class="scroll"><table id="tMacro"></table></div>
+  <p class="src">Manba: OSH <code>edge_pnl_daily.csv</code>, 1 925 kuzatuv, hisoblangan 2026-11-13.</p>
+</div>
+
+<h2>4. Nazoratli ablatsiya: qo'shsak nima bo'ladi?</h2>
+<div class="card">
+  <p>Bitta umumiy oyna (2024-02-20 → 2026-02-19, 70 077 qator), bir xil 6 ta purged walk-forward fold, bir xil triple-barrier label, bir xil 10 bps xarajat, bir xil train'dan kalibrlangan threshold. <strong>Faqat feature matritsasi o'zgartirildi</strong> — boshqa hech narsa emas.</p>
+  <div class="toggle" data-target="cAbl" data-table="tAbl">Jadvalni ko'rsat</div>
+  <div id="cAbl" class="chart"></div>
+  <div id="tAbl" class="scroll hidden"><table id="tAblTab"></table></div>
+  <p class="src">Manba: OSH <code>ablation_experiment.py</code> natijasi, 2026-11-13. B = 37 baza + 19 ta xasset feature; C = baza + 5 ta news feature; D = hammasi.</p>
+</div>
+<div class="card note">
+  <strong>To'g'ri o'qish:</strong> xasset +2.98 bps — bu <em>haqiqiy</em> kichik yaxshilanish (GLD/SLV/VIXY rejim haqida ozgina axborot beradi), lekin median net hali −8.26 bps va <strong>barcha 6 davr manfiy</strong>. Nolga chiqish uchun yana +8.26 bps, "2× xarajat" eshigi uchun esa +20 bps kerak. News qo'shish −0.83 bps, ikkalasini birga qo'shish esa deyarli nol (+0.05) — yaxshilanish o'zaro yo'qolgan, bu overfit/spuriy o'zaro ta'sir belgisi.
+</div>
+
+<h2>5. Xo'sh, nima qo'shish kerak?</h2>
+<div class="two">
+  <div class="card">
+    <h3>Ustuvorlik 1 — kripto-native ma'lumot</h3>
+    <ul>
+      <li><code>fapi/v1/fundingRate</code> + keyingi funding'gacha vaqt</li>
+      <li><code>openInterest</code> ning 1h/4h o'zgarishi</li>
+      <li><code>takerlongshortRatio</code>, <code>topLongShortPositionRatio</code></li>
+      <li><code>!forceOrders</code> → likvidatsiyalar (rejim burilishida)</li>
+      <li>perpetual−spot basis, order book imbalance, ETH/BTC</li>
+    </ul>
+    <p>Bular narx ichida yo'q, shuning uchun yangi axborot. Sizda <code>osh_binance_archive_sync.py</code> bor — shu yig'uvchini kengaytiring. Bu muhitdan Binance API 502 bergani uchun kollektor o'z mashinangizda ishlashi kerak.</p>
+  </div>
+  <div class="card">
+    <h3>Ustuvorlik 2 — haqiqiy yangiliklar</h3>
+    <ul>
+      <li>So'rovni <code>bitcoin OR crypto OR BTC</code> ga o'zgartiring</li>
+      <li><code>published_at</code> (UTC) va <code>available_at</code> (birinchi savdoga yaroqli sham) alohida saqlang</li>
+      <li>Dublikat/ko'chirib bosilganlarni tozalang, manba og'irligi bering</li>
+      <li>Sonli: polarlik, dispersiya, e'tibor soni, mavzu/narrativ ulushi, vaqt decay</li>
+      <li>24h kechikishni hisobga oling — aks holda look-ahead</li>
+    </ul>
+    <p>Avval <strong>faqat bitta</strong> gipoteza: "salbiy yangilik → keyingi 1h volatillik oshadi". Buni yo'nalish emas, <strong>volatillik/rejim</strong> uchun sinang — adabiyotda eng barqaror topilma shu.</p>
+  </div>
+</div>
+<div class="card">
+  <h3>Qabul qilish eshigi (o'zgarmaydi)</h3>
+  <p>Har qanday yangi feature to'plami uchun: <code>|IC| &gt; 0.03</code> · <code>IR &gt; 0.5</code> · choraklarning ≥55% ida IC to'g'ri ishora · 10 bps xarajatdan keyin median net &gt; 0 · musbat fold'lar ≥75% · Diebold-Mariano / Deflated Sharpe bilan ko'p sinov tuzatmasi · oxirgi 6–12 oy tegilmagan. Bugungi eng yaxshi konfiguratsiya ham bu eshikdan o'tmaydi: <strong>NO-GO</strong>, sayt analytics sifatida qoladi, <code>live_orders = false</code>.</p>
+</div>
+
+<footer>
+  <div>OSH research · barcha hisob-kitoblar lokal ma'lumotlar bo'yicha 2026-11-13 da qayta ishlab chiqilgan · statik hisobot · real buyurtma yo'q.</div>
+  <div style="margin-top:6px">Tashqi adabiyot/manba xulosalari ikkilamchi manba bo'lib, asl matni tekshirilmagan; ular hech bir raqam o'rnini bosmaydi.</div>
+  <div style="margin-top:6px"><a href="index.html">← Win rate dashboard'iga qaytish</a> · <a href="https://github.com/Sherzoddd2002/osh-btcusdt-winrate-audit">GitHub repo</a></div>
+</footer>
+
+</div>
+
+<script id="report-data" type="application/json">{"correlations":[{"asset":"GLD","n_15m":29212,"same_bar_corr":0.0984,"daily_corr":0.1284,"ic_spearman_fwd1h":0.00099,"ic_mean_quarter":0.00523,"ir_quarter":0.175,"ic_positive_quarter_pct":55.6,"roll30d_min":-0.456,"roll30d_max":0.583},{"asset":"UUP","n_15m":14493,"same_bar_corr":-0.0603,"daily_corr":-0.1108,"ic_spearman_fwd1h":-0.00028,"ic_mean_quarter":-0.00641,"ir_quarter":-0.161,"ic_positive_quarter_pct":55.6,"roll30d_min":-0.626,"roll30d_max":0.565},{"asset":"USO","n_15m":24744,"same_bar_corr":0.0831,"daily_corr":0.0439,"ic_spearman_fwd1h":-0.01417,"ic_mean_quarter":-0.01273,"ir_quarter":-0.922,"ic_positive_quarter_pct":33.3,"roll30d_min":-0.645,"roll30d_max":0.855},{"asset":"TLT","n_15m":27691,"same_bar_corr":-0.02,"daily_corr":-0.0334,"ic_spearman_fwd1h":0.00687,"ic_mean_quarter":0.00472,"ir_quarter":0.219,"ic_positive_quarter_pct":55.6,"roll30d_min":-0.657,"roll30d_max":0.642},{"asset":"SLV","n_15m":27201,"same_bar_corr":0.1311,"daily_corr":0.2114,"ic_spearman_fwd1h":0.00231,"ic_mean_quarter":0.00647,"ir_quarter":0.24,"ic_positive_quarter_pct":55.6,"roll30d_min":-0.375,"roll30d_max":0.652},{"asset":"VIXY","n_15m":22807,"same_bar_corr":-0.3357,"daily_corr":-0.3913,"ic_spearman_fwd1h":0.01256,"ic_mean_quarter":0.01041,"ir_quarter":0.712,"ic_positive_quarter_pct":88.9,"roll30d_min":-0.818,"roll30d_max":0.415}],"news_features":[{"feature":"news_sent","ic_spearman_fwd1h":-0.0023,"ic_mean_quarter":0.00528,"ir_quarter":0.29,"positive_quarter_pct":17.9,"nonzero_pct":33.49},{"feature":"news_c_sent","ic_spearman_fwd1h":-0.00675,"ic_mean_quarter":0.00046,"ir_quarter":0.045,"positive_quarter_pct":17.9,"nonzero_pct":39.7},{"feature":"news_c_neg","ic_spearman_fwd1h":-0.00605,"ic_mean_quarter":0.0006,"ir_quarter":0.045,"positive_quarter_pct":17.9,"nonzero_pct":39.68},{"feature":"news_n_1h","ic_spearman_fwd1h":-0.00547,"ic_mean_quarter":0.02181,"ir_quarter":null,"positive_quarter_pct":3.6,"nonzero_pct":39.73},{"feature":"news_n_24h","ic_spearman_fwd1h":-0.00558,"ic_mean_quarter":0.00185,"ir_quarter":0.118,"positive_quarter_pct":21.4,"nonzero_pct":39.73},{"feature":"news_sent_24h","ic_spearman_fwd1h":-0.00593,"ic_mean_quarter":-0.00039,"ir_quarter":-0.03,"positive_quarter_pct":17.9,"nonzero_pct":37.54},{"feature":"news_age_h","ic_spearman_fwd1h":-0.00364,"ic_mean_quarter":0.00807,"ir_quarter":0.426,"positive_quarter_pct":25.0,"nonzero_pct":39.72},{"feature":"news_sent_delayed24h","ic_spearman_fwd1h":-0.00466,"ic_mean_quarter":-0.00139,"ir_quarter":-0.093,"positive_quarter_pct":14.3,"nonzero_pct":33.45},{"feature":"control_random","ic_spearman_fwd1h":-0.00124,"ic_mean_quarter":-0.00098,"ir_quarter":-0.086,"positive_quarter_pct":46.4,"nonzero_pct":100.0}],"existing_macro_ablation":{"ML_price":{"mean_daily_pct":0.0054,"ann_sharpe":0.095,"cum_pct":-0.99,"n":1925},"ML_price+fund":{"mean_daily_pct":-0.0214,"ann_sharpe":-0.373,"cum_pct":-41.03,"n":1925},"ML_all(+macro)":{"mean_daily_pct":-0.0243,"ann_sharpe":-0.422,"cum_pct":-44.28,"n":1925},"RIDGE_price+fund":{"mean_daily_pct":-0.0221,"ann_sharpe":-0.368,"cum_pct":-42.39,"n":1925},"diff_macro_minus_price":{"mean_daily_pct":-0.0297,"t_stat":-2.44,"positive_pct":46.49}},"configs":{"A_BASE":{"folds":[{"fold":1,"start":"2024-08-18","trades":197,"win_rate_pct":35.53299492385787,"mean_net_bps":-11.774898742365153,"auc":0.6281650243829255,"threshold":0.43448},{"fold":2,"start":"2024-11-16","trades":198,"win_rate_pct":41.91919191919192,"mean_net_bps":-10.703517207337121,"auc":0.6530089659534736,"threshold":0.42312},{"fold":3,"start":"2025-02-14","trades":177,"win_rate_pct":40.67796610169492,"mean_net_bps":-12.381422909736521,"auc":0.6749297753604013,"threshold":0.42489},{"fold":4,"start":"2025-05-15","trades":205,"win_rate_pct":45.85365853658537,"mean_net_bps":-7.309537005094411,"auc":0.6432790734248727,"threshold":0.43639},{"fold":5,"start":"2025-08-13","trades":201,"win_rate_pct":39.30348258706468,"mean_net_bps":-10.4790427769011,"auc":0.6482018752943334,"threshold":0.43383},{"fold":6,"start":"2025-11-11","trades":190,"win_rate_pct":40.0,"mean_net_bps":-14.769727174125888,"auc":0.7283814106380921,"threshold":0.44183}],"median_net_bps":-11.239207974851137,"mean_net_bps":-11.2363576359267,"positive_folds":0,"mean_win_rate_pct":40.54788234473246,"median_auc":0.6506054206239035,"total_trades":1168,"feature_count":37,"delta_vs_base_bps":0.0},"B_BASE_XASSET":{"folds":[{"fold":1,"start":"2024-08-18","trades":177,"win_rate_pct":42.93785310734463,"mean_net_bps":-8.2025560098761,"auc":0.6380934976545064,"threshold":0.43302},{"fold":2,"start":"2024-11-16","trades":202,"win_rate_pct":45.04950495049505,"mean_net_bps":-8.307522473889719,"auc":0.6536246347854897,"threshold":0.4429},{"fold":3,"start":"2025-02-14","trades":188,"win_rate_pct":47.340425531914896,"mean_net_bps":-7.162734965512769,"auc":0.6784602275820709,"threshold":0.43455},{"fold":4,"start":"2025-05-15","trades":204,"win_rate_pct":41.66666666666667,"mean_net_bps":-10.52313579993517,"auc":0.6646466761336001,"threshold":0.44222},{"fold":5,"start":"2025-08-13","trades":201,"win_rate_pct":40.298507462686565,"mean_net_bps":-10.176631916251736,"auc":0.6574333812000969,"threshold":0.43769},{"fold":6,"start":"2025-11-11","trades":184,"win_rate_pct":48.369565217391305,"mean_net_bps":-7.762717743552772,"auc":0.7313333571879029,"threshold":0.44977}],"median_net_bps":-8.255039241882908,"mean_net_bps":-8.689216484836377,"positive_folds":0,"mean_win_rate_pct":44.277087156083184,"median_auc":0.6610400286668485,"total_trades":1156,"feature_count":56,"delta_vs_base_bps":2.984},"C_BASE_NEWS":{"folds":[{"fold":1,"start":"2024-08-18","trades":196,"win_rate_pct":37.755102040816325,"mean_net_bps":-10.860033521509425,"auc":0.6285451134389901,"threshold":0.43534},{"fold":2,"start":"2024-11-16","trades":185,"win_rate_pct":41.62162162162162,"mean_net_bps":-11.790541094756318,"auc":0.6651464372132251,"threshold":0.41381},{"fold":3,"start":"2025-02-14","trades":192,"win_rate_pct":41.66666666666667,"mean_net_bps":-12.788320380798764,"auc":0.6813475350078564,"threshold":0.44421},{"fold":4,"start":"2025-05-15","trades":237,"win_rate_pct":43.037974683544306,"mean_net_bps":-8.614584073614619,"auc":0.6528093566522895,"threshold":0.40267},{"fold":5,"start":"2025-08-13","trades":199,"win_rate_pct":39.698492462311556,"mean_net_bps":-12.343157274987004,"auc":0.6552049946248708,"threshold":0.43855},{"fold":6,"start":"2025-11-11","trades":189,"win_rate_pct":40.74074074074074,"mean_net_bps":-14.973072036075935,"auc":0.7239445735689036,"threshold":0.44377}],"median_net_bps":-12.06684918487166,"mean_net_bps":-11.894951396957012,"positive_folds":0,"mean_win_rate_pct":40.7534330359502,"median_auc":0.660175715919048,"total_trades":1198,"feature_count":42,"delta_vs_base_bps":-0.828},"D_BASE_BOTH":{"folds":[{"fold":1,"start":"2024-08-18","trades":176,"win_rate_pct":38.63636363636363,"mean_net_bps":-8.746924240003521,"auc":0.6382581674680887,"threshold":0.42842},{"fold":2,"start":"2024-11-16","trades":188,"win_rate_pct":41.48936170212766,"mean_net_bps":-11.103758938749131,"auc":0.6642694203757067,"threshold":0.43373},{"fold":3,"start":"2025-02-14","trades":185,"win_rate_pct":43.78378378378379,"mean_net_bps":-12.685071231486969,"auc":0.6858627222922589,"threshold":0.45789},{"fold":4,"start":"2025-05-15","trades":228,"win_rate_pct":41.228070175438596,"mean_net_bps":-9.640080379753325,"auc":0.6596581752659259,"threshold":0.39983},{"fold":5,"start":"2025-08-13","trades":191,"win_rate_pct":39.26701570680628,"mean_net_bps":-11.631250968494756,"auc":0.6554072485549881,"threshold":0.43119},{"fold":6,"start":"2025-11-11","trades":183,"win_rate_pct":44.26229508196721,"mean_net_bps":-11.273057913124289,"auc":0.727558653739898,"threshold":0.45037}],"median_net_bps":-11.18840842593671,"mean_net_bps":-10.846690611935331,"positive_folds":0,"mean_win_rate_pct":41.44448168108119,"median_auc":0.6619637978208163,"total_trades":1151,"feature_count":61,"delta_vs_base_bps":0.051}},"folds":6,"common_window":["2024-02-20 00:00:00+00:00","2026-02-19 00:00:00+00:00"]}</script>
+<script>
+(function(){
+  var D = JSON.parse(document.getElementById('report-data').textContent);
+  var f2 = function(x){ return (x===null||x===undefined||isNaN(x)) ? '—' : Number(x).toFixed(2); };
+  var f4 = function(x){ return (x===null||x===undefined||isNaN(x)) ? '—' : Number(x).toFixed(4); };
+  var cls = function(x){ return (x===null||isNaN(x))?'':(x>0?'pos':(x<0?'neg':'')); };
+  var table = function(el, head, rows){
+    var s = '<thead><tr>' + head.map(function(h){return '<th>'+h+'</th>';}).join('') + '</tr></thead><tbody>';
+    rows.forEach(function(r){ s += '<tr>' + r.map(function(v){return '<td>'+v+'</td>';}).join('') + '</tr>'; });
+    document.getElementById(el).innerHTML = s + '</tbody>';
+  };
+
+  table('tIntegrity', ['Tekshiruv','Natija','Izoh'], [
+    ['Qator / davr','240 672','2020-01-01 → 2026-11-11 23:45 UTC'],
+    ['Dublikat open_time','0','—'],
+    ['15 daqiqadan farqli uzilish','0','birinchi qator NaT hisobga olinmagan'],
+    ['OHLC qoida buzilishi','0','high ≥ max(open,close), low ≤ min(open,close)'],
+    ['VWAP [low,high] dan tashqari','0.00%','quote_volume / volume'],
+    ['taker_buy > volume','0','—'],
+    ['Nol hajmli sham','16','0.007%, pipeline allaqachon ehtiyotlaydi'],
+    ['open = oldingi close','46.92%','real bozorga xos; 100% bo\'lsa sintetik gumon'],
+    ['Lag-1 daromad avtokorrelyasiyasi','−0.00241','real BTCga mos'],
+    ['Yuqoridan keyin yuqori','47.64%','qisqa muddatli reversal — notebook\'dagi 46% shu'],
+    ['Pastdan keyin past','47.29%','xuddi shu effekt'],
+    ['Soatlik trade_count min/max','2.43×','real sessiya tuzilmasi bor'],
+    ['trade_count noodatiy qiymat','0','Decimal/object dtype, maks. satr 7 belgi']
+  ]);
+
+  var C = D.correlations;
+  table('tCorrTab', ['Aktiv','N (15m)','Same-bar korr','Kunlik korr','IC (keyingi 1h)','IR','IC musbat chorak %','30k min','30k max'],
+    C.map(function(r){ return [r.asset, r.n_15m.toLocaleString('en-US'), f4(r.same_bar_corr), f4(r.daily_corr),
+      f4(r.ic_spearman_fwd1h), f2(r.ir_quarter), f2(r.ic_positive_quarter_pct)+'%', f2(r.roll30d_min), f2(r.roll30d_max)]; }));
+
+  var N = D.news_features;
+  table('tNews', ['Feature','IC (keyingi 1h)','O\'rtacha chorak IC','IR','To\'g\'ri ishorali chorak %','Nolmas %'],
+    N.map(function(r){ return [r.feature, f4(r.ic_spearman_fwd1h), f4(r.ic_mean_quarter),
+      (r.ir_quarter===null?'—':f2(r.ir_quarter)), f2(r.positive_quarter_pct)+'%', f2(r.nonzero_pct)+'%']; }));
+
+  var M = D.existing_macro_ablation;
+  var mrows = [];
+  ['ML_price','ML_price+fund','ML_all(+macro)','RIDGE_price+fund'].forEach(function(k){
+    if(M[k]) mrows.push([k, f4(M[k].mean_daily_pct)+'%', f2(M[k].ann_sharpe), f2(M[k].cum_pct)+'%', M[k].n]);
+  });
+  mrows.push(['<strong>Makro − Narx farqi</strong>', '<strong>'+f4(M.diff_macro_minus_price.mean_daily_pct)+'%</strong>',
+              't = '+f2(M.diff_macro_minus_price.t_stat), f2(M.diff_macro_minus_price.positive_pct)+'% musbat', '—']);
+  table('tMacro', ['Model / farq','O\'rtacha kunlik','Yillik Sharpe','Jamgi','Kunlar'], mrows);
+
+  var A = D.configs, keys = ['A_BASE','B_BASE_XASSET','C_BASE_NEWS','D_BASE_BOTH'];
+  var labels = ['Faqat baza','+ Oltin/makro','+ Yangiliklar','+ Ikkalasi'];
+  table('tAblTab', ['Konfiguratsiya','Feature soni','Median net (bps)','Δ vs baza','Win rate','Musbat davrlar','AUC','Savdolar'],
+    keys.map(function(k,i){ var r=A[k]; return [labels[i], r.feature_count, '<span class="'+cls(r.median_net_bps)+'">'+f2(r.median_net_bps)+'</span>',
+      '<span class="'+cls(r.delta_vs_base_bps)+'">'+f2(r.delta_vs_base_bps)+'</span>', f2(r.mean_win_rate_pct)+'%',
+      r.positive_folds+'/'+D.folds, f4(r.median_auc), r.total_trades]; }));
+
+  document.querySelectorAll('.toggle').forEach(function(b){
+    b.addEventListener('click', function(){
+      var c = document.getElementById(b.dataset.target), t = document.getElementById(b.dataset.table);
+      var showTable = t.classList.contains('hidden');
+      t.classList.toggle('hidden'); c.classList.toggle('hidden', showTable);
+      b.classList.toggle('on', showTable);
+      b.textContent = showTable ? 'Grafikni ko\'rsat' : 'Jadvalni ko\'rsat';
+    });
+  });
+
+  if (!window.echarts) {
+    document.querySelectorAll('.chart').forEach(function(c){
+      c.innerHTML = '<div style="padding:24px;color:#6b7280;font-size:13px">Grafik kutubxonasi yuklanmadi — aniq raqamlar uchun «Jadvalni ko\'rsat» tugmasini bosing.</div>';
+      c.style.height = 'auto';
+    });
+    return;
+  }
+  var axis = { axisLine:{lineStyle:{color:'#d7dbe2'}}, axisLabel:{color:'#6b7280',fontSize:11},
+               splitLine:{lineStyle:{color:'#eef0f4'}} };
+  var mk = function(id, opt){ var el=document.getElementById(id); if(el) echarts.init(el).setOption(opt); };
+
+  mk('cCorr', {
+    tooltip:{trigger:'axis'}, legend:{data:['Bir vaqtdagi (15m)','Kunlik'],textStyle:{color:'#6b7280'}},
+    grid:{left:55,right:20,top:48,bottom:35},
+    xAxis:{type:'category',data:C.map(function(r){return r.asset;}),axisLine:axis.axisLine,axisLabel:axis.axisLabel},
+    yAxis:{type:'value',name:'korr',axisLine:axis.axisLine,axisLabel:axis.axisLabel,splitLine:axis.splitLine},
+    series:[
+      {name:'Bir vaqtdagi (15m)',type:'bar',data:C.map(function(r){return r.same_bar_corr;}),itemStyle:{color:'#2563eb'},barMaxWidth:26},
+      {name:'Kunlik',type:'bar',data:C.map(function(r){return r.daily_corr;}),itemStyle:{color:'#93b4f7'},barMaxWidth:26}
+    ]
+  });
+
+  var icItems = C.map(function(r){return {name:r.asset, v:r.ic_spearman_fwd1h};})
+    .concat([{name:'news_sent',v:N[0].ic_spearman_fwd1h},{name:'random',v:N[N.length-1].ic_spearman_fwd1h}]);
+  mk('cIC', {
+    tooltip:{trigger:'axis'}, grid:{left:62,right:20,top:30,bottom:48},
+    xAxis:{type:'category',data:icItems.map(function(r){return r.name;}),axisLine:axis.axisLine,
+           axisLabel:{color:'#6b7280',fontSize:11,rotate:30}},
+    yAxis:{type:'value',name:'IC',min:-0.035,max:0.035,axisLine:axis.axisLine,axisLabel:axis.axisLabel,splitLine:axis.splitLine},
+    series:[{
+      name:'IC',type:'bar',barMaxWidth:30,
+      data:icItems.map(function(r){return {value:r.v, itemStyle:{color:Math.abs(r.v)>=0.03?'#b45309':'#2563eb'}};}),
+      markLine:{symbol:'none',silent:true,lineStyle:{type:'dashed',color:'#b91c1c'},
+        data:[{yAxis:0.03,label:{formatter:'kerak: 0.03'}},{yAxis:-0.03,label:{formatter:'-0.03'}}]}
+    }]
+  });
+
+  mk('cAbl', {
+    tooltip:{trigger:'axis'}, legend:{data:['Median net (bps)','Win rate %'],textStyle:{color:'#6b7280'}},
+    grid:{left:58,right:58,top:48,bottom:35},
+    xAxis:{type:'category',data:labels,axisLine:axis.axisLine,axisLabel:axis.axisLabel},
+    yAxis:[
+      {type:'value',name:'bps',axisLine:axis.axisLine,axisLabel:axis.axisLabel,splitLine:axis.splitLine},
+      {type:'value',name:'win %',min:30,max:50,axisLine:axis.axisLine,axisLabel:axis.axisLabel,splitLine:{show:false}}
+    ],
+    series:[
+      {name:'Median net (bps)',type:'bar',barMaxWidth:48,
+       data:keys.map(function(k){return A[k].median_net_bps;}),itemStyle:{color:'#b91c1c'}},
+      {name:'Win rate %',type:'line',yAxisIndex:1,symbolSize:8,lineStyle:{width:2.5,color:'#2563eb'},itemStyle:{color:'#2563eb'},
+       data:keys.map(function(k){return A[k].mean_win_rate_pct;})}
+    ]
+  });
+})();
+</script>
+</body>
+</html>
