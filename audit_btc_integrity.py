@@ -38,12 +38,12 @@ def audit_frame(frame: pd.DataFrame, interval_minutes: int = 15) -> dict:
     raw = df[NUMERIC].copy()
     for col in NUMERIC:
         df[col] = pd.to_numeric(df[col], errors="coerce")
-    df = df.sort_values("candle_time").reset_index(drop=True)
+    order = df.sort_values("candle_time").index
+    df = df.loc[order].reset_index(drop=True)
+    raw = raw.loc[order].reset_index(drop=True)
     times = df["candle_time"]
     if times.isna().any():
         raise ValueError("Invalid or missing candle_time values detected.")
-
-    raw = raw.loc[df.index].reset_index(drop=True)
     delta = times.diff().dropna()
     expected = pd.Timedelta(minutes=interval_minutes)
     bad_intervals = delta[delta != expected]
