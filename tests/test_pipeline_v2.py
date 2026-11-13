@@ -17,7 +17,7 @@ class PipelineV2HardeningTests(unittest.TestCase):
 
     def test_normalizer_rejects_gap_without_deduplicating(self):
         frame = pv.load_synthetic(200, seed=7)
-        frame.loc[100:, "candle_time"] += pd.Timedelta(minutes=15)
+        frame = frame.drop(index=100).reset_index(drop=True)
         with self.assertRaisesRegex(ValueError, "non-15-minute"):
             pv._normalise(frame)
 
