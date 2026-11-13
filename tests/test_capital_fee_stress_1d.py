@@ -92,6 +92,24 @@ class BinanceVisionArchiveTests(unittest.TestCase):
         self.assertTrue(frame.attrs["checksum_verified"])
         self.assertEqual(download.call_count, 2)
 
+    def test_first_funding_event_at_first_candle_open_uses_open_fallback(self):
+        candles = candles_frame(8)
+        candles.loc[0, "open"] = 99.5
+        funding = pd.DataFrame({
+            "calc_time": [
+                int(pd.Timestamp("2023-01-01T00:00:00Z").timestamp() * 1000),
+            ],
+            "funding_interval_hours": [8],
+            "last_funding_rate": [0.0001],
+        })
+        normalized = stress.validate_funding_history(funding)
+        attached = stress.attach_funding_mark_price_proxy(normalized, candles)
+        self.assertAlmostEqual(float(attached.loc[0, "mark_price"]), 99.5)
+        self.assertEqual(
+            attached.attrs["mark_price_source"],
+            "previous_completed_15m_close_proxy",
+        )
+
     def test_mark_price_proxy_uses_only_completed_candle_close(self):
         candles = candles_frame(1500)
         candles["close"] = 100.0 + np.arange(len(candles)) * 0.1
