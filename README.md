@@ -177,7 +177,7 @@ deb qabul qilinadi; kod qiymatni 2 daqiqadan keyin mavjud deb hisoblaydi. CSV ti
 aslida close time bo'lsa, `--source-bar-minutes 0` ishlating. Semantika tekshirilmasdan
 xasset natijasini dalil deb qabul qilmang.
 
-### 4. V2 bazaviy pipeline
+### 5. V2 bazaviy pipeline
 
 ```powershell
 python pipeline_v2.py --table public.btcusdt_15m --cost-bps 10 --folds 5 --train-days 365 --test-days 90 --out report.json
