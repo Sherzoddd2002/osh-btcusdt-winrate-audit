@@ -11,9 +11,14 @@ No exchange credentials, order endpoints, or live orders are used.
 from __future__ import annotations
 
 import argparse
+import calendar
+import hashlib
+import io
 import json
 import os
 import time
+import zipfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -31,6 +36,7 @@ from selectivity_sweep_1d import thresholds_for_pct, wilson_interval_pct
 BARS_PER_DAY = 96
 HORIZON_BARS = 96
 FUNDING_URL = "https://fapi.binance.com/fapi/v1/fundingRate"
+BINANCE_VISION_BASE = "https://data.binance.vision/data/futures/um"
 DEFAULT_FEES = {
     "maker_maker": ("maker", "maker"),
     "maker_taker": ("maker", "taker"),
@@ -58,13 +64,20 @@ def validate_funding_history(
     if raw is None or raw.empty:
         raise ValueError("Funding history is empty")
     cols = {str(c).lower(): c for c in raw.columns}
-    time_col = cols.get("fundingtime") or cols.get("funding_time")
-    rate_col = cols.get("fundingrate") or cols.get("funding_rate")
+    time_col = (
+        cols.get("fundingtime") or cols.get("funding_time")
+        or cols.get("calc_time") or cols.get("calctime")
+    )
+    rate_col = (
+        cols.get("fundingrate") or cols.get("funding_rate")
+        or cols.get("last_funding_rate") or cols.get("lastfundingrate")
+    )
     mark_col = cols.get("markprice") or cols.get("mark_price")
+    interval_col = cols.get("funding_interval_hours")
     symbol_col = cols.get("symbol")
     missing = [
         label for label, col in (
-            ("fundingTime", time_col), ("fundingRate", rate_col), ("markPrice", mark_col)
+            ("fundingTime/calc_time", time_col), ("fundingRate/last_funding_rate", rate_col)
         ) if col is None
     ]
     if missing:
@@ -94,14 +107,33 @@ def validate_funding_history(
             out["funding_time"] = pd.to_datetime(times, utc=True, errors="coerce")
 
     out["funding_rate"] = pd.to_numeric(raw[rate_col], errors="coerce")
-    out["mark_price"] = pd.to_numeric(raw[mark_col], errors="coerce")
-    if out[["funding_time", "funding_rate", "mark_price"]].isna().any().any():
-        counts = out[["funding_time", "funding_rate", "mark_price"]].isna().sum()
+    if mark_col is None:
+        out["mark_price"] = np.nan
+        mark_price_source = "needs_15m_candle_proxy"
+    else:
+        out["mark_price"] = pd.to_numeric(raw[mark_col], errors="coerce")
+        has_mark = out["mark_price"].notna()
+        if has_mark.any() and not has_mark.all():
+            raise ValueError("Funding markPrice column is only partially populated")
+        mark_price_source = "binance_api" if has_mark.all() else "needs_15m_candle_proxy"
+    if interval_col is not None:
+        out["funding_interval_hours"] = pd.to_numeric(raw[interval_col], errors="coerce")
+        if out["funding_interval_hours"].isna().any() or (
+            (out["funding_interval_hours"] <= 0)
+            | (out["funding_interval_hours"] > 24)
+        ).any():
+            raise ValueError("funding_interval_hours contains invalid values")
+    required_values = out[["funding_time", "funding_rate"]]
+    if required_values.isna().any().any():
+        counts = required_values.isna().sum()
         raise ValueError(f"Funding history contains invalid fields: {counts.to_dict()}")
-    if not np.isfinite(out[["funding_rate", "mark_price"]].to_numpy(dtype=float)).all():
-        raise ValueError("Funding rates and mark prices must all be finite numeric values")
-    if (out["mark_price"] <= 0).any():
-        raise ValueError("Funding markPrice must be strictly positive")
+    if not np.isfinite(out["funding_rate"].to_numpy(dtype=float)).all():
+        raise ValueError("Funding rates must all be finite numeric values")
+    if mark_price_source == "binance_api":
+        if not np.isfinite(out["mark_price"].to_numpy(dtype=float)).all():
+            raise ValueError("Funding mark prices must all be finite numeric values")
+        if (out["mark_price"] <= 0).any():
+            raise ValueError("Funding markPrice must be strictly positive")
     if out["funding_time"].duplicated().any():
         raise ValueError("Duplicate fundingTime rows detected")
 
@@ -115,6 +147,7 @@ def validate_funding_history(
         )
     out.attrs["max_gap_hours"] = max_gap
     out.attrs["symbol"] = symbol.upper()
+    out.attrs["mark_price_source"] = mark_price_source
     return out
 
 
