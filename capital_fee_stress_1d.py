@@ -210,6 +210,252 @@ def fetch_binance_funding_history(
     return validate_funding_history(raw, symbol=symbol)
 
 
+
+def _download_vision_bytes(url: str, timeout: int = 45) -> bytes | None:
+    """Download one public Binance Vision object; return None only for HTTP 404."""
+    request = urllib.request.Request(
+        url,
+        headers={"User-Agent": "OSH-BTCUSDT-paper-research/1.0"},
+        method="GET",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return response.read()
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return None
+        raise RuntimeError(f"Binance Vision request failed ({exc.code}): {url}") from exc
+    except (urllib.error.URLError, TimeoutError) as exc:
+        raise RuntimeError(
+            "Binance Vision archive could not be reached. Check DNS/network access "
+            "to data.binance.vision."
+        ) from exc
+
+
+def _read_vision_funding_zip(url: str, timeout: int = 45) -> pd.DataFrame | None:
+    """Read and structurally validate one monthly/daily Binance Vision funding ZIP."""
+    payload = _download_vision_bytes(url, timeout=timeout)
+    if payload is None:
+        return None
+
+    checksum_payload = _download_vision_bytes(url + ".CHECKSUM", timeout=timeout)
+    checksum_verified = False
+    if checksum_payload:
+        try:
+            expected = checksum_payload.decode("ascii", errors="strict").strip().split()[0].lower()
+        except (UnicodeDecodeError, IndexError) as exc:
+            raise ValueError(f"Invalid checksum file for Binance archive: {url}") from exc
+        actual = hashlib.sha256(payload).hexdigest()
+        if expected != actual:
+            raise ValueError(
+                f"SHA-256 mismatch for Binance Vision archive {url}: "
+                f"expected {expected}, got {actual}"
+            )
+        checksum_verified = True
+
+    try:
+        with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+            bad_member = archive.testzip()
+            if bad_member is not None:
+                raise ValueError(f"Corrupt member {bad_member} inside {url}")
+            csv_names = [name for name in archive.namelist() if name.lower().endswith(".csv")]
+            if len(csv_names) != 1:
+                raise ValueError(
+                    f"Expected exactly one CSV in {url}, found {len(csv_names)}"
+                )
+            with archive.open(csv_names[0]) as stream:
+                frame = pd.read_csv(stream)
+    except zipfile.BadZipFile as exc:
+        raise ValueError(f"Downloaded Binance Vision object is not a valid ZIP: {url}") from exc
+
+    normalized = {str(col).strip().lower() for col in frame.columns}
+    required = {"calc_time", "funding_interval_hours", "last_funding_rate"}
+    if not required.issubset(normalized):
+        raise ValueError(
+            f"Unexpected funding archive schema in {url}; "
+            f"expected {sorted(required)}, got {list(frame.columns)}"
+        )
+    frame.attrs["archive_url"] = url
+    frame.attrs["checksum_verified"] = checksum_verified
+    return frame
+
+
+def _month_range(start: pd.Timestamp, end: pd.Timestamp) -> list[pd.Timestamp]:
+    first = pd.Timestamp(year=start.year, month=start.month, day=1, tz="UTC")
+    last = pd.Timestamp(year=end.year, month=end.month, day=1, tz="UTC")
+    return list(pd.date_range(first, last, freq="MS", tz="UTC"))
+
+
+def _vision_funding_urls(
+    symbol: str,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+    today: pd.Timestamp | None = None,
+) -> list[tuple[str, str]]:
+    """Plan monthly archives for completed months and daily archives for current month."""
+    symbol = symbol.upper()
+    today = today or pd.Timestamp.now(tz="UTC").normalize()
+    current_month = pd.Timestamp(year=today.year, month=today.month, day=1, tz="UTC")
+    plan: list[tuple[str, str]] = []
+    for month_start in _month_range(start, end):
+        if month_start < current_month:
+            period = month_start.strftime("%Y-%m")
+            url = (
+                f"{BINANCE_VISION_BASE}/monthly/fundingRate/{symbol}/"
+                f"{symbol}-fundingRate-{period}.zip"
+            )
+            plan.append((f"monthly {period}", url))
+        else:
+            first_day = max(month_start, start.normalize())
+            last_day = min(month_start + pd.offsets.MonthEnd(0), end.normalize())
+            for day in pd.date_range(first_day, last_day, freq="D", tz="UTC"):
+                period = day.strftime("%Y-%m-%d")
+                url = (
+                    f"{BINANCE_VISION_BASE}/daily/fundingRate/{symbol}/"
+                    f"{symbol}-fundingRate-{period}.zip"
+                )
+                plan.append((f"daily {period}", url))
+    return plan
+
+
+def fetch_binance_vision_funding_history(
+    symbol: str,
+    start_ms: int,
+    end_ms: int,
+    timeout: int = 45,
+    workers: int = 4,
+) -> pd.DataFrame:
+    """Download historical USD-M funding archives when the REST API is unreachable.
+
+    Binance Vision funding CSVs carry calc_time, funding_interval_hours, and
+    last_funding_rate, but not the API's settlement markPrice. Mark-price proxy
+    attachment is therefore a separate, explicit step using only completed
+    BTCUSDT 15m candles.
+    """
+    if start_ms < 0 or end_ms <= start_ms:
+        raise ValueError("Funding archive start/end timestamps are invalid")
+    if workers < 1 or workers > 8:
+        raise ValueError("Funding archive workers must be between 1 and 8")
+    start = pd.to_datetime(start_ms, unit="ms", utc=True)
+    end = pd.to_datetime(end_ms, unit="ms", utc=True)
+    plan = _vision_funding_urls(symbol, start, end)
+    if not plan:
+        raise ValueError("No Binance Vision funding archives were planned for this date range")
+    print(
+        f"[funding] Binance Vision fallback: {len(plan)} monthly/daily archive file(s), "
+        f"up to {workers} concurrent downloads."
+    )
+
+    downloaded: dict[str, pd.DataFrame] = {}
+    missing: list[str] = []
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {
+            pool.submit(_read_vision_funding_zip, url, timeout): label
+            for label, url in plan
+        }
+        completed = 0
+        for future in as_completed(futures):
+            label = futures[future]
+            frame = future.result()
+            completed += 1
+            if frame is None:
+                missing.append(label)
+            else:
+                downloaded[label] = frame
+            if completed % 12 == 0 or completed == len(plan):
+                print(f"[funding] Archive files checked: {completed}/{len(plan)}")
+
+    if missing:
+        sample = ", ".join(missing[:12])
+        suffix = " ..." if len(missing) > 12 else ""
+        raise RuntimeError(
+            f"Binance Vision funding archive is incomplete: {len(missing)} missing file(s): "
+            f"{sample}{suffix}. Refusing to fill missing funding events."
+        )
+
+    frames = [downloaded[label] for label, _ in plan]
+    raw = pd.concat(frames, ignore_index=True)
+    raw["symbol"] = symbol.upper()
+    raw = raw.rename(columns={
+        "calc_time": "fundingTime",
+        "last_funding_rate": "fundingRate",
+    })
+    raw = raw.drop_duplicates(subset=["fundingTime"], keep="last")
+    result = validate_funding_history(raw, symbol=symbol)
+    result.attrs["funding_source"] = "binance_vision_archive"
+    result.attrs["mark_price_source"] = "needs_15m_candle_proxy"
+    result.attrs["archive_files"] = int(len(plan))
+    result.attrs["archive_checksum_verified_files"] = int(sum(
+        bool(downloaded[label].attrs.get("checksum_verified"))
+        for label, _ in plan
+    ))
+    return result
+
+
+def attach_funding_mark_price_proxy(
+    funding: pd.DataFrame,
+    candles: pd.DataFrame,
+) -> pd.DataFrame:
+    """Fill absent archive mark prices from the last completed BTC 15m candle close.
+
+    This is an explicit proxy, not Binance's true markPrice. It is causal:
+    the 15m close used for each funding event is available at or before the
+    fundingTime. For the first event only, if no prior close exists, use the
+    open of a candle exactly at that event time.
+    """
+    out = funding.copy()
+    if "mark_price" not in out.columns:
+        out["mark_price"] = np.nan
+    missing = out["mark_price"].isna()
+    if not missing.any():
+        out.attrs.update(funding.attrs)
+        out.attrs["mark_price_source"] = out.attrs.get(
+            "mark_price_source", "binance_api"
+        )
+        return out
+    if not missing.all():
+        raise ValueError("Funding mark price is partially missing; refusing mixed proxy/API rows")
+
+    candle_times = pd.to_datetime(candles["candle_time"], utc=True)
+    completed = pd.DataFrame({
+        "available_at": candle_times + pd.Timedelta(minutes=rv.TF_MINUTES),
+        "proxy_price": pd.to_numeric(candles["close"], errors="coerce").to_numpy(float),
+    }).dropna().sort_values("available_at")
+    events = out[["funding_time"]].copy()
+    events["_row"] = np.arange(len(events))
+    events = events.sort_values("funding_time")
+    merged = pd.merge_asof(
+        events,
+        completed,
+        left_on="funding_time",
+        right_on="available_at",
+        direction="backward",
+        allow_exact_matches=True,
+    )
+    proxy = merged.sort_values("_row")["proxy_price"].to_numpy(float)
+
+    # First archive event can coincide with the very first available 15m candle.
+    still_missing = ~np.isfinite(proxy)
+    if still_missing.any():
+        candle_open = pd.DataFrame({
+            "candle_time": candle_times,
+            "open_proxy": pd.to_numeric(candles["open"], errors="coerce").to_numpy(float),
+        }).set_index("candle_time")["open_proxy"]
+        event_times = pd.DatetimeIndex(out["funding_time"])
+        exact = candle_open.reindex(event_times).to_numpy(float)
+        proxy[still_missing] = exact[still_missing]
+
+    if not np.isfinite(proxy).all() or np.any(proxy <= 0):
+        raise ValueError(
+            "Could not attach a valid causal 15m candle mark-price proxy to every funding event"
+        )
+
+    out["mark_price"] = proxy
+    out.attrs.update(funding.attrs)
+    out.attrs["mark_price_source"] = "previous_completed_15m_close_proxy"
+    return out
+
+
 def load_funding_history(
     csv_path: str | Path,
     symbol: str = "BTCUSDT",
