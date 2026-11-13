@@ -139,9 +139,39 @@ Faqat BTC bazasini tekshirish:
 
 ```powershell
 python research_v3.py --table public.btcusdt_15m --no-external --out v3_base_only.json
-```
+\`\`\`
 
-`WIDE_GLD_AUX_2MIN.csv` ichidagi `datetime` 2-daqiqalik barning **open** vaqti
+### 4. 1 kunlik selektiv signal sinovi (2% / 5% / 10%)
+
+Savdo sonini ko'paytirishga emas, eng yuqori ishonchli signallarni ajratishga mo'ljallangan
+alohida sinov. U **faqat 1d BASE** modelini tekshiradi va har bir walk-forward fold'da
+modelni bir marta o'qitib, aynan o'sha modelning kalibrlash ehtimollaridan uchta threshold
+oladi. Shu sababli 2%, 5% va 10% variantlari bir xil model va bir xil test davrlarida
+taqqoslanadi.
+
+PowerShell:
+
+\`\`\`powershell
+$env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
+.\\.venv\\Scripts\\python.exe selectivity_sweep_1d.py --table public.btcusdt_15m --cost-bps 10 --selection-pcts 0.02,0.05,0.10 --folds 5 --train-days 365 --test-days 90 --holdout-days 180 --out selectivity_sweep_1d.json
+\`\`\`
+
+Natijalar \`selectivity_sweep_1d.json\` fayliga yoziladi. Har bir variant uchun OOS va
+alohida holdout win rate, Wilson 95% interval, net expectancy, Profit Factor, o'rtacha
+net yutuq/zarar, payoff ratio, maksimal trade-sequence drawdown, ketma-ket zararlar,
+fold natijalari va GO/NO-GO eshiklari ko'rsatiladi.
+
+**Muhim metodologiya:** 2% / 5% / 10% — kalibrlash oynasidagi UP va DOWN ehtimollarining
+har biri uchun alohida yuqori kvantil. Bu testda aynan shuncha savdo bo'ladi degani emas;
+real signal va bajarilgan savdo ulushi alohida o'lchanadi. Threshold test va holdout
+boshlanishidan oldin muzlatiladi. Bir nechta variantni ko'rib chiqqandan keyin holdout'da
+eng yaxshisini tanlab olish mumkin emas — variantni development fold'laridan tanlab,
+keyingi yangi forward davrida bir marta tasdiqlash kerak.
+
+Bu script ham faqat tarixiy paper-research: real order yubormaydi va GO natija chiqmaguncha
+live trading'ga o'tish uchun ruxsat bermaydi.
+
+\`WIDE_GLD_AUX_2MIN.csv\` ichidagi `datetime` 2-daqiqalik barning **open** vaqti
 deb qabul qilinadi; kod qiymatni 2 daqiqadan keyin mavjud deb hisoblaydi. CSV timestamp'i
 aslida close time bo'lsa, `--source-bar-minutes 0` ishlating. Semantika tekshirilmasdan
 xasset natijasini dalil deb qabul qilmang.
