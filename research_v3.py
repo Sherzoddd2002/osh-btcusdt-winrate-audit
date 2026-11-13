@@ -231,10 +231,17 @@ def align_external_features(
         quote_time = merged["available_at"]
         age = (merged["signal_time"] - quote_time).dt.total_seconds() / 60.0
         stale = age.isna() | (age > max_age_min) | (age < 0)
+
+        # A quote that is merely carried forward is not a fresh 15m return.
+        # Also reject a return that spans a long market-data outage.
+        gap1 = (quote_time - quote_time.shift(1)).dt.total_seconds() / 60.0
+        gap4 = (quote_time - quote_time.shift(4)).dt.total_seconds() / 60.0
         r1 = np.log(price / price.shift(1))
         r4 = np.log(price / price.shift(4))
-        out[f"{asset}_ret1"] = r1.where(~stale).to_numpy()
-        out[f"{asset}_ret4"] = r4.where(~stale).to_numpy()
+        r1_ok = (~stale) & gap1.gt(0) & gap1.le(TF_MINUTES * 2)
+        r4_ok = (~stale) & gap4.gt(0) & gap4.le(TF_MINUTES * 6)
+        out[f"{asset}_ret1"] = r1.where(r1_ok).to_numpy()
+        out[f"{asset}_ret4"] = r4.where(r4_ok).to_numpy()
         age_safe = age.fillna(max_age_min + 1).clip(lower=0)
         out[f"{asset}_age_min"] = np.log1p(age_safe).to_numpy()
         out[f"{asset}_stale"] = stale.astype("int8").to_numpy()
