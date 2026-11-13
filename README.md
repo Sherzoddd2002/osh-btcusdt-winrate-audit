@@ -121,6 +121,7 @@ To'liq nazariy qo'llanma: [`QOLLANMA.md`](QOLLANMA.md).
 
 - **Asosiy dashboard:** https://sherzoddd2002.github.io/osh-btcusdt-winrate-audit/
 - **Tashqi ma'lumotlar auditi:** https://sherzoddd2002.github.io/osh-btcusdt-winrate-audit/external-audit.html
+- **Research v3 (tuzatilgan):** https://sherzoddd2002.github.io/osh-btcusdt-winrate-audit/research-v3.html
 
 GitHub Pages yoqilgan: source **`main` / `/ (root)`** (2026-11-13 dan; avvalgi
 `gh-pages` manbasida legacy Jekyll build xatosi chiqqani uchun o'zgartirildi).
@@ -174,6 +175,53 @@ raqamlari ikkilamchi manba bo'lib, asl matni tekshirilmagan.
 
 ---
 
+## Research v3 — to'liq tuzatilgan eksperiment (2026-11-13)
+
+[`research-v3.html`](research-v3.html) — user'ning ilmiy rejasiga asoslangan to'liq tuzatilgan
+tadqiqot tizimi. Barcha 5 ta oldingi xato tuzatildi, 3 ta gorizont × 2 ta konfiguratsiya × 5 fold
+purged walk-forward, untouched 6 oylik holdout, block-bootstrap 95% CI, GO/NO-GO eshiklari.
+
+### Natijalar (3 gorizont, 2 konfiguratsiya)
+
+| Gorizont | Konfig | Median net (bps) | Musbat fold % | Profit Factor | Bootstrap 95% CI | Holdout net (bps) | Verdict |
+|---|---|---|---|---|---|---|---|
+| 1h | BASE | −8.76 | 0% | 0.61 | [−10.23, −7.01] | −9.50 | NO-GO |
+| 1h | +XASSET | −8.19 | 0% | 0.61 | [−10.48, −7.00] | −8.73 | NO-GO |
+| 4h | BASE | −11.56 | 20% | 0.71 | [−17.11, −5.65] | −11.12 | NO-GO |
+| 4h | +XASSET | −13.13 | 0% | 0.68 | [−18.24, −8.22] | −8.54 | NO-GO |
+| **1d** | **BASE** | **+7.62** | **60%** | **1.01** | **[−25.85, +15.15]** | **+4.96** | **NO-GO*** |
+| **1d** | **+XASSET** | **+3.69** | **60%** | **1.04** | **[−7.91, +17.71]** | **−18.76** | **NO-GO*** |
+
+`*` 1d gorizontda median net > 0 va Profit Factor > 1, lekin bootstrap CI pastki chegarasi
+manfiy va musbat fold % 75% dan kam. Holdout'da +XASSET konfiguratsiyasi −18.76 bps — ya'ni
+o'rganilgan edge holdout'da yetib bormadi. **Ehtiyot bo'ling: 222 savdo = juda oz, statistik
+kuch yo'q.**
+
+### Tuzatilgan 5 ta xato
+
+1. Train threshold muzlatildi, test'da ishlatildi (endi to'g'ri)
+2. Triple-barrier endi high/low bilan (faqat close emas)
+3. Early stopping purged validation bilan (leakage yo'q)
+4. Tashqi ma'lumotlar `available_at` + max yosh bilan (stale ffill yo'q)
+5. 6 oylik untouched holdout (hech qachon tuning/qayta o'qitish uchun ochilmaydi)
+
+### Lookback tekshiruvlari (barchasi ✓)
+
+- `threshold_frozen_from_train_and_used`: ✓
+- `causal_chronological_selection`: ✓
+- `early_stopping_purged`: ✓
+- `barriers_use_high_low`: ✓
+- `external_staleness_capped`: ✓
+- `untouched_holdout`: ✓
+
+### Qayta ishga tushirish
+
+```bash
+python research_v3.py --table public.btcusdt_15m --cost-bps 10 --out v3_results.json
+```
+
+---
+
 ## Keyingi qadam (agar edge izlash davom etsa)
 
 Faqat OHLCV bilan 15m yo'nalishda edge topish real emas. Qo'shish kerak:
@@ -182,6 +230,8 @@ Faqat OHLCV bilan 15m yo'nalishda edge topish real emas. Qo'shish kerak:
 - `!forceOrders` (likvidatsiyalar), perpetual−spot basis, `ETH/BTC`, order book imbalance
 - Boshqa maqsad: yo'nalish emas, **volatillik / rejim / execution** bashorati
 - Meta-labeling: avval oddiy qoida nomzod chiqaradi, ML faqat "foydalimi?" deb javob beradi
+- Ikki bosqichli arxitektura: Market Data → Regime Detection → Strategy Engine → ML Meta-Labeling → Risk & Execution
+- GO eshiklari: median net > 0, musbat fold ≥ 75%, PF > 1, bootstrap 95% CI pastki > 0, benchmarkdan yaxshi, leakage = 0
 
 Bularsiz eng to'g'ri qaror — savdo qilmaslik va saytni analytics vositasi sifatida ishlatish.
 

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OSH · v3 tadqiqot tizimi — tuzatilgan o'lchov</title>
+<meta name="description" content="Beshta metodologik xato tuzatildi, kauzal savdo tanlovi, long/short, tegilmagan holdout va GO/NO-GO eshiklari.">
+<style>
+  :root{--bg:#f7f8fa;--card:#fff;--ink:#16181d;--muted:#6b7280;--line:#e3e6eb;
+    --blue:#2563eb;--blue-soft:#eaf0fe;--amber:#b45309;--amber-soft:#fff5e6;
+    --red:#b91c1c;--red-soft:#fdecec;--green:#0f766e;--green-soft:#e6f5f1}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;font-size:15px;line-height:1.65}
+  .wrap{max-width:1080px;margin:0 auto;padding:30px 20px 70px}
+  h1{font-size:26px;font-weight:600;margin:0 0 5px;letter-spacing:-.02em}
+  h2{font-size:19px;font-weight:600;margin:38px 0 12px;letter-spacing:-.01em}
+  h3{font-size:15px;font-weight:600;margin:0 0 8px}
+  p{margin:0 0 11px}
+  .sub{color:var(--muted);font-size:14px}
+  .badge{display:inline-flex;gap:7px;align-items:center;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:600;background:var(--blue-soft);color:var(--blue);border:1px solid #c9d9fb}
+  .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .tldr{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:12px;padding:18px 20px;margin:20px 0 8px}
+  .tldr .q{font-weight:600;color:var(--blue);margin-top:9px}
+  .tldr .q:first-child{margin-top:0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+  .card.alert{background:var(--red-soft);border-color:#f2b8b8;border-left:4px solid var(--red)}
+  .card.note{background:var(--amber-soft);border-color:#f0d9ad;border-left:4px solid var(--amber)}
+  .card.good{background:var(--green-soft);border-color:#bfe3da;border-left:4px solid var(--green)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;margin:18px 0}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+  .kpi .v{font-size:25px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+  .kpi .h{font-size:12px;color:var(--muted);margin-top:5px}
+  .kpi.ok .v{color:var(--green)} .kpi.bad .v{color:var(--red)} .kpi.warn .v{color:var(--amber)}
+  table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+  th,td{text-align:right;padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  thead th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+  .scroll{overflow-x:auto}
+  .neg{color:var(--red);font-weight:600}.pos{color:var(--green);font-weight:600}
+  .yes{color:var(--green);font-weight:600}.no{color:var(--red);font-weight:600}
+  ul{margin:0;padding-left:20px}li{margin-bottom:7px}
+  .src{font-size:12px;color:var(--muted);margin-top:9px}
+  code{background:#eef1f5;padding:2px 6px;border-radius:5px;font-size:13px}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+  .flow .node{background:var(--blue-soft);border:1px solid #c9d9fb;color:#0c447c;border-radius:9px;padding:10px 13px;font-size:13px;font-weight:600;min-width:130px;text-align:center}
+  .flow .arrow{color:var(--muted);font-size:17px}
+  .flow .final{background:var(--green-soft);border-color:#bfe3da;color:#085041}
+  .bar{height:11px;border-radius:5px;background:var(--blue);display:inline-block;vertical-align:middle;margin-right:7px;min-width:2px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:780px){.two{grid-template-columns:1fr}.wrap{padding:20px 13px 48px}h1{font-size:22px}}
+  footer{margin-top:42px;padding-top:18px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+  footer a{color:var(--blue)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>v3 tadqiqot tizimi: avval o'lchovni to'g'rilash, keyin alpha izlash</h1>
+  <div class="sub">OSH · BTCUSDT 15m · 2026-11-13 · barcha natijalar tarixiy paper-backtest, real buyurtma yo'q</div>
+  <div style="margin-top:12px"><span class="badge"><span class="dot"></span> FULLY CAUSAL · PAPER / SHADOW</span></div>
+</header>
+
+<div class="tldr" id="tldr"></div>
+<div class="grid" id="kpis"></div>
+
+<h2>1. Siz aytgan 5 ta muammo — kod bo'yicha tekshiruv</h2>
+<div class="card">
+  <div class="scroll"><table id="tClaims"></table></div>
+  <p class="src">Manba: <code>E:\OSH\pipeline_v2.py</code>, <code>ablation_experiment.py</code>, PostgreSQL <code>public.btcusdt_15m</code> — 2026-11-13 da qayta tekshirildi. 240 768 qator, haqiqiy 15m uzilish <strong>0</strong>; avvalgi "1 ta" birinchi qatorning <code>NaT</code> diff artefakti edi.</p>
+</div>
+<div class="card alert">
+  <strong>Eng katta xato tasdiqlandi.</strong> v2 da <code>thr</code> train quyrug'idan hisoblangan, lekin <code>evaluate_fold()</code> ichida test oynasining <em>butun 90 kuni bo'yicha</em> eng yuqori 5% ehtimollar tanlangan. Ya'ni "eng yaxshi signallar" kelajakdagi 90 kun tugagandan keyin aniqlangan. Bu +2.98 bps ni <strong>tasdiqlangan alpha emas, yuqori chegara</strong> qiladi. v3 da threshold haqiqatan ishlatiladi va signallar faqat vaqt bo'yicha oldinga qarab, ketma-ket olinadi.
+</div>
+
+<h2>2. Eng amaliy richag: gorizont, indikator emas</h2>
+<div class="card">
+  <p>Bitta savdoning xarajati deyarli o'zgarmaydi (10 bps), lekin ushlab turish davri uzayganda bozorning o'rtacha harakati kattalashadi. Sizning rejangizda bu yo'nalish umuman yo'q — menimcha eng katta bo'shliq shu.</p>
+  <div class="scroll"><table id="tHorizon"></table></div>
+  <p class="src">Manba: <code>public.btcusdt_15m</code> close qatori bo'yicha hisoblangan <code>|C(t+h)/C(t)−1|</code>, 240 768 sham, 2026-11-13. Xarajat 10 bps (Binance USDⓈ-M futures taker 0.02%/0.04% + slippage, ikkilamchi tarif ma'lumoti — o'z hisobingizdagi rate bilan tekshiring).</p>
+</div>
+
+<h2>3. Siz taklif qilgan arxitektura (men roziman, bitta tuzatma bilan)</h2>
+<div class="card">
+  <div class="flow">
+    <div class="node">Market Data<br><span style="font-weight:400;font-size:11px">OHLCV · OI · Funding · Liq · Book</span></div><span class="arrow">→</span>
+    <div class="node">Regime<br><span style="font-weight:400;font-size:11px">Trend / Range / Vol</span></div><span class="arrow">→</span>
+    <div class="node">Strategy<br><span style="font-weight:400;font-size:11px">4 ta nomzod</span></div><span class="arrow">→</span>
+    <div class="node">ML Meta-Label<br><span style="font-weight:400;font-size:11px">net foydalimi?</span></div><span class="arrow">→</span>
+    <div class="node">Risk / Execution<br><span style="font-weight:400;font-size:11px">size · SL · TP · cost</span></div><span class="arrow">→</span>
+    <div class="node final">LONG / SHORT<br>NO TRADE</div>
+  </div>
+  <p><strong>Tuzatma:</strong> Order book va likvidatsiyalar eng kuchli axborot, lekin ularning <strong>tarixi yo'q</strong> — Binance <code>!forceOrders</code> va depth faqat jonli WebSocket oqimi, REST orqali 2020–2026 ni orqaga yuklab bo'lmaydi. Demak ularni bugunoq yig'ishni boshlash kerak, lekin ularni backtest'da sinab bo'lmaydi; mustaqil OOS uchun oyLab kutish kerak. <strong>Avval orqaga yuklanadigan</strong> qatlam: <code>fundingRate</code> (8h), <code>openInterestHist</code>, <code>takerlongshortRatio</code>, <code>topLongShortPositionRatio</code>, basis. Shular bilan 6 yillik backtest mumkin.</p>
+</div>
+
+<h2>4. Tuzatilgan natijalar (kauzal, 10 bps, tegilmagan holdout)</h2>
+<div class="card"><div class="scroll"><table id="tResults"></table></div>
+  <p class="src">Manba: <code>research_v3.py</code> / <code>v3_results.json</code>, 2026-11-13. Har gorizont: 5 ta purged walk-forward fold + oxirgi 180 kun <strong>tegilmagan holdout</strong> (muzlatilgan model va threshold, qayta o'qitish yo'q). Long va short alohida ehtimollar, signallar xronologik tartibda, bir vaqtda bitta pozitsiya. Blok-bootstrap: 20 savdolik bloklar, 2000 takror.</p>
+</div>
+<div class="card" id="verdictCard"></div>
+
+<h2>5. GO / NO-GO eshiklari (oldindan ro'yxatga olingan)</h2>
+<div class="card"><div class="scroll"><table id="tGates"></table></div>
+  <p class="src">Barcha mezonlar natijani ko'rishdan oldin belgilangan; hech biri orqaga qarab yumshatilmagan.</p>
+</div>
+
+<h2>6. Men qo'shilmaydigan ikki joy</h2>
+<div class="two">
+  <div class="card note">
+    <h3>Har juma GO/NO-GO ni qayta ko'rib chiqish</h3>
+    <p>Bu <strong>eng xavfli</strong> band. 90 kunlik fold 1 soatlik gorizontda mustaqil kuzatuvni har 90 kunda bir marta beradi. Haftalik "qayta ko'rib chiqish" amalda haftalik qayta sozlashga aylanadi: holdout buziladi, ko'p sinov tarafkashligi yig'iladi, albatta "omadli" konfiguratsiya topiladi.</p>
+    <p><strong>Men shunday qildim:</strong> juma avtomatizatsiyasi faqat <em>ma'lumot yaxlitligi + drift + mavjud mezonlar holati</em>ni kuzatadi, parametr/feature/threshold'ni o'zgartirmaydi, holdout'ni ochmaydi. GO/NO-GO qarori faqat yangi to'liq mustaqil fold to'planganda — <strong>chorakda bir marta</strong>.</p>
+  </div>
+  <div class="card note">
+    <h3>4 ta strategiyani "alohida sinash"</h3>
+    <p>To'g'ri, lekin 4 strategiya × 5 fold × bir necha parametr = o'nlab sinov bitta ma'lumot to'plamida. Oldindan ro'yxatga olinmasa, eng yaxshisi tasodifan chiqadi. <strong>Deflated Sharpe</strong> / Bonferroni, har strategiya uchun bitta oldindan yozilgan gipoteza, va bitta umumiy sinov byudjeti shart.</p>
+    <p>Yana: short tomonni shunchaki long'ning oynasi deb bo'lmaydi — funding, borrow, likvidatsiya assimmetriyasi va BTC'ning tarixiy musbat drifti bor. Alohida xarajat modeli kerak.</p>
+  </div>
+</div>
+
+<h2>7. "Foydali qilish"ning halol tartibi</h2>
+<div class="card good">
+  <ol style="padding-left:20px;margin:0">
+    <li><strong>O'lchovni tuzatish</strong> — qilindi (v3). Bunsiz foyda bilan omadni ajratib bo'lmaydi.</li>
+    <li><strong>O'yinni o'zgartirish:</strong> gorizontni 1h dan 4h/1d ga ko'chirish + savdolar sonini kamaytirish. Bu model emas, arifmetika: xarajat/harakat ulushi 26% → 12.8% → 4.8%.</li>
+    <li><strong>Orqaga yuklanadigan pul oqimi</strong> (funding, OI, taker ratio, basis) — bitta oldindan yozilgan gipoteza, bitta ablatsiya.</li>
+    <li><strong>Meta-labeling</strong>: oddiy qoida nomzod chiqaradi, ML faqat "xarajatdan keyin foydalimi?" deb filtrlaydi; default = NO TRADE.</li>
+    <li><strong>Eshik:</strong> median net &gt; 0, musbat fold ≥ 75%, PF &gt; 1, bootstrap CI pastki chegarasi &gt; 0, benchmarkdan ustun, look-ahead = 0. O'tmasa — 6–8 hafta shadow, keyin juda kichik kapital.</li>
+  </ol>
+  <p style="margin-top:11px">Va oxirgi, eng muhimi: <strong>NO-GO ham natija</strong>. Edge chiqmasa, OSH'ni savdo boti emas, tadqiqot/analytics paneli sifatida qoldirish — eng arzon va eng real "foydali" qaror. Hech bir bosqich daromadni kafolatlamaydi.</p>
+</div>
+
+<footer>
+  <div>OSH research v3 · 2026-11-13 · statik hisobot · barcha natijalar tarixiy paper-backtest · <code>live_orders = false</code>.</div>
+  <div style="margin-top:6px"><a href="index.html">← Dashboard</a> · <a href="external-audit.html">Tashqi ma'lumotlar auditi</a> · <a href="https://github.com/Sherzoddd2002/osh-btcusdt-winrate-audit">GitHub repo</a></div>
+</footer>
+
+</div>
+
+<script id="v3-data" type="application/json">{"claims":{"threshold_computed":true,"threshold_used_in_eval":false,"evaluate_fold_selects_test_topk":true,"barrier_uses_close_only":true,"barrier_uses_high_low":false,"early_stop_has_embargo":false,"external_unbounded_ffill":true,"gaps_real":0,"gap_times":[],"gap_sizes_min":[],"rows":240768,"horizon_vs_cost":{"1h":{"mean_abs_move_bps":38.41,"median_abs_move_bps":22.83,"cost_10bps_as_pct_of_mean_move":26.0,"pct_moves_gt_20bps":54.6},"4h":{"mean_abs_move_bps":78.19,"median_abs_move_bps":46.07,"cost_10bps_as_pct_of_mean_move":12.8,"pct_moves_gt_20bps":74.1},"1d":{"mean_abs_move_bps":207.26,"median_abs_move_bps":135.79,"cost_10bps_as_pct_of_mean_move":4.8,"pct_moves_gt_20bps":90.2},"4d":{"mean_abs_move_bps":434.87,"median_abs_move_bps":303.73,"cost_10bps_as_pct_of_mean_move":2.3,"pct_moves_gt_20bps":95.7}}},"horizon_economics":{"1h":{"mean_abs_move_bps":38.41,"median_abs_move_bps":22.83,"cost_10bps_as_pct_of_mean_move":26.0,"pct_moves_gt_20bps":54.6},"4h":{"mean_abs_move_bps":78.19,"median_abs_move_bps":46.07,"cost_10bps_as_pct_of_mean_move":12.8,"pct_moves_gt_20bps":74.1},"1d":{"mean_abs_move_bps":207.26,"median_abs_move_bps":135.79,"cost_10bps_as_pct_of_mean_move":4.8,"pct_moves_gt_20bps":90.2},"4d":{"mean_abs_move_bps":434.87,"median_abs_move_bps":303.73,"cost_10bps_as_pct_of_mean_move":2.3,"pct_moves_gt_20bps":95.7}},"results":{"cost_bps":10.0,"top_pct":0.05,"holdout_days":180,"horizons":{"1h":{"bars":4,"configs":{"BASE":{"feature_count":37,"folds":[{"trades":396,"expectancy_bps":-7.6796599400505565,"win_rate_pct":47.72727272727273,"avg_win_gross_bps":44.85267181923231,"avg_loss_gross_bps":36.51352806809144,"expectancy_decomposition_bps":-7.679659940050558,"profit_factor":0.6841451514478119,"benchmark_mean_net_bps":-10.521429047296044,"edge_vs_benchmark_bps":2.8417691072454874,"no_trade_pct":95.4,"fold":1,"start":"2024-12-13","frozen_thr_up":0.48214,"frozen_thr_dn":0.50245,"test_pass_rate_pct":9.99},{"trades":429,"expectancy_bps":-6.560303523131194,"win_rate_pct":48.484848484848484,"avg_win_gross_bps":36.37834884587821,"avg_loss_gross_bps":27.561388105728284,"expectancy_decomposition_bps":-6.5603035231311955,"profit_factor":0.660962826954809,"benchmark_mean_net_bps":-9.11398847438646,"edge_vs_benchmark_bps":2.553684951255267,"no_trade_pct":95.0,"fold":2,"start":"2025-03-13","frozen_thr_up":0.46461,"frozen_thr_dn":0.51311,"test_pass_rate_pct":10.78},{"trades":380,"expectancy_bps":-9.790317603251088,"win_rate_pct":45.26315789473684,"avg_win_gross_bps":31.26958840104459,"avg_loss_gross_bps":25.474470645264823,"expectancy_decomposition_bps":-9.790317603251085,"profit_factor":0.4958019997354601,"benchmark_mean_net_bps":-10.602597464704122,"edge_vs_benchmark_bps":0.8122798614530334,"no_trade_pct":95.6,"fold":3,"start":"2025-06-11","frozen_thr_up":0.47869,"frozen_thr_dn":0.50244,"test_pass_rate_pct":9.1},{"trades":418,"expectancy_bps":-8.757142006335012,"win_rate_pct":45.933014354066984,"avg_win_gross_bps":37.89452149740191,"avg_loss_gross_bps":29.8948384342885,"expectancy_decomposition_bps":-8.75714200633501,"profit_factor":0.5940116940991715,"benchmark_mean_net_bps":-10.504263195165178,"edge_vs_benchmark_bps":1.7471211888301643,"no_trade_pct":95.2,"fold":4,"start":"2025-09-09","frozen_thr_up":0.46381,"frozen_thr_dn":0.50776,"test_pass_rate_pct":10.3},{"trades":395,"expectancy_bps":-10.205870985271616,"win_rate_pct":47.08860759493671,"avg_win_gross_bps":44.39124637316375,"avg_loss_gross_bps":39.89517160091266,"expectancy_decomposition_bps":-10.205870985271616,"profit_factor":0.6134173463264603,"benchmark_mean_net_bps":-10.66093150012021,"edge_vs_benchmark_bps":0.45506051484859406,"no_trade_pct":95.4,"fold":5,"start":"2025-12-08","frozen_thr_up":0.46695,"frozen_thr_dn":0.50041,"test_pass_rate_pct":10.38}],"positive_folds_pct":0.0,"median_fold_expectancy_bps":-8.757,"pooled_expectancy_bps":-8.557,"pooled_profit_factor":0.614,"bootstrap_ci95_bps":[-10.231,-7.014],"total_trades":2018,"untouched_holdout":{"trades":834,"expectancy_bps":-9.500278394652042,"win_rate_pct":44.12470023980815,"avg_win_gross_bps":33.16980251752543,"avg_loss_gross_bps":25.29982726950465,"expectancy_decomposition_bps":-9.500278394652053,"profit_factor":0.5183363353104969,"benchmark_mean_net_bps":-10.80142671551785,"edge_vs_benchmark_bps":1.301148320865807,"no_trade_pct":95.2,"note":"frozen model + frozen thresholds, no refit, no tuning"}},"BASE_XASSET_STALE_AWARE":{"feature_count":61,"folds":[{"trades":378,"expectancy_bps":-6.890592640400448,"win_rate_pct":48.94179894179894,"avg_win_gross_bps":45.522883819116664,"avg_loss_gross_bps":37.54599753682876,"expectancy_decomposition_bps":-6.890592640400447,"profit_factor":0.7161577091737354,"benchmark_mean_net_bps":-10.521429047296044,"edge_vs_benchmark_bps":3.6308364068955963,"no_trade_pct":95.6,"fold":1,"start":"2024-12-13","frozen_thr_up":0.48534,"frozen_thr_dn":0.49646,"test_pass_rate_pct":9.59},{"trades":417,"expectancy_bps":-8.187481700586009,"win_rate_pct":47.721822541966425,"avg_win_gross_bps":35.225982458470014,"avg_loss_gross_bps":28.68876320357752,"expectancy_decomposition_bps":-8.187481700586016,"profit_factor":0.5951957558290311,"benchmark_mean_net_bps":-9.11398847438646,"edge_vs_benchmark_bps":0.9265067738004518,"no_trade_pct":95.2,"fold":2,"start":"2025-03-13","frozen_thr_up":0.47725,"frozen_thr_dn":0.50504,"test_pass_rate_pct":10.19},{"trades":399,"expectancy_bps":-9.839753099979177,"win_rate_pct":44.611528822055135,"avg_win_gross_bps":31.153508333573004,"avg_loss_gross_bps":24.802651449175052,"expectancy_decomposition_bps":-9.83975309997918,"profit_factor":0.48955084271306537,"benchmark_mean_net_bps":-10.602597464704122,"edge_vs_benchmark_bps":0.7628443647249447,"no_trade_pct":95.4,"fold":3,"start":"2025-06-11","frozen_thr_up":0.48126,"frozen_thr_dn":0.50831,"test_pass_rate_pct":9.91},{"trades":384,"expectancy_bps":-7.85452307886905,"win_rate_pct":46.35416666666667,"avg_win_gross_bps":38.95599246994915,"avg_loss_gross_bps":29.661667582216815,"expectancy_decomposition_bps":-7.854523078869046,"profit_factor":0.6308415159623373,"benchmark_mean_net_bps":-10.504263195165178,"edge_vs_benchmark_bps":2.649740116296127,"no_trade_pct":95.6,"fold":4,"start":"2025-09-09","frozen_thr_up":0.46982,"frozen_thr_dn":0.5113,"test_pass_rate_pct":9.48},{"trades":390,"expectancy_bps":-10.719649566510261,"win_rate_pct":44.871794871794876,"avg_win_gross_bps":45.14382413479538,"avg_loss_gross_bps":38.05038397454974,"expectancy_decomposition_bps":-10.719649566510265,"profit_factor":0.5953217411208024,"benchmark_mean_net_bps":-10.66093150012021,"edge_vs_benchmark_bps":-0.058718066390051143,"no_trade_pct":95.5,"fold":5,"start":"2025-12-08","frozen_thr_up":0.46677,"frozen_thr_dn":0.49406,"test_pass_rate_pct":10.12}],"positive_folds_pct":0.0,"median_fold_expectancy_bps":-8.187,"pooled_expectancy_bps":-8.71,"pooled_profit_factor":0.609,"bootstrap_ci95_bps":[-10.48,-6.996],"total_trades":1968,"untouched_holdout":{"trades":902,"expectancy_bps":-8.734259442861202,"win_rate_pct":44.90022172949002,"avg_win_gross_bps":33.20661196861119,"avg_loss_gross_bps":24.76253493913146,"expectancy_decomposition_bps":-8.734259442861202,"profit_factor":0.5440000463544231,"benchmark_mean_net_bps":-10.80142671551785,"edge_vs_benchmark_bps":2.067167272656648,"no_trade_pct":94.8,"note":"frozen model + frozen thresholds, no refit, no tuning"}}}},"4h":{"bars":16,"configs":{"BASE":{"feature_count":37,"folds":[{"trades":159,"expectancy_bps":-18.007592153285625,"win_rate_pct":43.39622641509434,"avg_win_gross_bps":76.845687280349,"avg_loss_gross_bps":73.06177305240548,"expectancy_decomposition_bps":-18.007592153285618,"profit_factor":0.6169909257286602,"benchmark_mean_net_bps":-11.437706048574798,"edge_vs_benchmark_bps":-6.569886104710828,"no_trade_pct":98.2,"fold":1,"start":"2024-12-13","frozen_thr_up":0.50984,"frozen_thr_dn":0.50457,"test_pass_rate_pct":10.96},{"trades":160,"expectancy_bps":2.28223641654493,"win_rate_pct":52.5,"avg_win_gross_bps":67.62578552183452,"avg_loss_gross_bps":48.88694943666984,"expectancy_decomposition_bps":2.282236416544948,"profit_factor":1.081592072459535,"benchmark_mean_net_bps":-5.899160213224567,"edge_vs_benchmark_bps":8.181396629769496,"no_trade_pct":98.1,"fold":2,"start":"2025-03-13","frozen_thr_up":0.48791,"frozen_thr_dn":0.5216,"test_pass_rate_pct":11.97},{"trades":165,"expectancy_bps":-11.55764616186044,"win_rate_pct":44.84848484848485,"avg_win_gross_bps":52.07413935997457,"avg_loss_gross_bps":45.17030691588011,"expectancy_decomposition_bps":-11.557646161860433,"profit_factor":0.6201548843272333,"benchmark_mean_net_bps":-10.446068436706636,"edge_vs_benchmark_bps":-1.1115777251538042,"no_trade_pct":98.1,"fold":3,"start":"2025-06-11","frozen_thr_up":0.51233,"frozen_thr_dn":0.50601,"test_pass_rate_pct":10.59},{"trades":169,"expectancy_bps":-10.543447520051473,"win_rate_pct":49.70414201183432,"avg_win_gross_bps":61.73029073255752,"avg_loss_gross_bps":62.0845535579239,"expectancy_decomposition_bps":-10.543447520051478,"profit_factor":0.709190756599488,"benchmark_mean_net_bps":-14.555373727403673,"edge_vs_benchmark_bps":4.0119262073522,"no_trade_pct":98.0,"fold":4,"start":"2025-09-09","frozen_thr_up":0.5171,"frozen_thr_dn":0.50298,"test_pass_rate_pct":10.25},{"trades":142,"expectancy_bps":-17.642092760827104,"win_rate_pct":44.36619718309859,"avg_win_gross_bps":72.66517608001973,"avg_loss_gross_bps":71.68459829213533,"expectancy_decomposition_bps":-17.642092760827094,"profit_factor":0.6117860146645884,"benchmark_mean_net_bps":-12.689342744606417,"edge_vs_benchmark_bps":-4.952750016220687,"no_trade_pct":98.4,"fold":5,"start":"2025-12-08","frozen_thr_up":0.50922,"frozen_thr_dn":0.50753,"test_pass_rate_pct":7.96}],"positive_folds_pct":20.0,"median_fold_expectancy_bps":-11.558,"pooled_expectancy_bps":-10.933,"pooled_profit_factor":0.706,"bootstrap_ci95_bps":[-17.112,-5.65],"total_trades":795,"untouched_holdout":{"trades":316,"expectancy_bps":-11.117613771526237,"win_rate_pct":45.25316455696203,"avg_win_gross_bps":56.77146357664074,"avg_loss_gross_bps":48.96812279342148,"expectancy_decomposition_bps":-11.117613771526235,"profit_factor":0.6556221110918394,"benchmark_mean_net_bps":-13.613640225283183,"edge_vs_benchmark_bps":2.4960264537569454,"no_trade_pct":98.2,"note":"frozen model + frozen thresholds, no refit, no tuning"}},"BASE_XASSET_STALE_AWARE":{"feature_count":61,"folds":[{"trades":164,"expectancy_bps":-13.026246146161753,"win_rate_pct":44.51219512195122,"avg_win_gross_bps":81.30802866636026,"avg_loss_gross_bps":70.67901605071236,"expectancy_decomposition_bps":-13.026246146161753,"profit_factor":0.7090213375836898,"benchmark_mean_net_bps":-11.437706048574798,"edge_vs_benchmark_bps":-1.5885400975869552,"no_trade_pct":98.1,"fold":1,"start":"2024-12-13","frozen_thr_up":0.52106,"frozen_thr_dn":0.49288,"test_pass_rate_pct":11.4},{"trades":150,"expectancy_bps":-14.33085317544376,"win_rate_pct":43.333333333333336,"avg_win_gross_bps":65.37217201136396,"avg_loss_gross_bps":57.63316655359083,"expectancy_decomposition_bps":-14.330853175443755,"profit_factor":0.6260748655350483,"benchmark_mean_net_bps":-5.899160213224567,"edge_vs_benchmark_bps":-8.431692962219193,"no_trade_pct":98.3,"fold":2,"start":"2025-03-13","frozen_thr_up":0.51489,"frozen_thr_dn":0.50276,"test_pass_rate_pct":8.69},{"trades":186,"expectancy_bps":-13.131394560240757,"win_rate_pct":44.086021505376344,"avg_win_gross_bps":50.90448951205808,"avg_loss_gross_bps":45.73661084801484,"expectancy_decomposition_bps":-13.131394560240754,"profit_factor":0.5786433053600328,"benchmark_mean_net_bps":-10.446068436706636,"edge_vs_benchmark_bps":-2.685326123534123,"no_trade_pct":97.8,"fold":3,"start":"2025-06-11","frozen_thr_up":0.51543,"frozen_thr_dn":0.50102,"test_pass_rate_pct":11.47},{"trades":156,"expectancy_bps":-2.683838013160783,"win_rate_pct":50.0,"avg_win_gross_bps":70.69477754768398,"avg_loss_gross_bps":56.06245357400554,"expectancy_decomposition_bps":-2.683838013160778,"profit_factor":0.9187484609497814,"benchmark_mean_net_bps":-14.555373727403673,"edge_vs_benchmark_bps":11.87153571424289,"no_trade_pct":98.2,"fold":4,"start":"2025-09-09","frozen_thr_up":0.52508,"frozen_thr_dn":0.50893,"test_pass_rate_pct":9.39},{"trades":144,"expectancy_bps":-19.224504821529376,"win_rate_pct":40.97222222222222,"avg_win_gross_bps":76.97388426727059,"avg_loss_gross_bps":69.05632783610817,"expectancy_decomposition_bps":-19.22450482152937,"profit_factor":0.5880333204745062,"benchmark_mean_net_bps":-12.689342744606417,"edge_vs_benchmark_bps":-6.535162076922957,"no_trade_pct":98.3,"fold":5,"start":"2025-12-08","frozen_thr_up":0.51125,"frozen_thr_dn":0.50098,"test_pass_rate_pct":8.3}],"positive_folds_pct":0.0,"median_fold_expectancy_bps":-13.131,"pooled_expectancy_bps":-12.394,"pooled_profit_factor":0.678,"bootstrap_ci95_bps":[-18.238,-8.222],"total_trades":800,"untouched_holdout":{"trades":367,"expectancy_bps":-8.539386472248545,"win_rate_pct":44.95912806539509,"avg_win_gross_bps":59.06340458467494,"avg_loss_gross_bps":45.591171246468214,"expectancy_decomposition_bps":-8.539386472248538,"profit_factor":0.7209156139413819,"benchmark_mean_net_bps":-13.613640225283183,"edge_vs_benchmark_bps":5.074253753034638,"no_trade_pct":97.9,"note":"frozen model + frozen thresholds, no refit, no tuning"}}}},"1d":{"bars":96,"configs":{"BASE":{"feature_count":37,"folds":[{"trades":39,"expectancy_bps":7.621856806278661,"win_rate_pct":56.41025641025641,"avg_win_gross_bps":162.19950773666702,"avg_loss_gross_bps":169.47863263304743,"expectancy_decomposition_bps":7.62185680627866,"profit_factor":1.0974234979736508,"benchmark_mean_net_bps":-21.37518897681302,"edge_vs_benchmark_bps":28.997045783091682,"no_trade_pct":99.5,"fold":1,"start":"2024-12-13","frozen_thr_up":0.56267,"frozen_thr_dn":0.52809,"test_pass_rate_pct":8.48},{"trades":60,"expectancy_bps":-14.610184731720995,"win_rate_pct":46.666666666666664,"avg_win_gross_bps":140.94714557684915,"avg_loss_gross_bps":131.97284875171988,"expectancy_decomposition_bps":-14.610184731720993,"profit_factor":0.8070469345875894,"benchmark_mean_net_bps":2.619543614346782,"edge_vs_benchmark_bps":-17.229728346067777,"no_trade_pct":99.3,"fold":2,"start":"2025-03-13","frozen_thr_up":0.52717,"frozen_thr_dn":0.53617,"test_pass_rate_pct":20.3},{"trades":46,"expectancy_bps":-27.22149011750771,"win_rate_pct":41.30434782608695,"avg_win_gross_bps":98.1112459326889,"avg_loss_gross_bps":98.38156363431271,"expectancy_decomposition_bps":-27.2214901175077,"profit_factor":0.5720918578918808,"benchmark_mean_net_bps":-8.281910397434503,"edge_vs_benchmark_bps":-18.93957972007321,"no_trade_pct":99.5,"fold":3,"start":"2025-06-11","frozen_thr_up":0.57434,"frozen_thr_dn":0.53048,"test_pass_rate_pct":12.29},{"trades":44,"expectancy_bps":8.833563204979573,"win_rate_pct":56.81818181818182,"avg_win_gross_bps":135.38423159842603,"avg_loss_gross_bps":134.5225794179763,"expectancy_decomposition_bps":8.83356320497959,"profit_factor":1.1415465511866678,"benchmark_mean_net_bps":-24.287631897873272,"edge_vs_benchmark_bps":33.121195102852845,"no_trade_pct":99.5,"fold":4,"start":"2025-09-09","frozen_thr_up":0.60425,"frozen_thr_dn":0.52458,"test_pass_rate_pct":7.95},{"trades":33,"expectancy_bps":46.00872489876242,"win_rate_pct":60.60606060606061,"avg_win_gross_bps":162.45971800901336,"avg_loss_gross_bps":107.76203373239288,"expectancy_decomposition_bps":46.00872489876242,"profit_factor":1.9917574865815197,"benchmark_mean_net_bps":-23.33968749802917,"edge_vs_benchmark_bps":69.3484123967916,"no_trade_pct":99.6,"fold":5,"start":"2025-12-08","frozen_thr_up":0.59143,"frozen_thr_dn":0.5125,"test_pass_rate_pct":6.64}],"positive_folds_pct":60.0,"median_fold_expectancy_bps":7.622,"pooled_expectancy_bps":0.34,"pooled_profit_factor":1.005,"bootstrap_ci95_bps":[-25.848,15.151],"total_trades":222,"untouched_holdout":{"trades":89,"expectancy_bps":4.956794611352917,"win_rate_pct":55.0561797752809,"avg_win_gross_bps":117.80796938149565,"avg_loss_gross_bps":111.03589448207191,"expectancy_decomposition_bps":4.956794611352929,"profit_factor":1.0911206386952743,"benchmark_mean_net_bps":-24.80332006659876,"edge_vs_benchmark_bps":29.760114677951677,"no_trade_pct":99.5,"note":"frozen model + frozen thresholds, no refit, no tuning"}},"BASE_XASSET_STALE_AWARE":{"feature_count":61,"folds":[{"trades":36,"expectancy_bps":4.698988828161364,"win_rate_pct":52.77777777777778,"avg_win_gross_bps":155.4233125717797,"avg_loss_gross_bps":142.58113770882386,"expectancy_decomposition_bps":4.69898882816136,"profit_factor":1.0652164482505693,"benchmark_mean_net_bps":-21.37518897681302,"edge_vs_benchmark_bps":26.074177804974386,"no_trade_pct":99.6,"fold":1,"start":"2024-12-13","frozen_thr_up":0.54984,"frozen_thr_dn":0.51338,"test_pass_rate_pct":8.75},{"trades":46,"expectancy_bps":-0.1452982217302191,"win_rate_pct":52.17391304347826,"avg_win_gross_bps":121.2450587568852,"avg_loss_gross_bps":111.66205128931065,"expectancy_decomposition_bps":-0.1452982217302074,"profit_factor":0.9975028748119149,"benchmark_mean_net_bps":2.619543614346782,"edge_vs_benchmark_bps":-2.7648418360770015,"no_trade_pct":99.5,"fold":2,"start":"2025-03-13","frozen_thr_up":0.58161,"frozen_thr_dn":0.50685,"test_pass_rate_pct":18.4},{"trades":38,"expectancy_bps":-4.245017993611706,"win_rate_pct":52.63157894736842,"avg_win_gross_bps":94.69985337320304,"avg_loss_gross_bps":93.07265284562807,"expectancy_decomposition_bps":-4.245017993611709,"profit_factor":0.9130544872401584,"benchmark_mean_net_bps":-8.281910397434503,"edge_vs_benchmark_bps":4.0368924038227965,"no_trade_pct":99.6,"fold":3,"start":"2025-06-11","frozen_thr_up":0.60115,"frozen_thr_dn":0.52664,"test_pass_rate_pct":11.11},{"trades":36,"expectancy_bps":3.6865486407675534,"win_rate_pct":52.77777777777778,"avg_win_gross_bps":149.8831647663719,"avg_loss_gross_bps":138.53319879373137,"expectancy_decomposition_bps":3.6865486407675756,"profit_factor":1.0525593533952815,"benchmark_mean_net_bps":-24.287631897873272,"edge_vs_benchmark_bps":27.974180538640827,"no_trade_pct":99.6,"fold":4,"start":"2025-09-09","frozen_thr_up":0.61272,"frozen_thr_dn":0.53015,"test_pass_rate_pct":6.96},{"trades":33,"expectancy_bps":9.394319176735559,"win_rate_pct":51.515151515151516,"avg_win_gross_bps":156.1174146036736,"avg_loss_gross_bps":125.87396971438612,"expectancy_decomposition_bps":9.394319176735545,"profit_factor":1.142601142387655,"benchmark_mean_net_bps":-23.33968749802917,"edge_vs_benchmark_bps":32.73400667476473,"no_trade_pct":99.6,"fold":5,"start":"2025-12-08","frozen_thr_up":0.59273,"frozen_thr_dn":0.51233,"test_pass_rate_pct":7.91}],"positive_folds_pct":60.0,"median_fold_expectancy_bps":3.687,"pooled_expectancy_bps":2.349,"pooled_profit_factor":1.038,"bootstrap_ci95_bps":[-7.909,17.712],"total_trades":189,"untouched_holdout":{"trades":115,"expectancy_bps":-18.763236817874876,"win_rate_pct":45.21739130434783,"avg_win_gross_bps":116.63909734731871,"avg_loss_gross_bps":112.2699253351775,"expectancy_decomposition_bps":-18.76323681787486,"profit_factor":0.7198791703877513,"benchmark_mean_net_bps":-24.80332006659876,"edge_vs_benchmark_bps":6.040083248723886,"no_trade_pct":99.3,"note":"frozen model + frozen thresholds, no refit, no tuning"}}}}},"configs":["BASE","BASE_XASSET_STALE_AWARE"],"gates":[{"horizon":"1h","config":"BASE","checks":{"median_net_gt_0":false,"positive_folds_ge_75":false,"profit_factor_gt_1":false,"bootstrap_lower_gt_0":false,"beats_benchmark":true},"verdict":"NO-GO"},{"horizon":"1h","config":"BASE_XASSET_STALE_AWARE","checks":{"median_net_gt_0":false,"positive_folds_ge_75":false,"profit_factor_gt_1":false,"bootstrap_lower_gt_0":false,"beats_benchmark":true},"verdict":"NO-GO"},{"horizon":"4h","config":"BASE","checks":{"median_net_gt_0":false,"positive_folds_ge_75":false,"profit_factor_gt_1":false,"bootstrap_lower_gt_0":false,"beats_benchmark":false},"verdict":"NO-GO"},{"horizon":"4h","config":"BASE_XASSET_STALE_AWARE","checks":{"median_net_gt_0":false,"positive_folds_ge_75":false,"profit_factor_gt_1":false,"bootstrap_lower_gt_0":false,"beats_benchmark":false},"verdict":"NO-GO"},{"horizon":"1d","config":"BASE","checks":{"median_net_gt_0":true,"positive_folds_ge_75":false,"profit_factor_gt_1":true,"bootstrap_lower_gt_0":false,"beats_benchmark":true},"verdict":"NO-GO"},{"horizon":"1d","config":"BASE_XASSET_STALE_AWARE","checks":{"median_net_gt_0":true,"positive_folds_ge_75":false,"profit_factor_gt_1":true,"bootstrap_lower_gt_0":false,"beats_benchmark":true},"verdict":"NO-GO"}],"lookahead_checks":{"threshold_frozen_from_train_and_used":true,"causal_chronological_selection":true,"early_stopping_purged":true,"barriers_use_high_low":true,"external_staleness_capped":true,"untouched_holdout":true}}}</script>
+<script>
+(function(){
+  var D = JSON.parse(document.getElementById('v3-data').textContent);
+  var f2=function(x){return (x===null||x===undefined||isNaN(x))?'—':Number(x).toFixed(2);};
+  var f4=function(x){return (x===null||x===undefined||isNaN(x))?'—':Number(x).toFixed(4);};
+  var cls=function(x){return (x===null||isNaN(x))?'':(x>0?'pos':(x<0?'neg':''));};
+  var table=function(el,head,rows){
+    var s='<thead><tr>'+head.map(function(h){return '<th>'+h+'</th>';}).join('')+'</tr></thead><tbody>';
+    rows.forEach(function(r){s+='<tr>'+r.map(function(v){return '<td>'+v+'</td>';}).join('')+'</tr>';});
+    document.getElementById(el).innerHTML=s+'</tbody>';
+  };
+
+  var C=D.claims;
+  table('tClaims',['Da\'vo','Kodda tasdiq','v3 dagi tuzatma'],[
+    ['Threshold hisoblangan, ishlatilmagan','<span class="no">HA — xato bor</span>','Train\'dan muzlatilgan <code>thr_up/thr_dn</code> testda haqiqatan qo\'llanadi'],
+    ['Triple-barrier faqat close','<span class="no">HA — xato bor</span>','Future <code>high/low</code> bo\'yicha TP/SL; ikkisi bir shamda urilsa → konservativ SL'],
+    ['Early stopping\'da purge yo\'q','<span class="no">HA — xato bor</span>','Ichki train/eval orasiga <code>h+2</code> shamlik embargo'],
+    ['Tashqi ma\'lumot cheksiz ffill','<span class="no">HA — xato bor</span>','<code>*_age_min</code> + <code>*_stale</code>, maksimal 60 daqiqa'],
+    ['1 ta interval uzilishi','<span class="yes">YO\'Q — artefakt</span>','Birinchi qator <code>NaT</code> diff; haqiqiy uzilish <strong>0</strong>']
+  ]);
+
+  var H=D.horizon_economics;
+  var mx=0; for(var k in H){ if(H[k].mean_abs_move_bps>mx) mx=H[k].mean_abs_move_bps; }
+  table('tHorizon',['Gorizont','O\'rtacha |harakat|','Median','10 bps ulushi','&gt;20 bps harakatlar','Nisbiy'],
+    Object.keys(H).map(function(k){var r=H[k];
+      return [k, f2(r.mean_abs_move_bps)+' bps', f2(r.median_abs_move_bps)+' bps',
+        f2(r.cost_10bps_as_pct_of_mean_move)+'%', f2(r.pct_moves_gt_20bps)+'%',
+        '<span class="bar" style="width:'+Math.round(r.mean_abs_move_bps/mx*90)+'px"></span>'];}));
+
+  var order=['1h','4h','1d'], cfgs=['BASE','BASE_XASSET_STALE_AWARE'];
+  var rows=[];
+  order.forEach(function(hn){
+    cfgs.forEach(function(c){
+      var s=D.results.horizons[hn].configs[c]; if(!s) return;
+      var ci=s.bootstrap_ci95_bps||[null,null];
+      var ho=s.untouched_holdout||{};
+      rows.push([hn+' · '+(c==='BASE'?'baza':'+xasset'), s.feature_count, s.total_trades,
+        '<span class="'+cls(s.median_fold_expectancy_bps)+'">'+f2(s.median_fold_expectancy_bps)+'</span>',
+        f2(s.positive_folds_pct)+'%', (s.pooled_profit_factor===null?'—':f2(s.pooled_profit_factor)),
+        '['+f2(ci[0])+', '+f2(ci[1])+']',
+        '<span class="'+cls(ho.expectancy_bps)+'">'+(ho.expectancy_bps===undefined?'—':f2(ho.expectancy_bps))+'</span>']);
+    });
+  });
+  table('tResults',['Gorizont · config','Feature','Savdo','Median net (bps)','Musbat fold','PF','Bootstrap 95% CI','Holdout net (bps)'],rows);
+
+  var gates=D.results.gates||[];
+  var gk=['median_net_gt_0','positive_folds_ge_75','profit_factor_gt_1','bootstrap_lower_gt_0','beats_benchmark'];
+  table('tGates',['Gorizont · config','Median&gt;0','Fold≥75%','PF&gt;1','CI&gt;0','Benchmark','Qaror'],
+    gates.map(function(g){return [g.horizon+' · '+(g.config==='BASE'?'baza':'+xasset')]
+      .concat(gk.map(function(k){return g.checks[k]?'<span class="yes">✓</span>':'<span class="no">✗</span>';}))
+      .concat(['<strong class="'+(g.verdict==='GO'?'yes':'no')+'">'+g.verdict+'</strong>']);}));
+
+  var go=gates.filter(function(g){return g.verdict==='GO';}).length;
+  var best=null;
+  gates.forEach(function(g){var s=D.results.horizons[g.horizon].configs[g.config];
+    if(!best||s.median_fold_expectancy_bps>best.v) best={v:s.median_fold_expectancy_bps,h:g.horizon,c:g.config};});
+  document.getElementById('tldr').innerHTML='<strong>Xulosa</strong>'+
+    '<div class="q">1. Siz ko\'rsatgan 5 ta muammodan <strong>4 tasi mening kodimdagi haqiqiy xato</strong> edi — barchasi v3 da tuzatildi; 5-si o\'lchov artefakti (haqiqiy uzilish 0).</div>'+
+    '<div class="q">2. +2.98 bps endi <strong>tasdiqlangan alpha emas</strong>: u butun test oynasidan keyin tanlangan top-5% bilan olingan edi. Kauzal qayta o\'lchov natijasi pastdagi jadvalda.</div>'+
+    '<div class="q">3. <strong>'+go+' / '+gates.length+'</strong> konfiguratsiya GO eshigidan o\'tdi. Eng yaxshisi: '+best.h+' · '+(best.c==='BASE'?'baza':'+xasset')+' = <strong>'+f2(best.v)+' bps</strong>.</div>'+
+    '<div class="q">4. Eng katta amaliy richag yangi indikator emas — <strong>gorizont</strong>: 1h da xarajat o\'rtacha harakatning 26% ini yeydi, 4h da 12.8%, 1d da 4.8%.</div>';
+
+  document.getElementById('kpis').innerHTML=[
+    {l:'Tuzatilgan xato',v:'4 / 5',h:'5-si NaT artefakti',c:'warn'},
+    {l:'GO o\'tgan',v:go+' / '+gates.length,h:'oldindan belgilangan 5 mezon',c:go?'ok':'bad'},
+    {l:'Eng yaxshi median',v:f2(best.v)+' bps',h:best.h,h2:best.c,c:cls(best.v)==='pos'?'ok':'bad'},
+    {l:'1h xarajat ulushi',v:'26%',h:'o\'rtacha harakatdan',c:'bad'},
+    {l:'Tegilmagan holdout',v:'180 kun',h:'muzlatilgan model',c:'ok'}
+  ].map(function(k){return '<div class="kpi '+k.c+'"><div class="l">'+k.l+'</div><div class="v">'+k.v+'</div><div class="h">'+(k.h2?k.h2+' · ':'')+k.h+'</div></div>';}).join('');
+
+  document.getElementById('verdictCard').className='card '+(go?'good':'alert');
+  document.getElementById('verdictCard').innerHTML='<strong>'+(go?'GO':'NO-GO')+'</strong> — '+
+    (go?'Kamida bitta konfiguratsiya barcha oldindan belgilangan eshiklardan o\'tdi. Keyingi qadam: 6–8 hafta real vaqtda shadow test, keyin juda kichik kapital.'
+       :'Hech bir konfiguratsiya barcha eshiklardan o\'tmadi. Jonli savdoga asos yo\'q; sayt analytics vositasi sifatida qoladi, <code>live_orders = false</code>.')+
+    ' Hech bir bosqich foydani kafolatlamaydi.';
+})();
+</script>
+</body>
+</html>
