@@ -1,0 +1,277 @@
+{
+  "common_window": [
+    "2024-02-20 00:00:00+00:00",
+    "2026-02-19 00:00:00+00:00"
+  ],
+  "rows": 70077,
+  "cost_bps": 10.0,
+  "horizon_bars": 4,
+  "folds": 6,
+  "configs": {
+    "A_BASE": {
+      "folds": [
+        {
+          "fold": 1,
+          "start": "2024-08-18",
+          "trades": 197,
+          "win_rate_pct": 35.53299492385787,
+          "mean_net_bps": -11.774898742365153,
+          "auc": 0.6281650243829255,
+          "threshold": 0.43448
+        },
+        {
+          "fold": 2,
+          "start": "2024-11-16",
+          "trades": 198,
+          "win_rate_pct": 41.91919191919192,
+          "mean_net_bps": -10.703517207337121,
+          "auc": 0.6530089659534736,
+          "threshold": 0.42312
+        },
+        {
+          "fold": 3,
+          "start": "2025-02-14",
+          "trades": 177,
+          "win_rate_pct": 40.67796610169492,
+          "mean_net_bps": -12.381422909736521,
+          "auc": 0.6749297753604013,
+          "threshold": 0.42489
+        },
+        {
+          "fold": 4,
+          "start": "2025-05-15",
+          "trades": 205,
+          "win_rate_pct": 45.85365853658537,
+          "mean_net_bps": -7.309537005094411,
+          "auc": 0.6432790734248727,
+          "threshold": 0.43639
+        },
+        {
+          "fold": 5,
+          "start": "2025-08-13",
+          "trades": 201,
+          "win_rate_pct": 39.30348258706468,
+          "mean_net_bps": -10.4790427769011,
+          "auc": 0.6482018752943334,
+          "threshold": 0.43383
+        },
+        {
+          "fold": 6,
+          "start": "2025-11-11",
+          "trades": 190,
+          "win_rate_pct": 40.0,
+          "mean_net_bps": -14.769727174125888,
+          "auc": 0.7283814106380921,
+          "threshold": 0.44183
+        }
+      ],
+      "median_net_bps": -11.239207974851137,
+      "mean_net_bps": -11.2363576359267,
+      "positive_folds": 0,
+      "mean_win_rate_pct": 40.54788234473246,
+      "median_auc": 0.6506054206239035,
+      "total_trades": 1168,
+      "feature_count": 37,
+      "delta_vs_base_bps": 0.0
+    },
+    "B_BASE_XASSET": {
+      "folds": [
+        {
+          "fold": 1,
+          "start": "2024-08-18",
+          "trades": 177,
+          "win_rate_pct": 42.93785310734463,
+          "mean_net_bps": -8.2025560098761,
+          "auc": 0.6380934976545064,
+          "threshold": 0.43302
+        },
+        {
+          "fold": 2,
+          "start": "2024-11-16",
+          "trades": 202,
+          "win_rate_pct": 45.04950495049505,
+          "mean_net_bps": -8.307522473889719,
+          "auc": 0.6536246347854897,
+          "threshold": 0.4429
+        },
+        {
+          "fold": 3,
+          "start": "2025-02-14",
+          "trades": 188,
+          "win_rate_pct": 47.340425531914896,
+          "mean_net_bps": -7.162734965512769,
+          "auc": 0.6784602275820709,
+          "threshold": 0.43455
+        },
+        {
+          "fold": 4,
+          "start": "2025-05-15",
+          "trades": 204,
+          "win_rate_pct": 41.66666666666667,
+          "mean_net_bps": -10.52313579993517,
+          "auc": 0.6646466761336001,
+          "threshold": 0.44222
+        },
+        {
+          "fold": 5,
+          "start": "2025-08-13",
+          "trades": 201,
+          "win_rate_pct": 40.298507462686565,
+          "mean_net_bps": -10.176631916251736,
+          "auc": 0.6574333812000969,
+          "threshold": 0.43769
+        },
+        {
+          "fold": 6,
+          "start": "2025-11-11",
+          "trades": 184,
+          "win_rate_pct": 48.369565217391305,
+          "mean_net_bps": -7.762717743552772,
+          "auc": 0.7313333571879029,
+          "threshold": 0.44977
+        }
+      ],
+      "median_net_bps": -8.255039241882908,
+      "mean_net_bps": -8.689216484836377,
+      "positive_folds": 0,
+      "mean_win_rate_pct": 44.277087156083184,
+      "median_auc": 0.6610400286668485,
+      "total_trades": 1156,
+      "feature_count": 56,
+      "delta_vs_base_bps": 2.984
+    },
+    "C_BASE_NEWS": {
+      "folds": [
+        {
+          "fold": 1,
+          "start": "2024-08-18",
+          "trades": 196,
+          "win_rate_pct": 37.755102040816325,
+          "mean_net_bps": -10.860033521509425,
+          "auc": 0.6285451134389901,
+          "threshold": 0.43534
+        },
+        {
+          "fold": 2,
+          "start": "2024-11-16",
+          "trades": 185,
+          "win_rate_pct": 41.62162162162162,
+          "mean_net_bps": -11.790541094756318,
+          "auc": 0.6651464372132251,
+          "threshold": 0.41381
+        },
+        {
+          "fold": 3,
+          "start": "2025-02-14",
+          "trades": 192,
+          "win_rate_pct": 41.66666666666667,
+          "mean_net_bps": -12.788320380798764,
+          "auc": 0.6813475350078564,
+          "threshold": 0.44421
+        },
+        {
+          "fold": 4,
+          "start": "2025-05-15",
+          "trades": 237,
+          "win_rate_pct": 43.037974683544306,
+          "mean_net_bps": -8.614584073614619,
+          "auc": 0.6528093566522895,
+          "threshold": 0.40267
+        },
+        {
+          "fold": 5,
+          "start": "2025-08-13",
+          "trades": 199,
+          "win_rate_pct": 39.698492462311556,
+          "mean_net_bps": -12.343157274987004,
+          "auc": 0.6552049946248708,
+          "threshold": 0.43855
+        },
+        {
+          "fold": 6,
+          "start": "2025-11-11",
+          "trades": 189,
+          "win_rate_pct": 40.74074074074074,
+          "mean_net_bps": -14.973072036075935,
+          "auc": 0.7239445735689036,
+          "threshold": 0.44377
+        }
+      ],
+      "median_net_bps": -12.06684918487166,
+      "mean_net_bps": -11.894951396957012,
+      "positive_folds": 0,
+      "mean_win_rate_pct": 40.7534330359502,
+      "median_auc": 0.660175715919048,
+      "total_trades": 1198,
+      "feature_count": 42,
+      "delta_vs_base_bps": -0.828
+    },
+    "D_BASE_BOTH": {
+      "folds": [
+        {
+          "fold": 1,
+          "start": "2024-08-18",
+          "trades": 176,
+          "win_rate_pct": 38.63636363636363,
+          "mean_net_bps": -8.746924240003521,
+          "auc": 0.6382581674680887,
+          "threshold": 0.42842
+        },
+        {
+          "fold": 2,
+          "start": "2024-11-16",
+          "trades": 188,
+          "win_rate_pct": 41.48936170212766,
+          "mean_net_bps": -11.103758938749131,
+          "auc": 0.6642694203757067,
+          "threshold": 0.43373
+        },
+        {
+          "fold": 3,
+          "start": "2025-02-14",
+          "trades": 185,
+          "win_rate_pct": 43.78378378378379,
+          "mean_net_bps": -12.685071231486969,
+          "auc": 0.6858627222922589,
+          "threshold": 0.45789
+        },
+        {
+          "fold": 4,
+          "start": "2025-05-15",
+          "trades": 228,
+          "win_rate_pct": 41.228070175438596,
+          "mean_net_bps": -9.640080379753325,
+          "auc": 0.6596581752659259,
+          "threshold": 0.39983
+        },
+        {
+          "fold": 5,
+          "start": "2025-08-13",
+          "trades": 191,
+          "win_rate_pct": 39.26701570680628,
+          "mean_net_bps": -11.631250968494756,
+          "auc": 0.6554072485549881,
+          "threshold": 0.43119
+        },
+        {
+          "fold": 6,
+          "start": "2025-11-11",
+          "trades": 183,
+          "win_rate_pct": 44.26229508196721,
+          "mean_net_bps": -11.273057913124289,
+          "auc": 0.727558653739898,
+          "threshold": 0.45037
+        }
+      ],
+      "median_net_bps": -11.18840842593671,
+      "mean_net_bps": -10.846690611935331,
+      "positive_folds": 0,
+      "mean_win_rate_pct": 41.44448168108119,
+      "median_auc": 0.6619637978208163,
+      "total_trades": 1151,
+      "feature_count": 61,
+      "delta_vs_base_bps": 0.051
+    }
+  },
+  "verdict_note": "Only a controlled ablation can answer whether external data helps."
+}
