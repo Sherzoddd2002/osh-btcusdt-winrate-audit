@@ -254,8 +254,9 @@ def triple_barrier_labels(
     sigma = (ret_cc.rolling(vol_window, min_periods=max(2, vol_window // 2)).std()
              * np.sqrt(horizon)).to_numpy()
     cost_ret = cost_bps / 10_000.0
-    upper = pt_mult * sigma
-    lower = -sl_mult * sigma
+    barrier_vol = np.maximum(sigma, cost_ret * 1.5)
+    upper = pt_mult * barrier_vol
+    lower = -sl_mult * barrier_vol
     entry = np.full(len(df), np.nan)
     entry[:-1] = o[1:]
     fwd_h = np.full(len(df), np.nan)
