@@ -177,6 +177,57 @@ deb qabul qilinadi; kod qiymatni 2 daqiqadan keyin mavjud deb hisoblaydi. CSV ti
 aslida close time bo'lsa, `--source-bar-minutes 0` ishlating. Semantika tekshirilmasdan
 xasset natijasini dalil deb qabul qilmang.
 
+### 5. $100 kapital: komissiya, slippage va funding stress-sinovi
+
+Bu tajriba 1 kunlik BASE modelni turli ijro xarajatlari ostida qayta o'qitadi. U faqat
+oldingi 10 bps natijasiga keyin komissiya qo'shmaydi: model barrier-label xarajati har
+bir **komissiya + slippage** yig'indisi uchun qayta quriladi. Bir xil jami xarajatga ega
+fee/slippage juftliklari bir xil fold modelidan foydalanadi.
+
+Standart Regular User taxminlari (akkauntning shaxsiy Fee Rate jadvalini tekshiring):
+maker **2 bps/side** (0.02%), taker **5 bps/side** (0.05%). Shuning uchun:
+maker/maker = 4 bps round-trip; maker/taker = 7 bps; taker/taker = 10 bps.
+Slippage 0/2/5 bps — bozor chuqurligidan o'lchangan fakt emas, balki foydalanuvchi
+tanlaydigan round-trip stress farazlari. `--bnb-discount-pct 10` BNB chegirmasini
+alohida tekshiradi; faqat USDⓈ-M Futures wallet'da komissiyani BNB bilan to'lashga
+yetarli BNB bo'lsa qo'llanadi.
+
+Funding `8h` deb taxmin qilinmaydi. Skript Binance public
+`/fapi/v1/fundingRate` tarixidan `fundingTime`, `fundingRate`, `markPrice` qatorlarini
+sahifalab yuklaydi va ularning to'liqligini tekshiradi. Funding long/short yo'nalishi,
+pozitsiya muddati va settlement paytidagi mark narxiga qarab hisoblanadi. 15m sham
+ichidagi aniq fill soniyasi ko'rinmagani uchun kirish/chiqish chegara shamidagi
+funding to'lovi hisoblanadi, ehtimoliy funding krediti esa olinmaydi.
+
+PowerShell:
+
+```powershell
+$env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
+.\.venv\Scripts\python.exe capital_fee_stress_1d.py --table public.btcusdt_15m --fetch-funding --funding-csv .\binance_btcusdt_funding_history.csv --maker-fee-bps 2 --taker-fee-bps 5 --bnb-discount-pct 0 --slippage-bps 0,2,5 --selection-pcts 0.02,0.05,0.10 --position-caps 25,50,100 --initial-capital 100 --cash-reserve-pct 10 --folds 5 --train-days 365 --test-days 90 --holdout-days 180 --out capital_fee_stress_1d.json
+```
+
+Natija `capital_fee_stress_1d.json` ichida 3 fee rejimi × 3 slippage rejimi × 3
+signal selektivligi bilan solishtiriladi. Har bir variant uchun OOS va untouched
+holdout win rate/95% CI, Profit Factor, net expectancy, komissiya, slippage, funding
+to'lovi va krediti, drawdown, hamda $25/$50/$100 pozitsiya-cap bilan $100 hisobning
+yakuniy balansi beriladi.
+
+`cash-reserve-pct 10` sabab $100 cap ssenariysi dastlab $90 nominal bilan boshlanadi;
+$25 va $50 cap esa mos ravishda $25/$50 dan boshlanadi. Kapital tushsa pozitsiya
+90% joriy balans bilan chegaralanadi; yuqoriga qarab tanlangan cap'dan oshmaydi.
+Bu 1x, zaxirali qog'oz simulyatsiya, lekin exchange liquidation/maintenance margin,
+order-book queue yoki maker order fill ehtimolini modellashtirmaydi. Maker/maker
+natijasi maker fill kafolati emas.
+
+Agar `fapi.binance.com` tarmoqdan ochilmasa, funding tarixini Binance'dan CSV qilib
+olib `--funding-csv` bilan bering; funding ma'lumoti bo'lmasa skript uni nol deb
+taxmin qilib GO bermaydi. Hisob ma'lumotlari va fee tier akkauntga bog'liq.
+
+Rasmiy manbalar: [USDⓈ-M fee rate table](https://www.binance.com/en-BH/fee/futureFee),
+[Binance Futures fees and funding](https://www.binance.com/en/support/faq/detail/98488a516eb84e3eb34605683dffd554),
+[Funding rate history API](https://developers.binance.com/docs/derivatives/usds-margined-futures/market-data/rest-api/Get-Funding-Rate-History).
+
+
 ### 5. V2 bazaviy pipeline
 
 ```powershell
@@ -189,7 +240,7 @@ Sintetik self-test kod ishga tushishini tekshiradi, bozor edge'ini emas:
 python pipeline_v2.py --synthetic --rows 80000 --folds 4 --cost-bps 10
 ```
 
-### 5. Eskirgan tajriba va eski natijalar
+### 6. Eskirgan tajriba va eski natijalar
 
 `ablation_experiment.py` non-causal test ranking va external timestamp muammolari sabab
 ataylab o'chirilgan. `ablation_results.json`, `v3_results.json`, `index.html`,
