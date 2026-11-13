@@ -67,6 +67,15 @@ class FundingValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "markPrice"):
             stress.validate_funding_history(missing)
 
+    def test_infinite_funding_rate_is_rejected(self):
+        raw = pd.DataFrame({
+            "fundingTime": [1760000000000],
+            "fundingRate": [np.inf],
+            "markPrice": [100000.0],
+        })
+        with self.assertRaisesRegex(ValueError, "finite"):
+            stress.validate_funding_history(raw)
+
     def test_funding_series_with_large_gap_is_rejected(self):
         raw = pd.DataFrame({
             "fundingTime": [1760000000000, 1760040000000],
