@@ -188,14 +188,14 @@ class FullPipelineSmokeTests(unittest.TestCase):
             result = stress.run_capital_fee_stress(
                 frame, funding,
                 selection_pcts=(0.02, 0.05, 0.10),
-                slippage_grid=(0.0,),
+                slippage_grid=(0.0, 2.0, 5.0),
                 maker_fee_bps=2.0, taker_fee_bps=5.0,
                 capital_sizes=(25.0, 50.0, 100.0),
                 folds_count=1, train_days=4, test_days=2, holdout_days=2,
             )
 
-        self.assertEqual(fit_mock.call_count, 3)  # maker/maker, maker/taker, taker/taker
-        self.assertEqual(len(result["scenarios"]), 3)
+        self.assertEqual(fit_mock.call_count, 7)  # seven unique fee+slippage label costs
+        self.assertEqual(len(result["scenarios"]), 9)  # three fee modes x three slippage settings
         scenario = next(iter(result["scenarios"].values()))
         self.assertEqual(set(scenario["selections"]), {"2%", "5%", "10%"})
         for selection in scenario["selections"].values():
