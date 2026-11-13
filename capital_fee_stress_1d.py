@@ -95,7 +95,11 @@ def validate_funding_history(
         out["symbol"] = raw[symbol_col].astype(str).str.upper()
 
     times = raw[time_col]
-    if pd.api.types.is_numeric_dtype(times):
+    if pd.api.types.is_datetime64_any_dtype(times):
+        # Pandas datetime64 values are internally nanoseconds; never reinterpret
+        # those integers as Unix milliseconds.
+        out["funding_time"] = pd.to_datetime(times, utc=True, errors="coerce")
+    elif pd.api.types.is_numeric_dtype(times):
         out["funding_time"] = pd.to_datetime(
             pd.to_numeric(times, errors="coerce"), unit="ms", utc=True, errors="coerce"
         )
