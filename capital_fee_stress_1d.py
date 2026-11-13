@@ -63,6 +63,7 @@ def validate_funding_history(
     """Validate actual funding settlement rows; never synthesize rates."""
     if raw is None or raw.empty:
         raise ValueError("Funding history is empty")
+    raw_attrs = dict(raw.attrs)
     cols = {str(c).lower(): c for c in raw.columns}
     time_col = (
         cols.get("fundingtime") or cols.get("funding_time")
@@ -152,6 +153,7 @@ def validate_funding_history(
             f"Funding history has a {max_gap:.2f}h gap; maximum accepted is "
             f"{max_gap_hours:.2f}h. Re-fetch or reconcile the funding data."
         )
+    out.attrs.update(raw_attrs)
     out.attrs["max_gap_hours"] = max_gap
     out.attrs["symbol"] = symbol.upper()
     out.attrs["mark_price_source"] = mark_price_source
