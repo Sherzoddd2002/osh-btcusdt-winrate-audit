@@ -105,8 +105,8 @@ shu sababli AUC ko'tariladi. Bu statistik mahorat, lekin iqtisodiy edge emas:
 
 ## Qayta ishga tushirish (hardening branch)
 
-> Quyidagi buyruqlar yangi branch kodiga tegishli. Eski `v3_results.json` va dashboard
-> avtomatik yangilanmaydi; ular faqat lokal qayta hisobdan keyin yangilanadi.
+> Quyidagi buyruqlar yangi branch kodiga tegishli. Eski reportlar avtomatik yangilanmaydi;
+> ular faqat lokal qayta hisobdan keyin yangi natija bo'ladi.
 
 ### 1. Muhit va testlar
 
@@ -119,10 +119,10 @@ python -m compileall -q .
 python -m unittest discover -s tests -v
 ```
 
-### 2. PostgreSQL ulanishi
+### 2. PostgreSQL audit
 
-Parolni buyruq satriga yoki Git'ga yozmang. PostgreSQL `pgpass.conf` yoki
-PowerShell sessiyasidagi maxfiy environment variable'dan foydalaning.
+Parolni buyruq satriga yoki Git'ga yozmang. PostgreSQL `pgpass.conf` yoki maxfiy
+environment variable'dan foydalaning.
 
 ```powershell
 $env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
@@ -135,16 +135,16 @@ python audit_btc_integrity.py --table public.btcusdt_15m --out integrity_report.
 python research_v3.py --table public.btcusdt_15m --cost-bps 10 --folds 5 --train-days 365 --test-days 90 --holdout-days 180 --out v3_results.json
 ```
 
-Cross-asset CSV mavjud bo'lmasa yoki avval faqat BTC bazasini tekshirmoqchi bo'lsangiz:
+Faqat BTC bazasini tekshirish:
 
 ```powershell
 python research_v3.py --table public.btcusdt_15m --no-external --out v3_base_only.json
 ```
 
-`WIDE_GLD_AUX_2MIN.csv` ichidagi `datetime` source 2-daqiqalik shamning **open**
-vaqti deb qabul qilinadi; kod ma'lumotni 2 daqiqa keyin mavjud deb hisoblaydi.
-CSV timestamp'i aslida close vaqti bo'lsa, `--source-bar-minutes 0` bilan semantikasini
-aniq belgilang. Timestamp semantikasi tekshirilmasdan xasset natijasini ishonchli deb olmang.
+`WIDE_GLD_AUX_2MIN.csv` ichidagi `datetime` 2-daqiqalik barning **open** vaqti
+deb qabul qilinadi; kod qiymatni 2 daqiqadan keyin mavjud deb hisoblaydi. CSV timestamp'i
+aslida close time bo'lsa, `--source-bar-minutes 0` ishlating. Semantika tekshirilmasdan
+xasset natijasini dalil deb qabul qilmang.
 
 ### 4. V2 bazaviy pipeline
 
@@ -152,51 +152,18 @@ aniq belgilang. Timestamp semantikasi tekshirilmasdan xasset natijasini ishonchl
 python pipeline_v2.py --table public.btcusdt_15m --cost-bps 10 --folds 5 --train-days 365 --test-days 90 --out report.json
 ```
 
-Sintetik test faqat kod ishlashini tekshiradi, bozor edge'i haqida dalil bermaydi:
+Sintetik self-test kod ishga tushishini tekshiradi, bozor edge'ini emas:
 
 ```powershell
 python pipeline_v2.py --synthetic --rows 80000 --folds 4 --cost-bps 10
 ```
 
-### 5. Eslatma
+### 5. Eskirgan tajriba va eski natijalar
 
-`ablation_experiment.py` eski top-5% test ranking va external timestamp sababli ataylab
-o'chirilgan. Uning `ablation_results.json` fayli tarixiy hisobot; uni alpha isboti deb
-ishlatmang. Yangi ablation faqat v3 causal pipeline ichida, source-data timestamp
-semantikasi tekshirilgach o'tkazilishi kerak.
-
-## Legacy natijalar — arxiv
-
-Bu README ichidagi avvalgi summary jadvallari, `index.html`, `research-v3.html`,
-`external-audit.html`, `v3_results.json`, `ablation_results.json` yangi hardening
-kodidan oldingi natijalar. Ular qayta hisoblanmaguncha yangi model natijasi sifatida
-taqdim etilmasin.
-
-
-```bash
-# 1) Haqiqiy PostgreSQL ma'lumoti bilan (parol pgpass.conf orqali o'qiladi)
-python pipeline_v2.py --table public.btcusdt_15m --cost-bps 10 --folds 10 \
-  --train-days 365 --test-days 90 --out report.json
-
-# 2) Yoki hech qanday DB siz, sintetik self-test
-python pipeline_v2.py --synthetic --rows 80000 --folds 4 --cost-bps 10
-
-# 3) Dashboard'ni qayta yig'ish
-python build_dashboard.py --report report.json --out .
-```
-
-`pipeline_v2.py` quyidagilarni qiladi:
-
-1. `make_features()` — faqat `t` sham yopilishida ma'lum bo'lgan 37 ta stasionar feature
-   (training/serving symmetry).
-2. `triple_barrier_labels()` — `σ = std(log ret, 96) · √h` faqat **o'tmish** ma'lumotidan;
-   to'siqlar `±σ`; `y=1` faqat maqsad xarajatdan oshganda; ustma-ust label'lar `1/h` og'irlikda.
-3. `make_folds()` — xronologik expanding train + 6 sham embargo + 90 kunlik test,
-   **eng so'nggi** 10 fold olinadi.
-4. Threshold har fold'da faqat train oxiridan kalibrlanadi; testga tegilmaydi.
-5. `non_overlapping()` — pozitsiyalar ustma-ust tushmaydi; barrier-exit PnL.
-6. `wilson_ci()` — win rate uchun 95% ishonch oralig'i.
-7. `GO` faqat: median net > 0 **va** musbat fold'lar ≥ 75% **va** median AUC > 0.52.
+`ablation_experiment.py` non-causal test ranking va external timestamp muammolari sabab
+ataylab o'chirilgan. `ablation_results.json`, `v3_results.json`, `index.html`,
+`research-v3.html` va `external-audit.html` yangi hardening kodidan oldingi arxiv
+natijalaridir. Qayta hisoblanmaguncha ularni yangi model natijasi sifatida ko'rsatmang.
 
 To'liq nazariy qo'llanma: [`QOLLANMA.md`](QOLLANMA.md).
 
