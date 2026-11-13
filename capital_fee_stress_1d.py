@@ -407,7 +407,7 @@ def summarize_net_trades(trades: list[dict]) -> dict:
         "avg_commission_bps": float(np.mean([t["commission_cost_bps"] for t in trades])),
         "avg_slippage_bps": float(np.mean([t["slippage_cost_bps"] for t in trades])),
         "avg_funding_cost_bps": float(np.mean([t["funding_cost_bps"] for t in trades])),
-        "funding_paid_events": int(sum(
+        "funding_settlement_rows_in_position_windows": int(sum(
             t["funding_events_in_hold_window"] for t in trades
         )),
         "funding_boundary_ambiguous_events": int(sum(
@@ -880,6 +880,10 @@ def run_capital_fee_stress(
             "funding_method": (
                 "Actual fundingTime/fundingRate/markPrice records. Funding events within "
                 "entry or exit boundary candles count payments but ignore potential receipts."
+            ),
+            "label_cost_components": (
+                "Model barriers are calibrated to commission plus slippage; variable "
+                "historical funding is applied only to post-prediction trade PnL."
             ),
             "fees": "Entry and exit commission use notional at each fill; exit notional scales with exit/entry price.",
             "slippage": "User-defined round-trip stress assumption; not estimated from order-book replay.",
