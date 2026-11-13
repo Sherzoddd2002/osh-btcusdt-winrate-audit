@@ -41,24 +41,34 @@ def funding_frame(start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
 
 
 class BinanceVisionArchiveTests(unittest.TestCase):
-    def test_monthly_and_current_month_daily_url_plan(self):
+    def test_only_completed_monthly_funding_archives_are_planned(self):
         start = pd.Timestamp("2026-10-30T00:00:00Z")
         end = pd.Timestamp("2026-11-02T23:45:00Z")
         today = pd.Timestamp("2026-11-14T00:00:00Z")
         plan = stress._vision_funding_urls("BTCUSDT", start, end, today=today)
-        self.assertEqual(len(plan), 3)
+        self.assertEqual(len(plan), 1)
+        self.assertEqual(plan[0][0], "monthly 2026-10")
         self.assertIn(
             "/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-10.zip",
             plan[0][1],
         )
-        self.assertIn(
-            "/daily/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-11-01.zip",
-            plan[1][1],
+        self.assertFalse(any("/daily/fundingRate/" in url for _, url in plan))
+
+    def test_current_month_vision_fallback_requires_explicit_truncation(self):
+        end_ms = int(pd.Timestamp("2026-11-12T23:45:00Z").timestamp() * 1000)
+        required, cutoff = stress.vision_monthly_coverage(
+            end_ms, today=pd.Timestamp("2026-11-14T00:00:00Z")
         )
-        self.assertIn(
-            "/daily/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-11-02.zip",
-            plan[2][1],
+        self.assertTrue(required)
+        self.assertEqual(cutoff, pd.Timestamp("2026-10-31T23:45:00Z"))
+
+    def test_completed_month_end_does_not_require_truncation(self):
+        end_ms = int(pd.Timestamp("2026-10-31T23:45:00Z").timestamp() * 1000)
+        required, cutoff = stress.vision_monthly_coverage(
+            end_ms, today=pd.Timestamp("2026-11-14T00:00:00Z")
         )
+        self.assertFalse(required)
+        self.assertEqual(cutoff, pd.Timestamp("2026-10-31T23:45:00Z"))
 
     def test_archive_csv_zip_checksum_and_schema_are_verified(self):
         csv_bytes = (
