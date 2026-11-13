@@ -83,12 +83,12 @@ class BinanceVisionArchiveTests(unittest.TestCase):
         self.assertEqual(download.call_count, 2)
 
     def test_mark_price_proxy_uses_only_completed_candle_close(self):
-        candles = candles_frame(5)
-        candles["close"] = [100.0, 101.0, 102.0, 103.0, 104.0]
+        candles = candles_frame(1500)
+        candles["close"] = 100.0 + np.arange(len(candles)) * 0.1
         funding = pd.DataFrame({
             "calc_time": [
                 int(pd.Timestamp("2023-01-01T00:15:00Z").timestamp() * 1000),
-                int(pd.Timestamp("2023-01-01T00:30:00Z").timestamp() * 1000),
+                int(pd.Timestamp("2023-01-01T08:15:00Z").timestamp() * 1000),
             ],
             "funding_interval_hours": [8, 8],
             "last_funding_rate": [0.0001, 0.0002],
@@ -96,7 +96,7 @@ class BinanceVisionArchiveTests(unittest.TestCase):
         normalized = stress.validate_funding_history(funding)
         attached = stress.attach_funding_mark_price_proxy(normalized, candles)
         self.assertAlmostEqual(float(attached.loc[0, "mark_price"]), 100.0)
-        self.assertAlmostEqual(float(attached.loc[1, "mark_price"]), 101.0)
+        self.assertAlmostEqual(float(attached.loc[1, "mark_price"]), 103.2)
         self.assertEqual(
             attached.attrs["mark_price_source"],
             "previous_completed_15m_close_proxy",
