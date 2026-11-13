@@ -8,6 +8,23 @@ xavf ostida emas.
 > tarixiy qog'oz savdo (backtest) bo'lib, kelajakdagi natijani kafolatlamaydi.
 > `live_orders = false` — sayt faqat analytics uchun.
 
+> **METODOLOGIK HOLAT — MUHIM:** ushbu branch'da v2/v3 tadqiqot kodi jiddiy qayta mustahkamlandi.
+> Quyida ko'rsatilgan eski dashboard va `v3_results.json` raqamlari yangi kod bilan qayta
+> hisoblanmagan; ular faqat tarixiy/arxiv natijalaridir. Yangi natijani faqat o'zingizning
+> PostgreSQL ma'lumotingizda testlar o'tgach qayta yarating. Hozircha hech qanday strategiya
+> GO deb tasdiqlanmaydi; jonli savdo o'chirilgan.
+
+## Yangi hardening branch
+
+- Branch: `research/v3-hardening-derivatives-data`
+- Qattiq 15m interval / dublikat / OHLC / hajm validatsiyasi; qatorlarni jimgina tashlab yubormaydi.
+- Train threshold endi test oynasidan top-5% rank qilish bilan almashtirilmagan: alohida train calibration tail ishlatiladi.
+- Future OHLC barrier, bir shamda ikki to'siq tegsa konservativ stop, gap-through stop yomonroq open narxda.
+- 2m cross-asset feature faqat source bar yopilib, BTC candle close vaqti kelganidan keyin mavjud deb olinadi.
+- Audit import qilinganda DB'ga ulanmaydi; birinchi `NaT` diff uzilish deb sanalmaydi.
+- Regression testlar va GitHub Actions CI qo'shildi.
+- Eski news / ablation skripti non-causal bo'lgani uchun ataylab bloklandi.
+
 ---
 
 ## Natija (qisqa)
@@ -86,7 +103,75 @@ shu sababli AUC ko'tariladi. Bu statistik mahorat, lekin iqtisodiy edge emas:
 
 ---
 
-## Qayta ishga tushirish
+## Qayta ishga tushirish (hardening branch)
+
+> Quyidagi buyruqlar yangi branch kodiga tegishli. Eski `v3_results.json` va dashboard
+> avtomatik yangilanmaydi; ular faqat lokal qayta hisobdan keyin yangilanadi.
+
+### 1. Muhit va testlar
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m compileall -q .
+python -m unittest discover -s tests -v
+```
+
+### 2. PostgreSQL ulanishi
+
+Parolni buyruq satriga yoki Git'ga yozmang. PostgreSQL `pgpass.conf` yoki
+PowerShell sessiyasidagi maxfiy environment variable'dan foydalaning.
+
+```powershell
+$env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
+python audit_btc_integrity.py --table public.btcusdt_15m --out integrity_report.json
+```
+
+### 3. V3 kauzal tadqiqot
+
+```powershell
+python research_v3.py --table public.btcusdt_15m --cost-bps 10 --folds 5 --train-days 365 --test-days 90 --holdout-days 180 --out v3_results.json
+```
+
+Cross-asset CSV mavjud bo'lmasa yoki avval faqat BTC bazasini tekshirmoqchi bo'lsangiz:
+
+```powershell
+python research_v3.py --table public.btcusdt_15m --no-external --out v3_base_only.json
+```
+
+`WIDE_GLD_AUX_2MIN.csv` ichidagi `datetime` source 2-daqiqalik shamning **open**
+vaqti deb qabul qilinadi; kod ma'lumotni 2 daqiqa keyin mavjud deb hisoblaydi.
+CSV timestamp'i aslida close vaqti bo'lsa, `--source-bar-minutes 0` bilan semantikasini
+aniq belgilang. Timestamp semantikasi tekshirilmasdan xasset natijasini ishonchli deb olmang.
+
+### 4. V2 bazaviy pipeline
+
+```powershell
+python pipeline_v2.py --table public.btcusdt_15m --cost-bps 10 --folds 5 --train-days 365 --test-days 90 --out report.json
+```
+
+Sintetik test faqat kod ishlashini tekshiradi, bozor edge'i haqida dalil bermaydi:
+
+```powershell
+python pipeline_v2.py --synthetic --rows 80000 --folds 4 --cost-bps 10
+```
+
+### 5. Eslatma
+
+`ablation_experiment.py` eski top-5% test ranking va external timestamp sababli ataylab
+o'chirilgan. Uning `ablation_results.json` fayli tarixiy hisobot; uni alpha isboti deb
+ishlatmang. Yangi ablation faqat v3 causal pipeline ichida, source-data timestamp
+semantikasi tekshirilgach o'tkazilishi kerak.
+
+## Legacy natijalar — arxiv
+
+Bu README ichidagi avvalgi summary jadvallari, `index.html`, `research-v3.html`,
+`external-audit.html`, `v3_results.json`, `ablation_results.json` yangi hardening
+kodidan oldingi natijalar. Ular qayta hisoblanmaguncha yangi model natijasi sifatida
+taqdim etilmasin.
+
 
 ```bash
 # 1) Haqiqiy PostgreSQL ma'lumoti bilan (parol pgpass.conf orqali o'qiladi)
