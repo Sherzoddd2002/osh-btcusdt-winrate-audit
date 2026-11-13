@@ -168,8 +168,9 @@ boshlanishidan oldin muzlatiladi. Bir nechta variantni ko'rib chiqqandan keyin h
 eng yaxshisini tanlab olish mumkin emas — variantni development fold'laridan tanlab,
 keyingi yangi forward davrida bir marta tasdiqlash kerak.
 
-Bu script ham faqat tarixiy paper-research: real order yubormaydi va GO natija chiqmaguncha
-live trading'ga o'tish uchun ruxsat bermaydi.
+Bu script faqat tarixiy paper-research; real order yubormaydi. Hatto barcha GO
+mezoni bajarilgan taqdirda ham, bu live trading uchun kafolat yoki ruxsat emas: keyingi
+mustaqil forward sinov, ijro xarajatlari va risk nazorati alohida talab qilinadi.
 
 `WIDE_GLD_AUX_2MIN.csv` ichidagi `datetime` 2-daqiqalik barning **open** vaqti
 deb qabul qilinadi; kod qiymatni 2 daqiqadan keyin mavjud deb hisoblaydi. CSV timestamp'i
