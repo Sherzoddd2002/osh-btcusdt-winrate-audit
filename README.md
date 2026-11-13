@@ -117,15 +117,13 @@ To'liq nazariy qo'llanma: [`QOLLANMA.md`](QOLLANMA.md).
 
 ---
 
-## GitHub Pages'ni yoqish (bir marta)
+## Jonli sayt
 
-Repo **Settings → Pages → Build and deployment**:
+**https://sherzoddd2002.github.io/osh-btcusdt-winrate-audit/**
 
-- Source: **Deploy from a branch**
-- Branch: `main` → `/ (root)` → **Save**
-
-yoki `gh-pages` branch'ini tanlang (shu repo'ga tayyorlab qo'yilgan).
-Natija: `https://<foydalanuvchi>.github.io/<repo>/`
+GitHub Pages allaqachon yoqilgan: source `gh-pages` branch / `/ (root)`, status `built`.
+`main` va `gh-pages` branch'lari bir xil fayllarni saqlaydi; o'zgartirish kiritganda
+ikkalasini ham yangilang (yoki Settings → Pages'da source'ni `main / root` ga o'tkazing).
 
 `.nojekyll` fayli `_` bilan boshlanuvchi papkalarning o'tkazib yuborilishining oldini oladi.
 
