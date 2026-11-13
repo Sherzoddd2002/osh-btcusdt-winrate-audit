@@ -31,7 +31,7 @@ def funding_frame(start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     times = pd.date_range(start.floor("h"), end.ceil("h"), freq="4h", tz="UTC")
     return pd.DataFrame({
         "symbol": "BTCUSDT",
-        "fundingTime": (times.view("int64") // 1_000_000).astype("int64"),
+        "fundingTime": np.asarray([pd.Timestamp(t).value // 1_000_000 for t in times], dtype="int64"),
         "fundingRate": np.full(len(times), 0.0001),
         "markPrice": np.full(len(times), 100.0),
     })
@@ -85,7 +85,7 @@ class FundingValidationTests(unittest.TestCase):
             "2026-01-01T08:00:00Z",  # unambiguous during the trade
             "2026-01-02T00:15:00Z",  # ambiguous exit boundary
         ], utc=True)
-        times_ns = times.astype("int64").to_numpy()
+        times_ns = np.asarray([pd.Timestamp(t).value for t in times], dtype=np.int64)
         rates = np.full(3, 0.001)
         marks = np.full(3, 100.0)
 
