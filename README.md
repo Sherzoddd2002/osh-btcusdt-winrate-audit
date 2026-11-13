@@ -122,9 +122,10 @@ To'liq nazariy qo'llanma: [`QOLLANMA.md`](QOLLANMA.md).
 - **Asosiy dashboard:** https://sherzoddd2002.github.io/osh-btcusdt-winrate-audit/
 - **Tashqi ma'lumotlar auditi:** https://sherzoddd2002.github.io/osh-btcusdt-winrate-audit/external-audit.html
 
-GitHub Pages allaqachon yoqilgan: source `gh-pages` branch / `/ (root)`, status `built`.
-`main` va `gh-pages` branch'lari bir xil fayllarni saqlaydi; o'zgartirish kiritganda
-ikkalasini ham yangilang (yoki Settings → Pages'da source'ni `main / root` ga o'tkazing).
+GitHub Pages yoqilgan: source **`main` / `/ (root)`** (2026-11-13 dan; avvalgi
+`gh-pages` manbasida legacy Jekyll build xatosi chiqqani uchun o'zgartirildi).
+`main` va `gh-pages` branch'lari bir xil fayllarni saqlaydi — asosiy manba `main`,
+shuning uchun o'zgartirishni kamida `main` ga yuboring.
 
 `.nojekyll` fayli `_` bilan boshlanuvchi papkalarning o'tkazib yuborilishining oldini oladi.
 
