@@ -210,7 +210,13 @@ Natija `capital_fee_stress_1d.json` ichida 3 fee rejimi × 3 slippage rejimi × 
 signal selektivligi bilan solishtiriladi. Har bir variant uchun OOS va untouched
 holdout win rate/95% CI, Profit Factor, net expectancy, komissiya, slippage, funding
 to'lovi va krediti, drawdown, hamda $25/$50/$100 pozitsiya-cap bilan $100 hisobning
-yakuniy balansi beriladi.
+yakuniy balansi beriladi. OOS va holdout balanslari **har biri mustaqil $100 dan boshlanadi**;
+ularning PnL qiymatlarini bir-biriga qo'shmang.
+
+**Ko'p variantni tanlash ogohlantirishi:** 27 ta kombinatsiyadan eng yaxshisini holdout
+natijasiga qarab tanlash mumkin emas. Nomzodni faqat development fold'larida tanlang,
+so'ng uni hali ko'rilmagan yangi forward davrida bir marta tasdiqlang. Bu usul holdout'ni
+optimallashtirish ma'lumotiga aylantirib yubormaslik uchun kerak.
 
 `cash-reserve-pct 10` sabab $100 cap ssenariysi dastlab $90 nominal bilan boshlanadi;
 $25 va $50 cap esa mos ravishda $25/$50 dan boshlanadi. Kapital tushsa pozitsiya
