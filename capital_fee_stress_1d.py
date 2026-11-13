@@ -631,7 +631,10 @@ def run_capital_fee_stress(
     candles = rv.validate_market_data(candles)
     funding = validate_funding_history(funding)
     funding_coverage = check_funding_coverage(funding, candles)
-    funding_times_ns = funding["funding_time"].astype("int64").to_numpy()
+    funding_times_ns = np.fromiter(
+        (pd.Timestamp(value).value for value in funding["funding_time"]),
+        dtype=np.int64, count=len(funding),
+    )
     funding_rates = funding["funding_rate"].to_numpy(float)
     funding_marks = funding["mark_price"].to_numpy(float)
 
