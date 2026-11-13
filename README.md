@@ -194,9 +194,18 @@ yetarli BNB bo'lsa qo'llanadi.
 
 Funding `8h` deb taxmin qilinmaydi. `--funding-source auto` (standart) avval
 Binance USDⓈ-M `/fapi/v1/fundingRate` REST API'sini sinaydi; DNS/ulanish muammosida
-rasmiy Binance Vision `futures/um/monthly/fundingRate` va joriy oy uchun `daily/fundingRate`
-ZIP arxivlariga avtomatik o'tadi. Arxivlarning SHA-256 `.CHECKSUM` fayli mavjud bo'lsa
-tekshiriladi; ZIP ichidagi CSV schema va funding vaqtlarining uzluksizligi ham tekshiriladi.
+rasmiy Binance Vision `futures/um/monthly/fundingRate` arxivlariga o'tadi. FundingRate
+uchun joriy oyning kunlik ZIP fayllari mavjud deb faraz qilinmaydi: tugallanmagan oy
+REST API yoki alohida tekshirilgan CSV orqali olinishi kerak. Arxivlarning SHA-256
+`.CHECKSUM` fayli mavjud bo'lsa tekshiriladi; ZIP ichidagi CSV schema va funding
+vaqtlarining uzluksizligi ham tekshiriladi.
+
+Agar REST API ochilmasa, lekin Vision ishlasa, `--allow-vision-monthly-truncate`
+parametri bilan **joriy tugallanmagan oy shamlarini chiqarib tashlab**, oxirgi to'liq
+oyning oxirigacha bo'lgan tarixiy sinovni alohida belgi bilan bajarish mumkin.
+Bu to'liq davr natijasi emas; JSON metadata'da truncation va oxirgi qamrab olingan
+vaqt yoziladi. Parametr berilmasa skript joriy oyning funding ma'lumoti yo'qligida
+hisobni to'xtatadi.
 
 REST API `fundingTime/fundingRate/markPrice` beradi. Vision arxivida esa
 `calc_time/funding_interval_hours/last_funding_rate` bor, haqiqiy settlement
@@ -210,11 +219,9 @@ funding to'lovi hisoblanadi, ehtimoliy funding krediti esa olinmaydi.
 Agar to'g'ridan-to'g'ri arxiv yo'lidan foydalanmoqchi bo'lsangiz, `--funding-source vision`
 qo'shing. `--funding-source api` esa REST API xatosida fallback qilmaydi.
 
-PowerShell:
-
 ```powershell
 $env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
-.\.venv\Scripts\python.exe capital_fee_stress_1d.py --table public.btcusdt_15m --fetch-funding --funding-csv .\binance_btcusdt_funding_history.csv --maker-fee-bps 2 --taker-fee-bps 5 --bnb-discount-pct 0 --slippage-bps 0,2,5 --selection-pcts 0.02,0.05,0.10 --position-caps 25,50,100 --initial-capital 100 --cash-reserve-pct 10 --folds 5 --train-days 365 --test-days 90 --holdout-days 180 --out capital_fee_stress_1d.json
+.\.venv\Scripts\python.exe capital_fee_stress_1d.py --table public.btcusdt_15m --fetch-funding --funding-source vision --allow-vision-monthly-truncate --funding-csv .\binance_btcusdt_funding_history.csv --maker-fee-bps 2 --taker-fee-bps 5 --bnb-discount-pct 0 --slippage-bps 0,2,5 --selection-pcts 0.02,0.05,0.10 --position-caps 25,50,100 --initial-capital 100 --cash-reserve-pct 10 --folds 5 --train-days 365 --test-days 90 --holdout-days 180 --out capital_fee_stress_1d.json
 ```
 
 Natija `capital_fee_stress_1d.json` ichida 3 fee rejimi × 3 slippage rejimi × 3
