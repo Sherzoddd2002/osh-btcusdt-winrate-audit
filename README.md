@@ -228,7 +228,7 @@ Rasmiy manbalar: [USDⓈ-M fee rate table](https://www.binance.com/en-BH/fee/fut
 [Funding rate history API](https://developers.binance.com/docs/derivatives/usds-margined-futures/market-data/rest-api/Get-Funding-Rate-History).
 
 
-### 5. V2 bazaviy pipeline
+### 6. V2 bazaviy pipeline
 
 ```powershell
 python pipeline_v2.py --table public.btcusdt_15m --cost-bps 10 --folds 5 --train-days 365 --test-days 90 --out report.json
@@ -240,7 +240,7 @@ Sintetik self-test kod ishga tushishini tekshiradi, bozor edge'ini emas:
 python pipeline_v2.py --synthetic --rows 80000 --folds 4 --cost-bps 10
 ```
 
-### 6. Eskirgan tajriba va eski natijalar
+### 7. Eskirgan tajriba va eski natijalar
 
 `ablation_experiment.py` non-causal test ranking va external timestamp muammolari sabab
 ataylab o'chirilgan. `ablation_results.json`, `v3_results.json`, `index.html`,
