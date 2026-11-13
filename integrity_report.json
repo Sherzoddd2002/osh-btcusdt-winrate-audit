@@ -1,0 +1,99 @@
+{
+  "rows": 240672,
+  "period": [
+    "2020-01-01 00:00:00+00:00",
+    "2026-11-11 23:45:00+00:00"
+  ],
+  "duplicate_open_time": 0,
+  "non_15m_gaps": 1,
+  "column_anomalies": {
+    "open": {
+      "non_numeric": 0,
+      "abs_gt_1e15": 0,
+      "negative": 0
+    },
+    "high": {
+      "non_numeric": 0,
+      "abs_gt_1e15": 0,
+      "negative": 0
+    },
+    "low": {
+      "non_numeric": 0,
+      "abs_gt_1e15": 0,
+      "negative": 0
+    },
+    "close": {
+      "non_numeric": 0,
+      "abs_gt_1e15": 0,
+      "negative": 0
+    },
+    "volume": {
+      "non_numeric": 0,
+      "abs_gt_1e15": 0,
+      "negative": 0
+    },
+    "quote_volume": {
+      "non_numeric": 0,
+      "abs_gt_1e15": 0,
+      "negative": 0
+    },
+    "trade_count": {
+      "non_numeric": 0,
+      "abs_gt_1e15": 0,
+      "negative": 0
+    },
+    "taker_buy_base_volume": {
+      "non_numeric": 0,
+      "abs_gt_1e15": 0,
+      "negative": 0
+    },
+    "taker_buy_quote_volume": {
+      "non_numeric": 0,
+      "abs_gt_1e15": 0,
+      "negative": 0
+    }
+  },
+  "corrupted_trade_count_rows": [],
+  "corrupted_trade_count_count": 0,
+  "valid_rows": 240672,
+  "ohlc_violations": 0,
+  "nonpositive_price": 0,
+  "zero_volume": 16,
+  "zero_trade_count": 16,
+  "taker_gt_volume": 0,
+  "close_time_width_wrong": 0,
+  "vwap_outside_hilo_pct": 0.0,
+  "open_equals_prev_close_pct": 46.921,
+  "no_upper_wick_pct": 4.627,
+  "no_lower_wick_pct": 4.537,
+  "exact_doji_pct": 0.079,
+  "lag1_return_autocorr": -0.00241,
+  "up_after_up_pct": 47.642,
+  "down_after_down_pct": 47.288,
+  "up_rate_pct": 50.169,
+  "ret_abs_mean_bps": 19.6,
+  "last_5_closes": [
+    [
+      "2026-11-11 22:45:00+00:00",
+      73910.1
+    ],
+    [
+      "2026-11-11 23:00:00+00:00",
+      73485.3
+    ],
+    [
+      "2026-11-11 23:15:00+00:00",
+      73771.4
+    ],
+    [
+      "2026-11-11 23:30:00+00:00",
+      73878.1
+    ],
+    [
+      "2026-11-11 23:45:00+00:00",
+      73980.0
+    ]
+  ],
+  "trade_count_hour_minmax_ratio": 2.431,
+  "days_data_lag": 1
+}
