@@ -470,7 +470,9 @@ def attach_funding_mark_price_proxy(
         direction="backward",
         allow_exact_matches=True,
     )
-    proxy = merged.sort_values("_row")["proxy_price"].to_numpy(float)
+    # merge_asof may expose a read-only NumPy view; the first-event
+    # candle-open fallback below needs to fill missing values in place.
+    proxy = merged.sort_values("_row")["proxy_price"].to_numpy(dtype=float, copy=True)
 
     # First archive event can coincide with the very first available 15m candle.
     still_missing = ~np.isfinite(proxy)
