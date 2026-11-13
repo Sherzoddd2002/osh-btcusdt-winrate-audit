@@ -228,3 +228,31 @@ cd E:\OSH
 python pipeline_v2.py --synthetic --rows 80000 --folds 4 --cost-bps 10
 python pipeline_v2.py --table public.btcusdt_15m --cost-bps 10 --folds 10 --out report.json
 ```
+
+---
+
+## Qo'shimcha (2026-11-13): tuzatmalar haqiqiy ma'lumotda ishga tushirildi
+
+`pipeline_v2.py` 240 672 ta sham (`2020-01-01 → 2026-11-11 UTC`, 0 ta uzilish) bo'yicha,
+eng so'nggi 10 ta purged walk-forward fold'da, 10 bps real xarajat bilan yuritildi.
+
+| Ko'rsatkich | Eski notebook | Tuzatilgan pipeline |
+|---|---|---|
+| Median ROC AUC | 0.5139–0.5157 | **0.6524** |
+| Brier / doimiy baseline | 0.2609 / ≈0.25 | 0.1434 / 0.1320 |
+| Validatsiya | bitta 70/15/15 split | 10 ta xronologik fold |
+| Jami savdo | — | 1 974 ta qog'oz savdo |
+| Win rate @ 10 bps | 52–56% precision (xarajatsiz) | **40.63%** (95% CI 38.48–42.81%) |
+| Median net / savdo | ≈ +1.38 bps gross | **−10.484 bps** |
+| Musbat davrlar | — | **0 / 10** |
+| Qaror | amalda NO-GO (xato xarajat bilan GO deb qabul qilingan) | **NO-GO** |
+
+**Xulosa o'zgarmadi, lekin aniqlandi:** modelning tartiblash qobiliyati sezilarli yaxshilandi
+(AUC 0.515 → 0.652), biroq bu asosan volatillik rejimini bashorat qilishdan keladi va
+savdo foydasiga aylanmaydi. Hatto 0 bps xarajatda ham o'rtacha net `−0.35 bps`, ya'ni
+yo'nalish bo'yicha edge yo'q. Bu "model yaxshilandi = foyda bor" degan xulosaning noto'g'ri
+ekanini ko'rsatadi.
+
+Natijalar va xavfsiz (paper-mode) dashboard:
+**https://sherzoddd2002.github.io/osh-btcusdt-winrate-audit/** ·
+repo: **https://github.com/Sherzoddd2002/osh-btcusdt-winrate-audit**
