@@ -192,12 +192,23 @@ tanlaydigan round-trip stress farazlari. `--bnb-discount-pct 10` BNB chegirmasin
 alohida tekshiradi; faqat USDⓈ-M Futures wallet'da komissiyani BNB bilan to'lashga
 yetarli BNB bo'lsa qo'llanadi.
 
-Funding `8h` deb taxmin qilinmaydi. Skript Binance public
-`/fapi/v1/fundingRate` tarixidan `fundingTime`, `fundingRate`, `markPrice` qatorlarini
-sahifalab yuklaydi va ularning to'liqligini tekshiradi. Funding long/short yo'nalishi,
-pozitsiya muddati va settlement paytidagi mark narxiga qarab hisoblanadi. 15m sham
-ichidagi aniq fill soniyasi ko'rinmagani uchun kirish/chiqish chegara shamidagi
+Funding `8h` deb taxmin qilinmaydi. `--funding-source auto` (standart) avval
+Binance USDⓈ-M `/fapi/v1/fundingRate` REST API'sini sinaydi; DNS/ulanish muammosida
+rasmiy Binance Vision `futures/um/monthly/fundingRate` va joriy oy uchun `daily/fundingRate`
+ZIP arxivlariga avtomatik o'tadi. Arxivlarning SHA-256 `.CHECKSUM` fayli mavjud bo'lsa
+tekshiriladi; ZIP ichidagi CSV schema va funding vaqtlarining uzluksizligi ham tekshiriladi.
+
+REST API `fundingTime/fundingRate/markPrice` beradi. Vision arxivida esa
+`calc_time/funding_interval_hours/last_funding_rate` bor, haqiqiy settlement
+`markPrice` yo'q. Shu sabab arxiv yo'li ishlatilganda funding hisobida funding
+vaqtigacha yopilgan oxirgi BTCUSDT 15m candle close narxi **mark-price proxy** sifatida
+ishlatiladi. Bu haqiqiy Binance mark price emas va JSON hisobotda alohida belgilanadi.
+Funding long/short yo'nalishi, pozitsiya muddati va settlement vaqtiga qarab hisoblanadi.
+15m sham ichidagi aniq fill soniyasi ko'rinmagani uchun kirish/chiqish chegara shamidagi
 funding to'lovi hisoblanadi, ehtimoliy funding krediti esa olinmaydi.
+
+Agar to'g'ridan-to'g'ri arxiv yo'lidan foydalanmoqchi bo'lsangiz, `--funding-source vision`
+qo'shing. `--funding-source api` esa REST API xatosida fallback qilmaydi.
 
 PowerShell:
 
@@ -225,9 +236,9 @@ Bu 1x, zaxirali qog'oz simulyatsiya, lekin exchange liquidation/maintenance marg
 order-book queue yoki maker order fill ehtimolini modellashtirmaydi. Maker/maker
 natijasi maker fill kafolati emas.
 
-Agar `fapi.binance.com` tarmoqdan ochilmasa, funding tarixini Binance'dan CSV qilib
-olib `--funding-csv` bilan bering; funding ma'lumoti bo'lmasa skript uni nol deb
-taxmin qilib GO bermaydi. Hisob ma'lumotlari va fee tier akkauntga bog'liq.
+Funding API ham, Binance Vision arxivi ham tarmoqdan ochilmasa, Binance funding CSV'sini
+`--funding-csv` bilan bering; funding ma'lumoti bo'lmasa skript uni nol deb taxmin qilib
+GO bermaydi. Hisob ma'lumotlari va fee tier akkauntga bog'liq.
 
 Rasmiy manbalar: [USDⓈ-M fee rate table](https://www.binance.com/en-BH/fee/futureFee),
 [Binance Futures fees and funding](https://www.binance.com/en/support/faq/detail/98488a516eb84e3eb34605683dffd554),
