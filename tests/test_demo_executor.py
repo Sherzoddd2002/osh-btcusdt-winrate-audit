@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import unittest
 from decimal import Decimal
+from unittest.mock import patch
 
-from demo_executor.client import DEMO_FUTURES_URL
+from demo_executor.client import BinanceDemoClient, DEMO_FUTURES_URL
 from demo_executor.logic import (
     barrier_prices, choose_side, decimal_floor_step, quantity_for_cap,
     round_price_to_tick,
@@ -14,6 +15,38 @@ class DemoLogicTests(unittest.TestCase):
     def test_only_demo_url_is_configured(self):
         self.assertEqual(DEMO_FUTURES_URL, "https://demo-fapi.binance.com")
         self.assertNotIn("https://fapi.binance.com", DEMO_FUTURES_URL)
+
+    def test_conditional_stop_uses_algo_endpoint(self):
+        client = BinanceDemoClient("demo-key", "demo-secret")
+        with patch.object(client, "_request", return_value={"algoStatus": "NEW"}) as request:
+            client.place_algo_order({
+                "algoType": "CONDITIONAL", "symbol": "BTCUSDT",
+                "side": "SELL", "type": "STOP_MARKET",
+                "triggerPrice": "60000", "quantity": "0.001",
+                "reduceOnly": True, "clientAlgoId": "OSHSL123",
+            })
+        request.assert_called_once_with(
+            "POST", "/fapi/v1/algoOrder",
+            {
+                "algoType": "CONDITIONAL", "symbol": "BTCUSDT",
+                "side": "SELL", "type": "STOP_MARKET",
+                "triggerPrice": "60000", "quantity": "0.001",
+                "reduceOnly": True, "clientAlgoId": "OSHSL123",
+            },
+            signed=True,
+        )
+        client.close()
+
+    def test_algo_order_status_uses_client_algo_id(self):
+        client = BinanceDemoClient("demo-key", "demo-secret")
+        with patch.object(client, "_request", return_value={"algoStatus": "NEW"}) as request:
+            client.algo_order("BTCUSDT", "OSHSL123")
+        request.assert_called_once_with(
+            "GET", "/fapi/v1/algoOrder",
+            {"symbol": "BTCUSDT", "clientAlgoId": "OSHSL123"},
+            signed=True,
+        )
+        client.close()
 
     def test_thresholds_control_signals(self):
         self.assertIsNone(choose_side(.5, .5, .8, .8))
