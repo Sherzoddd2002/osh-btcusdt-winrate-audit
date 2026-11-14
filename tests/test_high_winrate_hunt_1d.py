@@ -240,13 +240,13 @@ class ExecutionHorizonTests(unittest.TestCase):
         result = hunt._execute_signals(
             np.ones(n), np.zeros(n), 0.5, 0.5, labels, times,
             empty_times, empty_values, empty_values, 1.0,
-            horizon_bars=2,
+            horizon_bars=2, entry_cooldown_bars=2,
         )
         np.testing.assert_array_equal(result["indices"], np.array([0, 2, 4]))
         np.testing.assert_array_equal(result["holding_bars"], np.array([2, 2, 2]))
 
     def test_entry_cooldown_is_independent_of_time_exit_horizon(self):
-        n = 10
+        n = 12
         times = pd.Series(pd.date_range(
             "2024-01-01T00:00:00Z", periods=n, freq="15min"
         ))
