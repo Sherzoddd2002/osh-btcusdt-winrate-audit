@@ -158,6 +158,24 @@ class FundingTests(unittest.TestCase):
         # exit-boundary credit is deliberately ignored.
         self.assertAlmostEqual(pnl, 0.0012, places=10)
 
+    def test_barrier_exit_candle_funding_credits_are_ignored(self):
+        times = pd.to_datetime([
+            "2024-01-01T00:00:00Z",
+            "2024-01-01T08:00:00Z",
+            "2024-01-01T15:52:00Z",
+            "2024-01-01T16:00:00Z",
+        ])
+        ns = times.to_numpy(dtype="datetime64[ns]").astype(np.int64)
+        rates = np.array([0.001, -0.002, -0.003, -0.001])
+        marks = np.array([100.0, 110.0, 120.0, 130.0])
+        pnl = hunt.funding_pnl_for_trade(
+            1, times[0], times[3], 100.0, ns, rates, marks,
+            exit_bar_open_time=pd.Timestamp("2024-01-01T15:45:00Z"),
+        )
+        # The 08:00 credit is inside the known holding interval; credits in
+        # the uncertain final 15m barrier-exit candle are ignored.
+        self.assertAlmostEqual(pnl, 0.0012, places=10)
+
     def test_mark_proxy_uses_only_last_completed_candle(self):
         frame = pd.DataFrame({
             "candle_time": pd.to_datetime([
