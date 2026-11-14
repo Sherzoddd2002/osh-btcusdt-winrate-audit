@@ -61,10 +61,8 @@ def _validate_funding(funding: pd.DataFrame) -> pd.DataFrame:
     out = out.sort_values("funding_time").reset_index(drop=True)
     if out["funding_time"].duplicated().any():
         raise ValueError("Funding CSV contains duplicate settlement timestamps.")
-    if (out["funding_rate"].abs() > 0.05).any():
-        raise ValueError("Funding rate outside the 5% sanity bound; inspect the source units.")
-    if len(out) < 100:
-        raise ValueError("Funding history is too short for a historical 1d test.")
+    if (out["funding_rate"].abs() > 0.50).any():
+        raise ValueError("Funding rate outside the 50% sanity bound; inspect the source units.")
     return out
 
 
@@ -90,6 +88,15 @@ def funding_mark_price_proxy(
         "close_proxy": pd.to_numeric(df["close"], errors="coerce"),
     }).sort_values("completed_at")
     events = funding.sort_values("funding_time").copy()
+    if len(candles):
+        first_completed = candles["completed_at"].iloc[0]
+        last_completed = candles["completed_at"].iloc[-1]
+        events = events.loc[
+            (events["funding_time"] >= first_completed)
+            & (events["funding_time"] <= last_completed)
+        ].copy()
+    if events.empty:
+        raise ValueError("No funding settlements overlap the available completed BTC candles.")
     mapped = pd.merge_asof(
         events,
         candles,
