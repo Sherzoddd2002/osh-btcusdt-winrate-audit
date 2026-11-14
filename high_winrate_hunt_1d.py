@@ -783,10 +783,10 @@ def run_config(
             p_l, p_s, thr_l, thr_s, test_labels, test_times, ft, fr, fm
         )
         benchmark = _long_benchmark(
-            test_labels, test_times, ft, fr, fm, FEE_BPS_PRIMARY
+            test_labels, test_times, ft, fr, fm, stress=False
         )
         benchmark_stress = _long_benchmark(
-            test_labels, test_times, ft, fr, fm, FEE_BPS_STRESS
+            test_labels, test_times, ft, fr, fm, stress=True
         )
         primary = _metrics_with_ci(execution, benchmark, te1 - te0, "net_primary")
         stress = _metrics_with_ci(execution, benchmark_stress, te1 - te0, "net_stress")
@@ -851,10 +851,10 @@ def run_config(
         hold_labels, hold_times, ft, fr, fm,
     )
     hold_benchmark = _long_benchmark(
-        hold_labels, hold_times, ft, fr, fm, FEE_BPS_PRIMARY
+        hold_labels, hold_times, ft, fr, fm, stress=False
     )
     hold_benchmark_stress = _long_benchmark(
-        hold_labels, hold_times, ft, fr, fm, FEE_BPS_STRESS
+        hold_labels, hold_times, ft, fr, fm, stress=True
     )
     hold_primary = _metrics_with_ci(
         hold_execution, hold_benchmark, len(hold_times), "net_primary"
@@ -1003,9 +1003,13 @@ def main() -> None:
             "horizon_days": 1,
             "selection": f"top {TOP_PCT:.0%} per side from frozen calibration quantiles; <=1 entry/day",
             "preregistered_configs": [c[0] for c in CONFIGS],
-            "primary_cost_bps": FEE_BPS_PRIMARY,
-            "stress_cost_bps": FEE_BPS_STRESS,
-            "fees": "maker/maker 4 bps RT plus 2 bps RT slippage scenario",
+            "primary_costs": (
+                "maker 2 bps per side on entry and exit notional + 2 bps round-trip slippage"
+            ),
+            "stress_costs": (
+                "taker 5 bps per side on entry and exit notional; no additional slippage"
+            ),
+            "flat_price_equivalent_cost_bps": {"primary": 6.0, "stress": 10.0},
             "funding_source": str(Path(args.funding_csv).resolve()),
             "funding_settlements": int(len(ft)),
             "funding_first_utc": str(mapped_funding["funding_time"].iloc[0]),
