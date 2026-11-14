@@ -81,6 +81,24 @@ class AsymmetricBarrierTests(unittest.TestCase):
             places=7,
         )
 
+    def test_short_trade_returns_are_measured_on_entry_notional(self):
+        frame = market_frame()
+        i = 20
+        entry = float(frame.loc[i + 1, "open"])
+        # A 10% fall should produce +10% PnL on the entry notional,
+        # not +11.11% from the reciprocal-price formula.
+        frame.loc[i + 1, "open"] = entry
+        frame.loc[i + 1, "close"] = entry * 0.90
+        frame.loc[i + 1, "high"] = entry * 1.001
+        frame.loc[i + 1, "low"] = entry * 0.899
+
+        labels = hunt.asymmetric_barrier_labels(
+            frame, h=1, tp_mult=1000.0, sl_mult=1000.0, vol_win=4
+        )
+        self.assertEqual(int(labels.loc[i, "short_label"]), 0)
+        self.assertAlmostEqual(float(labels.loc[i, "short_exit"]), 0.10, places=7)
+        self.assertAlmostEqual(float(labels.loc[i, "short_horizon_exit"]), 0.10, places=7)
+
     def test_same_bar_double_touch_is_a_loss_for_both_sides(self):
         frame = market_frame()
         i = 20
@@ -157,6 +175,15 @@ class FundingTests(unittest.TestCase):
 
 
 class ReportingTests(unittest.TestCase):
+    def test_fees_apply_to_entry_and_exit_notional(self):
+        # At unchanged prices: maker 2 bps on both sides + 2 bps slip = 6 bps.
+        self.assertAlmostEqual(hunt._execution_cost_fraction(0.0, 1, False), 0.0006)
+        # A 10% profitable short exits at 90% of entry notional:
+        # maker fees are 2 bps * (1.00 + 0.90), plus 2 bps slip.
+        self.assertAlmostEqual(hunt._execution_cost_fraction(0.10, -1, False), 0.00058)
+        # Taker stress is 5 bps * (1.00 + 0.90) = 9.5 bps.
+        self.assertAlmostEqual(hunt._execution_cost_fraction(0.10, -1, True), 0.00095)
+
     def test_capital_path_respects_position_cap_and_reserve(self):
         result = hunt._capital_path(np.array([0.01, -0.005]), cap=25.0)
         self.assertEqual(result["position_cap_usd"], 25.0)
