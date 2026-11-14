@@ -546,6 +546,23 @@ def predict_side_proba(model, classes: np.ndarray, X: pd.DataFrame) -> np.ndarra
     return aligned
 
 
+def _execution_cost_fraction(gross_return: float, side: int, stress: bool) -> float:
+    """Round-trip costs on entry and exit notionals, plus explicit slippage."""
+    if side not in (-1, 1) or not np.isfinite(gross_return):
+        raise ValueError("Invalid side or gross return for execution-cost calculation.")
+    exit_ratio = 1.0 + gross_return if side == 1 else 1.0 - gross_return
+    if not np.isfinite(exit_ratio) or exit_ratio <= 0:
+        raise ValueError("Non-positive exit notional ratio; reject this trade simulation.")
+    if stress:
+        total_bps = TAKER_FEE_PER_SIDE_BPS * (1.0 + exit_ratio)
+    else:
+        total_bps = (
+            MAKER_FEE_PER_SIDE_BPS * (1.0 + exit_ratio)
+            + SLIPPAGE_ROUND_TRIP_BPS
+        )
+    return float(total_bps / 10_000.0)
+
+
 def _execute_signals(
     p_long: np.ndarray,
     p_short: np.ndarray,
@@ -607,13 +624,24 @@ def _execute_signals(
 
     gross_arr = np.asarray(gross, dtype=float)
     funding_arr = np.asarray(funding_returns, dtype=float)
+    side_arr = np.asarray(sides, dtype=np.int8)
+    primary_cost = np.asarray([
+        _execution_cost_fraction(r, int(s), stress=False)
+        for r, s in zip(gross_arr, side_arr)
+    ], dtype=float)
+    stress_cost = np.asarray([
+        _execution_cost_fraction(r, int(s), stress=True)
+        for r, s in zip(gross_arr, side_arr)
+    ], dtype=float)
     return {
         "indices": np.asarray(indices, dtype=int),
-        "sides": np.asarray(sides, dtype=np.int8),
+        "sides": side_arr,
         "gross": gross_arr,
         "funding": funding_arr,
-        "net_primary": gross_arr - FEE_BPS_PRIMARY / 10_000.0 + funding_arr,
-        "net_stress": gross_arr - FEE_BPS_STRESS / 10_000.0 + funding_arr,
+        "cost_primary": primary_cost,
+        "cost_stress": stress_cost,
+        "net_primary": gross_arr - primary_cost + funding_arr,
+        "net_stress": gross_arr - stress_cost + funding_arr,
         "holding_bars": np.asarray(holding, dtype=int),
     }
 
@@ -624,7 +652,7 @@ def _long_benchmark(
     fund_times_ns: np.ndarray,
     fund_rates: np.ndarray,
     fund_marks: np.ndarray,
-    fee_bps: float,
+    stress: bool,
 ) -> np.ndarray:
     values = []
     for i in range(0, max(0, len(times) - H), H):
@@ -636,7 +664,8 @@ def _long_benchmark(
             1, entry_time, exit_time, entry_price,
             fund_times_ns, fund_rates, fund_marks,
         )
-        values.append(ret - fee_bps / 10_000.0 + funding)
+        fee = _execution_cost_fraction(ret, 1, stress=stress)
+        values.append(ret - fee + funding)
     return np.asarray(values, dtype=float)
 
 
