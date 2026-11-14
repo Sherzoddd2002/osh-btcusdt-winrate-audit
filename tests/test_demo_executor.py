@@ -48,6 +48,22 @@ class DemoLogicTests(unittest.TestCase):
         )
         client.close()
 
+    def test_exchange_info_uses_documented_unfiltered_endpoint(self):
+        client = BinanceDemoClient("demo-key", "demo-secret")
+        with patch.object(client, "_request", return_value={"symbols": []}) as request:
+            client.exchange_info("BTCUSDT")
+        request.assert_called_once_with("GET", "/fapi/v1/exchangeInfo")
+        client.close()
+
+    def test_open_algo_orders_uses_symbol_filter_only(self):
+        client = BinanceDemoClient("demo-key", "demo-secret")
+        with patch.object(client, "_request", return_value=[]) as request:
+            client.open_algo_orders("BTCUSDT")
+        request.assert_called_once_with(
+            "GET", "/fapi/v1/openAlgoOrders", {"symbol": "BTCUSDT"}, signed=True
+        )
+        client.close()
+
     def test_thresholds_control_signals(self):
         self.assertIsNone(choose_side(.5, .5, .8, .8))
         self.assertEqual(choose_side(.85, .4, .8, .8), "LONG")
