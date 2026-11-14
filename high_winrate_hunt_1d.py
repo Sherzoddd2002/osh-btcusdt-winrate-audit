@@ -125,6 +125,7 @@ def asymmetric_barrier_labels(
     sl_mult: float,
     vol_win: int = VOL_WIN,
     chunk_size: int = 10_000,
+    tp_mult_short: float | None = None,
 ) -> pd.DataFrame:
     """Compute independent long/short first-touch labels in bounded-memory chunks.
 
@@ -132,8 +133,9 @@ def asymmetric_barrier_labels(
     double-touch is a loss for that side. Stops use adverse gap fills. TP fills
     are fixed at the barrier and never assume price improvement on a gap.
     """
-    if h < 1 or tp_mult <= 0 or sl_mult <= 0 or vol_win < 2:
-        raise ValueError("h, tp_mult and sl_mult must be positive; vol_win >= 2.")
+    short_tp_mult = tp_mult if tp_mult_short is None else float(tp_mult_short)
+    if h < 1 or tp_mult <= 0 or short_tp_mult <= 0 or sl_mult <= 0 or vol_win < 2:
+        raise ValueError("h, long/short tp_mult and sl_mult must be positive; vol_win >= 2.")
     if chunk_size < 1:
         raise ValueError("chunk_size must be positive.")
 
@@ -180,7 +182,7 @@ def asymmetric_barrier_labels(
 
         long_tp = e * (1.0 + tp_mult * s)
         long_sl = e * (1.0 - sl_mult * s)
-        short_tp = e * (1.0 - tp_mult * s)
+        short_tp = e * (1.0 - short_tp_mult * s)
         short_sl = e * (1.0 + sl_mult * s)
 
         # windows[r] contains candles r+1 through r+h, inclusive.
