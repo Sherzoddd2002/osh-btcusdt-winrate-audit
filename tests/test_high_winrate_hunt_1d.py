@@ -193,9 +193,9 @@ class ReportingTests(unittest.TestCase):
             "funding_time": pd.to_datetime([
                 "2024-01-01T00:00:00Z", "2024-01-01T08:00:00Z"
             ]),
-            "funding_rate": [0.001, 0.10],
+            "funding_rate": [0.001, 1.0],
         })
-        with self.assertRaisesRegex(ValueError, "5%"):
+        with self.assertRaisesRegex(ValueError, "50%"):
             hunt._validate_funding(bad_units)
 
 
