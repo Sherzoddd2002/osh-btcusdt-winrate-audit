@@ -98,6 +98,38 @@ class AsymmetricBarrierTests(unittest.TestCase):
             float(frame.loc[i + 1:i + 3, "low"].min()),
         )
 
+    def test_side_specific_short_tp_multiplier_changes_only_short_barrier(self):
+        frame = market_frame()
+        i = 20
+        h = 3
+        with patch.object(hunt, "VOL_WIN", 4):
+            sigma = (
+                np.log(frame["close"]).diff().rolling(4, min_periods=2).std().iloc[i]
+                * np.sqrt(h)
+            )
+        entry = float(frame.loc[i + 1, "open"])
+        frame.loc[i + 1:i + h, "high"] = entry * (1 + 0.10 * sigma)
+        frame.loc[i + 1:i + h, "low"] = entry * (1 - 0.10 * sigma)
+        frame.loc[i + 1, "low"] = entry * (1 - 0.50 * sigma)
+        frame.loc[i + 1:i + h, "close"] = entry
+
+        with patch.object(hunt, "VOL_WIN", 4):
+            labels = hunt.asymmetric_barrier_labels(
+                frame, h, 1.0, 1.0, vol_win=4, chunk_size=7,
+                tp_mult_short=0.25,
+            )
+
+        self.assertEqual(int(labels.loc[i, "long_label"]), 0)
+        self.assertEqual(int(labels.loc[i, "short_label"]), 1)
+        self.assertEqual(int(labels.loc[i, "short_holding_bars"]), 1)
+
+    def test_side_specific_short_tp_multiplier_must_be_positive(self):
+        frame = market_frame()
+        with self.assertRaisesRegex(ValueError, "positive"):
+            hunt.asymmetric_barrier_labels(
+                frame, 3, 1.0, 1.0, tp_mult_short=0.0
+            )
+
     def test_tp_gap_does_not_assume_price_improvement(self):
         frame = market_frame()
         i = 20
