@@ -104,6 +104,29 @@ class BinanceDemoClient:
         return self._request("DELETE", "/fapi/v1/order",
                              {"symbol": symbol, "origClientOrderId": client_id}, signed=True)
 
+    # USD-M conditional orders were migrated to Algo endpoints from 2025-12-09.
+    def place_algo_order(self, params):
+        return self._request("POST", "/fapi/v1/algoOrder", params, signed=True)
+
+    def algo_order(self, symbol, client_algo_id):
+        return self._request(
+            "GET", "/fapi/v1/algoOrder",
+            {"symbol": symbol, "clientAlgoId": client_algo_id}, signed=True
+        )
+
+    def open_algo_orders(self, symbol):
+        result = self._request(
+            "GET", "/fapi/v1/openAlgoOrders",
+            {"symbol": symbol, "algoType": "CONDITIONAL"}, signed=True
+        )
+        return result if isinstance(result, list) else [result]
+
+    def cancel_algo_order(self, symbol, client_algo_id):
+        return self._request(
+            "DELETE", "/fapi/v1/algoOrder",
+            {"symbol": symbol, "clientAlgoId": client_algo_id}, signed=True
+        )
+
     def set_isolated(self, symbol):
         try:
             return self._request("POST", "/fapi/v1/marginType",
