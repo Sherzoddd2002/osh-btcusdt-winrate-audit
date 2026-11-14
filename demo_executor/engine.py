@@ -202,14 +202,25 @@ class DemoEngine:
             client = self._client()
             positions = self.position_amount(client.positions(SYMBOL))
             orders = client.open_orders(SYMBOL)
+            algo_orders = client.open_algo_orders(SYMBOL)
             trade = self.state.get("trade")
             if trade and abs(positions) > 1e-12:
-                expected = {trade.get("tp_id"), trade.get("sl_id")}
-                open_ids = {x.get("origClientOrderId") for x in orders}
-                if not expected.issubset(open_ids) or open_ids - expected:
-                    raise RuntimeError("Existing OSH BTC position does not have exactly its two saved protective orders.")
-            elif abs(positions) > 1e-12 or orders:
-                raise RuntimeError("BTCUSDT has an unrecognized position/open order. Reconcile it manually in Demo.")
+                tp_ids = {x.get("origClientOrderId") for x in orders}
+                sl_ids = {x.get("clientAlgoId") for x in algo_orders}
+                if (
+                    trade.get("tp_id") not in tp_ids
+                    or trade.get("sl_id") not in sl_ids
+                    or tp_ids - {trade.get("tp_id")}
+                    or sl_ids - {trade.get("sl_id")}
+                ):
+                    raise RuntimeError(
+                        "Existing OSH BTC position must have its saved LIMIT TP and Algo STOP. "
+                        "Unexpected/missing protective orders require manual Demo reconciliation."
+                    )
+            elif abs(positions) > 1e-12 or orders or algo_orders:
+                raise RuntimeError(
+                    "BTCUSDT has an unrecognized position/order. Reconcile it manually in Demo."
+                )
             elif trade:
                 self.state["trade"] = None
                 self._save()
@@ -415,10 +426,16 @@ class DemoEngine:
         exit_side = "SELL" if side == "LONG" else "BUY"
         try:
             # Set the stop first. Take-profit is a post-only conditional Maker limit.
-            client.place_order({
-                "symbol": SYMBOL, "side": exit_side, "type": "STOP_MARKET",
-                "stopPrice": format_decimal(sl_price), "quantity": format_decimal(DecimalQty(filled, rules["market_step_size"])),
-                "reduceOnly": True, "workingType": "CONTRACT_PRICE", "newClientOrderId": sl_id,
+            client.place_algo_order({
+                "algoType": "CONDITIONAL",
+                "symbol": SYMBOL,
+                "side": exit_side,
+                "type": "STOP_MARKET",
+                "triggerPrice": format_decimal(sl_price),
+                "quantity": format_decimal(DecimalQty(filled, rules["market_step_size"])),
+                "reduceOnly": True,
+                "workingType": "CONTRACT_PRICE",
+                "clientAlgoId": sl_id,
             })
             client.place_order({
                 "symbol": SYMBOL, "side": exit_side, "type": "LIMIT",
@@ -427,7 +444,7 @@ class DemoEngine:
                 "reduceOnly": True, "newClientOrderId": tp_id,
             })
         except Exception as exc:
-            self._cancel_owned(sl_id)
+            self._cancel_algo_owned(sl_id)
             self._cancel_owned(tp_id)
             self._close_reduce_only("PROTECTIVE_ORDER_SETUP_FAILED")
             self._event("PROTECTION_FAILED_CLOSE_REQUESTED", error=f"{type(exc).__name__}: {exc}")
@@ -448,11 +465,22 @@ class DemoEngine:
         except Exception as exc:
             self._event("CANCEL_WARNING", client_id=client_id, error=type(exc).__name__)
 
+    def _cancel_algo_owned(self, client_algo_id):
+        if not client_algo_id:
+            return
+        try:
+            self._client().cancel_algo_order(SYMBOL, client_algo_id)
+        except BinanceAPIError as exc:
+            if exc.code not in {-2011, -2013}:
+                self._event("ALGO_CANCEL_WARNING", client_algo_id=client_algo_id, error=str(exc))
+        except Exception as exc:
+            self._event("ALGO_CANCEL_WARNING", client_algo_id=client_algo_id, error=type(exc).__name__)
+
     def _close_reduce_only(self, reason):
         trade = self.state.get("trade") or {}
         trade["phase"] = "EXIT_REQUESTED"
         self._cancel_owned(trade.get("tp_id"))
-        self._cancel_owned(trade.get("sl_id"))
+        self._cancel_algo_owned(trade.get("sl_id"))
         rows = self._client().positions(SYMBOL)
         amount = self.position_amount(rows)
         if abs(amount) <= 1e-12:
@@ -528,7 +556,8 @@ class DemoEngine:
             if exc.code not in {-2011, -2013}:
                 raise
         try:
-            sl_status = str(client.order(SYMBOL, trade["sl_id"]).get("status", "")).upper() if trade.get("sl_id") else "UNKNOWN"
+            algo = client.algo_order(SYMBOL, trade["sl_id"]) if trade.get("sl_id") else {}
+            sl_status = str(algo.get("algoStatus", "")).upper() or "UNKNOWN"
         except BinanceAPIError as exc:
             if exc.code not in {-2011, -2013}:
                 raise
