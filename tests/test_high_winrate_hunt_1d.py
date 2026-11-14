@@ -136,6 +136,9 @@ class FundingTests(unittest.TestCase):
             "funding_rate": [0.001, 0.003, -0.001, 0.005],
         })
         features = hunt.funding_features(frame, funding)
+        # At a signal timestamp exactly equal to settlement (07:45 candle closes
+        # at 08:00), the just-settled funding is not yet assumed available.
+        self.assertAlmostEqual(features.loc[31, "fund_last"], 0.001, places=10)
         self.assertAlmostEqual(features.loc[32, "fund_last"], 0.003, places=10)
         self.assertAlmostEqual(features.loc[32, "fund_mean_1d"], 0.002, places=10)
         self.assertAlmostEqual(features.loc[64, "fund_mean_1d"], 0.001, places=10)
