@@ -20,6 +20,13 @@ import pandas as pd
 import pipeline_v2 as pv
 import research_v3 as rv
 import high_winrate_hunt_1d as hunt
+from execution_costs_1d import (
+    DEFAULT_MAKER_FEE_BPS, DEFAULT_TAKER_FEE_BPS,
+    DEFAULT_ROUND_TRIP_SLIPPAGE_BPS,
+    SCENARIO_LEGACY_MAKER_MAKER, SCENARIO_TAKER_ALL,
+    SCENARIO_TAKER_ENTRY_TP_MAKER,
+    build_execution_scenarios, calculate_trade_costs,
+)
 from risk_management_1d import run_risk_budget_grid, summarize_trade_attribution
 
 
@@ -55,6 +62,59 @@ def _json_safe(value):
     return value
 
 
+def _benchmark_with_execution_fees(
+    labels: pd.DataFrame,
+    times: pd.Series,
+    funding_times_ns: np.ndarray,
+    funding_rates: np.ndarray,
+    funding_marks: np.ndarray,
+    *,
+    maker_fee_bps: float,
+    taker_fee_bps: float,
+    round_trip_slippage_bps: float,
+    use_maker_exit: bool,
+) -> np.ndarray:
+    """24h long benchmark under legacy Maker/Maker or Taker/Taker costs."""
+    values = []
+    for i in range(0, max(0, len(times) - H), H):
+        gross = float(labels["long_horizon_exit"].iloc[i])
+        entry_price = float(labels["entry_price"].iloc[i])
+        entry_time = pd.Timestamp(times.iloc[i + 1])
+        exit_time = pd.Timestamp(times.iloc[i + H]) + pd.Timedelta(minutes=hunt.TF_MINUTES)
+        funding = hunt.funding_pnl_for_trade(
+            1, entry_time, exit_time, entry_price,
+            funding_times_ns, funding_rates, funding_marks,
+        )
+        fee = maker_fee_bps if use_maker_exit else taker_fee_bps
+        costs = calculate_trade_costs(
+            gross, 1, "time",
+            entry_fee_bps=fee,
+            exit_fee_bps=fee,
+            round_trip_slippage_bps=round_trip_slippage_bps,
+        )
+        values.append(gross - costs["total_cost_return"] + funding)
+    return np.asarray(values, dtype=float)
+
+
+def _scenario_cost_summary(scenarios: dict[str, dict[str, np.ndarray]]) -> dict:
+    result = {}
+    for name, parts in scenarios.items():
+        count = len(parts["net_return"])
+        def avg(key: str):
+            return round(float(np.mean(parts[key]) * 10_000.0), 4) if count else None
+        result[name] = {
+            "trades": count,
+            "mean_entry_commission_bps": avg("entry_commission_return"),
+            "mean_exit_commission_bps": avg("exit_commission_return"),
+            "mean_total_commission_bps": avg("commission_return"),
+            "mean_slippage_bps": avg("slippage_return"),
+            "mean_total_execution_cost_bps": avg("total_cost_return"),
+            "mean_funding_return_bps": avg("funding_return"),
+            "net_expectancy_bps": avg("net_return"),
+        }
+    return result
+
+
 def _class_ids(labels: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     y_long = np.where(
         labels["long_label"].to_numpy() == -1, 0,
@@ -74,6 +134,7 @@ def run_variant(
     candles: pd.DataFrame,
     X_base: pd.DataFrame,
     funding_arrays: tuple[np.ndarray, np.ndarray, np.ndarray],
+    fee_schedule: tuple[float, float, float],
 ) -> dict:
     labels_all = hunt.asymmetric_barrier_labels(
         candles, H, tp_long, SL_MULT, tp_mult_short=tp_short
@@ -109,6 +170,15 @@ def run_variant(
     fold_rows = []
     pooled_net: list[float] = []
     pooled_stress: list[float] = []
+    pooled_legacy: list[float] = []
+    pooled_fee_parts = {
+        key: {part: [] for part in (
+            "entry_commission_return", "exit_commission_return",
+            "commission_return", "slippage_return", "total_cost_return",
+            "funding_return", "net_return",
+        )}
+        for key in (SCENARIO_LEGACY_MAKER_MAKER, SCENARIO_TAKER_ENTRY_TP_MAKER, SCENARIO_TAKER_ALL)
+    }
     pooled_gross: list[float] = []
     pooled_sides: list[int] = []
     pooled_reasons: list[str] = []
@@ -136,18 +206,49 @@ def run_variant(
         execution = hunt._execute_signals(
             p_l, p_s, thr_l, thr_s, test_labels, test_times, ft, fr, fm, SL_MULT
         )
-        benchmark = hunt._long_benchmark(
-            test_labels, test_times, ft, fr, fm, stress=False
+        maker_fee_bps, taker_fee_bps, slippage_bps = fee_schedule
+        fee_scenarios = build_execution_scenarios(
+            execution["gross"], execution["sides"], execution["exit_reasons"],
+            execution["funding"],
+            maker_fee_bps=maker_fee_bps,
+            taker_fee_bps=taker_fee_bps,
+            round_trip_slippage_bps=slippage_bps,
         )
-        benchmark_stress = hunt._long_benchmark(
-            test_labels, test_times, ft, fr, fm, stress=True
+        execution["net_legacy"] = fee_scenarios[SCENARIO_LEGACY_MAKER_MAKER]["net_return"]
+        execution["net_primary"] = fee_scenarios[SCENARIO_TAKER_ENTRY_TP_MAKER]["net_return"]
+        execution["net_stress"] = fee_scenarios[SCENARIO_TAKER_ALL]["net_return"]
+        benchmark = _benchmark_with_execution_fees(
+            test_labels, test_times, ft, fr, fm,
+            maker_fee_bps=maker_fee_bps, taker_fee_bps=taker_fee_bps,
+            round_trip_slippage_bps=slippage_bps, use_maker_exit=False,
         )
+        benchmark_stress = benchmark.copy()
+        benchmark_legacy = _benchmark_with_execution_fees(
+            test_labels, test_times, ft, fr, fm,
+            maker_fee_bps=maker_fee_bps, taker_fee_bps=taker_fee_bps,
+            round_trip_slippage_bps=slippage_bps, use_maker_exit=True,
+        )
+        for scenario_name, parts in fee_scenarios.items():
+            for part_name, values in parts.items():
+                pooled_fee_parts[scenario_name][part_name].extend(values.tolist())
         primary = hunt._metrics_with_ci(
             execution, benchmark, te1 - te0, "net_primary"
         )
         stress = hunt._metrics_with_ci(
             execution, benchmark_stress, te1 - te0, "net_stress"
         )
+        legacy = hunt._metrics_with_ci(
+            execution, benchmark_legacy, te1 - te0, "net_legacy"
+        )
+        primary["execution_cost_assumptions"] = {
+            "entry": "Taker",
+            "take_profit_exit": "Maker conditional on passive limit fill",
+            "stop_loss_exit": "Taker",
+            "time_exit": "Taker",
+        }
+        stress["execution_cost_assumptions"] = {
+            "entry": "Taker", "all_exit_reasons": "Taker"
+        }
         attribution = summarize_trade_attribution(
             execution["net_primary"],
             execution["sides"],
@@ -166,10 +267,11 @@ def run_variant(
             "frozen_threshold_long": float(thr_l),
             "frozen_threshold_short": float(thr_s),
         })
-        fold_rows.append({"primary": primary, "stress10bps": stress})
+        fold_rows.append({"primary": primary, "all_taker": stress, "legacy_maker_maker": legacy})
 
         pooled_net.extend(execution["net_primary"].tolist())
         pooled_stress.extend(execution["net_stress"].tolist())
+        pooled_legacy.extend(execution["net_legacy"].tolist())
         pooled_gross.extend(execution["gross"].tolist())
         pooled_sides.extend(execution["sides"].tolist())
         pooled_reasons.extend(execution["exit_reasons"].tolist())
@@ -185,12 +287,14 @@ def run_variant(
     net = np.asarray(pooled_net, dtype=float)
     gross = np.asarray(pooled_gross, dtype=float)
     stress_net = np.asarray(pooled_stress, dtype=float)
+    legacy_net = np.asarray(pooled_legacy, dtype=float)
     if len(net) == 0:
         raise ValueError(f"{name}: no development OOS trades were selected.")
 
     pooled_execution = {
         "net_primary": net,
         "net_stress": stress_net,
+        "net_legacy": legacy_net,
         "gross": gross,
     }
     primary = hunt._metrics_with_ci(
@@ -201,6 +305,14 @@ def run_variant(
         pooled_execution, np.asarray(pooled_benchmark_stress, dtype=float),
         total_test_bars, "net_stress",
     )
+    legacy = hunt._metrics_with_ci(
+        pooled_execution, np.asarray(pooled_benchmark, dtype=float),
+        total_test_bars, "net_legacy",
+    )
+    pooled_fee_scenarios = {
+        scenario: {part: np.asarray(values, dtype=float) for part, values in parts.items()}
+        for scenario, parts in pooled_fee_parts.items()
+    }
     fold_expectancies = [
         row["primary"]["expectancy_bps"] for row in fold_rows
         if row["primary"]["expectancy_bps"] is not None
@@ -226,7 +338,7 @@ def run_variant(
         initial_capital=hunt.INITIAL_CAPITAL,
         max_notional=100.0,
         cash_reserve_pct=hunt.CASH_RESERVE_PCT,
-        cost_buffer_bps=6.0,
+        cost_buffer_bps=12.0,
         daily_loss_limit_pct=2.0,
         max_drawdown_stop_pct=15.0,
         max_consecutive_losses=3,
@@ -260,7 +372,9 @@ def run_variant(
         "feature_count": int(X.shape[1]),
         "folds": fold_rows,
         "pooled_oos_primary": primary,
-        "pooled_oos_stress10bps": stress,
+        "pooled_oos_all_taker": stress,
+        "pooled_oos_legacy_maker_maker": legacy,
+        "execution_cost_summary": _scenario_cost_summary(pooled_fee_scenarios),
         "positive_oos_folds_pct": round(positive_folds_pct, 3),
         "median_fold_expectancy_bps": (
             float(np.median(fold_expectancies)) if fold_expectancies else None
@@ -285,6 +399,9 @@ def run_development_hunt(
     df_all: pd.DataFrame,
     funding_all: pd.DataFrame,
     holdout_days: int = HOLDOUT_DAYS,
+    fee_schedule: tuple[float, float, float] = (
+        DEFAULT_MAKER_FEE_BPS, DEFAULT_TAKER_FEE_BPS, DEFAULT_ROUND_TRIP_SLIPPAGE_BPS
+    ),
 ) -> dict:
     if holdout_days < 1:
         raise ValueError("holdout_days must be positive.")
@@ -339,8 +456,25 @@ def run_development_hunt(
                 "not independent validation."
             ),
             "selection": "top 10% calibrated TP probability per side; at most one entry per 96 bars",
-            "primary_costs": "maker 2 bps per side plus 2 bps round-trip slippage; funding cashflows included",
-            "stress_costs": "taker 5 bps per side; funding cashflows included",
+            "fee_schedule_bps": {
+                "maker_per_side": fee_schedule[0],
+                "taker_per_side": fee_schedule[1],
+                "round_trip_slippage": fee_schedule[2],
+                "source": "configurable assumptions; verify personal rates in Binance account",
+            },
+            "primary_costs": (
+                "Taker entry; TP exit Maker conditional on passive limit fill; "
+                "SL and TIME exits Taker; round-trip slippage included"
+            ),
+            "stress_costs": (
+                "Taker entry and Taker exit for every exit reason; "
+                "round-trip slippage included"
+            ),
+            "legacy_comparison": "Maker entry and Maker exit for all trades; optimistic baseline only",
+            "maker_fill_warning": (
+                "15m OHLC does not prove passive queue execution or Maker fill at TP; "
+                "all-Taker scenario must also remain viable"
+            ),
             "risk_grid": "0.25%, 0.5%, 1.0% stop-distance risk; development OOS only",
         },
         "variants": {},
@@ -352,7 +486,7 @@ def run_development_hunt(
             flush=True,
         )
         result = run_variant(
-            name, tp_long, tp_short, dev, X_base, funding_arrays
+            name, tp_long, tp_short, dev, X_base, funding_arrays, fee_schedule
         )
         output["variants"][name] = result
         stats = result["pooled_oos_primary"]
@@ -383,6 +517,9 @@ def main() -> None:
     parser.add_argument("--funding-csv", default="binance_btcusdt_funding_history.csv")
     parser.add_argument("--data-end-utc", default="2026-10-31T23:45:00Z")
     parser.add_argument("--holdout-days", type=int, default=HOLDOUT_DAYS)
+    parser.add_argument("--maker-fee-bps", type=float, default=DEFAULT_MAKER_FEE_BPS)
+    parser.add_argument("--taker-fee-bps", type=float, default=DEFAULT_TAKER_FEE_BPS)
+    parser.add_argument("--round-trip-slippage-bps", type=float, default=DEFAULT_ROUND_TRIP_SLIPPAGE_BPS)
     parser.add_argument("--out", default="development_side_hybrid_1d.json")
     args = parser.parse_args()
 
@@ -397,7 +534,10 @@ def main() -> None:
         funding["funding_time"] <= cutoff + pd.Timedelta(minutes=15)
     ].reset_index(drop=True)
 
-    result = run_development_hunt(all_candles, funding, args.holdout_days)
+    result = run_development_hunt(
+        all_candles, funding, args.holdout_days,
+        (args.maker_fee_bps, args.taker_fee_bps, args.round_trip_slippage_bps),
+    )
     output = Path(args.out)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
