@@ -31,3 +31,4 @@ selectivity_sweep_1d.json
 capital_fee_stress_1d.json
 binance_btcusdt_funding_history.csv
 *.log
+high_winrate_hunt_1d_fixed.json
