@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OSH · v3 tadqiqot tizimi — tuzatilgan o'lchov</title>
-<meta name="description" content="Beshta metodologik xato tuzatildi, kauzal savdo tanlovi, long/short, tegilmagan holdout va GO/NO-GO eshiklari.">
+<meta name="description" content="OSH BTCUSDT 15m research report. Embedded results are archived until the hardened pipeline is rerun.">
 <style>
   :root{--bg:#f7f8fa;--card:#fff;--ink:#16181d;--muted:#6b7280;--line:#e3e6eb;
     --blue:#2563eb;--blue-soft:#eaf0fe;--amber:#b45309;--amber-soft:#fff5e6;
@@ -23,6 +23,9 @@
   .tldr .q{font-weight:600;color:var(--blue);margin-top:9px}
   .tldr .q:first-child{margin-top:0}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+  .stale-warning{background:#fff5e6;border:1px solid #f0d9ad;border-left:5px solid var(--amber);border-radius:12px;padding:16px 19px;margin:18px 0 10px}
+  .stale-warning strong{display:block;color:#92400e;margin-bottom:5px}
+
   .card.alert{background:var(--red-soft);border-color:#f2b8b8;border-left:4px solid var(--red)}
   .card.note{background:var(--amber-soft);border-color:#f0d9ad;border-left:4px solid var(--amber)}
   .card.good{background:var(--green-soft);border-color:#bfe3da;border-left:4px solid var(--green)}
@@ -59,8 +62,17 @@
 <header>
   <h1>v3 tadqiqot tizimi: avval o'lchovni to'g'rilash, keyin alpha izlash</h1>
   <div class="sub">OSH · BTCUSDT 15m · 2026-11-13 · barcha natijalar tarixiy paper-backtest, real buyurtma yo'q</div>
-  <div style="margin-top:12px"><span class="badge"><span class="dot"></span> FULLY CAUSAL · PAPER / SHADOW</span></div>
+  <div style="margin-top:12px"><span class="badge"><span class="dot"></span> HISTORICAL REPORT · PAPER ONLY</span></div>
 </header>
+
+<div class="stale-warning" role="alert">
+  <strong>ARXIV HISOBOT — yangi kod natijalari emas</strong>
+  Bu sahifadagi jadval va KPI'lar hardening branch'dagi yangi kod bilan qayta hisoblanmagan.
+  Ular eski eksperimentning tarixiy natijalari sifatida saqlangan. Yangi pipeline'da data
+  validation, alohida train calibration tail, adverse-gap OHLC barrier va 2m external
+  availability alignment o'zgartirildi. PostgreSQL'da qayta hisob va CI tasdig'isiz bu
+  raqamlardan strategiya tanlash yoki GO qarori chiqarish mumkin emas.
+</div>
 
 <div class="tldr" id="tldr"></div>
 <div class="grid" id="kpis"></div>
@@ -91,7 +103,7 @@
     <div class="node">Risk / Execution<br><span style="font-weight:400;font-size:11px">size · SL · TP · cost</span></div><span class="arrow">→</span>
     <div class="node final">LONG / SHORT<br>NO TRADE</div>
   </div>
-  <p><strong>Tuzatma:</strong> Order book va likvidatsiyalar eng kuchli axborot, lekin ularning <strong>tarixi yo'q</strong> — Binance <code>!forceOrders</code> va depth faqat jonli WebSocket oqimi, REST orqali 2020–2026 ni orqaga yuklab bo'lmaydi. Demak ularni bugunoq yig'ishni boshlash kerak, lekin ularni backtest'da sinab bo'lmaydi; mustaqil OOS uchun oyLab kutish kerak. <strong>Avval orqaga yuklanadigan</strong> qatlam: <code>fundingRate</code> (8h), <code>openInterestHist</code>, <code>takerlongshortRatio</code>, <code>topLongShortPositionRatio</code>, basis. Shular bilan 6 yillik backtest mumkin.</p>
+  <p><strong>Derivatives data availability:</strong> order-book history and liquidation stream history cannot be reconstructed from today's public REST snapshot; those feeds must be captured prospectively. <code>fundingRate</code> supports historical queries with <code>startTime</code>/<code>endTime</code> pagination. In contrast, <code>openInterestHist</code> exposes only the latest month, and global/top-trader Long/Short ratio endpoints expose only the latest 30 days. Therefore, OI and ratio data cannot support a 2020–2026 historical backtest; start collecting them now and evaluate them only on a later, separately held-out period. <a href="https://developers.binance.me/en/docs/catalog/core-trading-derivatives-trading-usd-s-m-futures/api/rest-api/market-data" target="_blank" rel="noopener">Official Binance USDⓈ-M Futures Market Data docs</a>. Never synthesize missing historical observations.</p>
 </div>
 
 <h2>4. Tuzatilgan natijalar (kauzal, 10 bps, tegilmagan holdout)</h2>

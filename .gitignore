@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+credentials/
+
+# Local market data and large inputs
+WIDE_GLD_AUX_2MIN.csv
+BTCUSDT*.csv
+macro_data/news_raw.csv
+*.parquet
+*.feather
+
+# Local outputs (keep the committed, explicitly named reports)
+report.local.json
+v3_results.local.json
+integrity_report.local.json
+selectivity_sweep_1d.json
+capital_fee_stress_1d.json
+binance_btcusdt_funding_history.csv
+*.log
