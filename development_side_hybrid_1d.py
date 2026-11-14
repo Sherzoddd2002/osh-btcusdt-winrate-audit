@@ -24,7 +24,7 @@ from execution_costs_1d import (
     DEFAULT_MAKER_FEE_BPS, DEFAULT_TAKER_FEE_BPS,
     DEFAULT_ROUND_TRIP_SLIPPAGE_BPS,
     SCENARIO_LEGACY_MAKER_MAKER, SCENARIO_TAKER_ALL,
-    SCENARIO_TAKER_ENTRY_TP_MAKER,
+    SCENARIO_TAKER_ENTRY_TP_MAKER, SCENARIO_COMPONENT_KEYS,
     build_execution_scenarios, calculate_trade_costs,
 )
 from risk_management_1d import run_risk_budget_grid, summarize_trade_attribution
@@ -174,12 +174,12 @@ def run_variant(
     pooled_stress: list[float] = []
     pooled_legacy: list[float] = []
     pooled_fee_parts = {
-        key: {part: [] for part in (
-            "entry_commission_return", "exit_commission_return",
-            "commission_return", "slippage_return", "total_cost_return",
-            "funding_return", "net_return",
-        )}
-        for key in (SCENARIO_LEGACY_MAKER_MAKER, SCENARIO_TAKER_ENTRY_TP_MAKER, SCENARIO_TAKER_ALL)
+        key: {part: [] for part in SCENARIO_COMPONENT_KEYS}
+        for key in (
+            SCENARIO_LEGACY_MAKER_MAKER,
+            SCENARIO_TAKER_ENTRY_TP_MAKER,
+            SCENARIO_TAKER_ALL,
+        )
     }
     pooled_gross: list[float] = []
     pooled_sides: list[int] = []
