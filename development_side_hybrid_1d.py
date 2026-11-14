@@ -251,6 +251,7 @@ def run_variant(
         ) is not None and risk_half["max_closed_trade_drawdown_pct"] < 15.0,
         "at_least_100_oos_trades": primary.get("trades", 0) >= 100,
     }
+    last_primary = fold_rows[-1]["primary"]
     return {
         "tp_long_sigma": tp_long,
         "tp_short_sigma": tp_short,
@@ -273,7 +274,10 @@ def run_variant(
             "DEVELOPMENT_RESEARCH_CANDIDATE"
             if all(checks.values()) else "DISCOVERY_ONLY_NO_GO"
         ),
-        "final_frozen_thresholds_by_last_fold": fold_rows[-1]["primary"],
+        "last_oos_fold_thresholds": {
+            "long_tp_probability": last_primary["frozen_threshold_long"],
+            "short_tp_probability": last_primary["frozen_threshold_short"],
+        },
     }
 
 
@@ -303,6 +307,15 @@ def run_development_hunt(
     ft = mapped["funding_time"].to_numpy(dtype="datetime64[ns]").astype(np.int64)
     fr = mapped["funding_rate"].to_numpy(dtype=float)
     fm = mapped["mark_price_proxy"].to_numpy(dtype=float)
+    if len(ft) < 100 or not (np.diff(ft) > 0).all():
+        raise ValueError("Development funding settlements are insufficient or not strictly increasing.")
+    funding_gap_hours = (
+        float(np.diff(ft).max() / 3_600_000_000_000) if len(ft) > 1 else None
+    )
+    if funding_gap_hours is not None and funding_gap_hours > hunt.FUNDING_MAX_AGE_HOURS:
+        raise ValueError(
+            f"Development funding gap {funding_gap_hours:.2f}h exceeds the fail-closed limit."
+        )
     funding_arrays = (ft, fr, fm)
 
     X_base, feature_names = pv.make_features(dev)
