@@ -1000,6 +1000,12 @@ def main() -> None:
     args = parser.parse_args()
 
     print("=== OSH HIGH-WINRATE HUNT 1d — CORRECTNESS HARDENED / PAPER ONLY ===", flush=True)
+    print(
+        "Costs: maker 2bps/side on entry+exit notional + 2bps RT slippage; "
+        "stress taker 5bps/side on entry+exit notional; "
+        "holdout family-wise 95% Bonferroni CI across six candidates",
+        flush=True,
+    )
     print("Fixed 7-config experiment; no holdout tuning; live_orders=false", flush=True)
 
     df = rv.load_btc(args.db_url, args.table)
@@ -1036,7 +1042,6 @@ def main() -> None:
 
     X_base, base_features = pv.make_features(df)
     X_funding = funding_features(df, funding)
-    labels_by_config = {}
 
     dev_end = len(df) - BARS_PER_DAY * HOLDOUT_DAYS
     dev_cut_time = pd.Timestamp(df["candle_time"].iloc[dev_end])
@@ -1049,6 +1054,13 @@ def main() -> None:
             "last_candle_utc": str(df["candle_time"].iloc[-1]),
             "development_holdout_cut_utc": str(dev_cut_time),
             "holdout_days": HOLDOUT_DAYS,
+            "holdout_familywise_method": (
+                f"two-sided Bonferroni-adjusted 95% family-wise interval across "
+                f"{GO_CANDIDATE_COUNT} candidates; C6 trap excluded"
+            ),
+            "funding_feature_availability": (
+                "strict as-of backward join; exact signal/settlement timestamp matches excluded"
+            ),
             "holdout_model_protocol": (
                 "refit on the 365 days immediately before a separate 90-day calibration tail; "
                 "freeze model and thresholds for the untouched 180-day holdout"
