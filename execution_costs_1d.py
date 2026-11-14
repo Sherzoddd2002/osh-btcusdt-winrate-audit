@@ -31,9 +31,13 @@ def calculate_trade_costs(
     entry_fee_bps: float,
     exit_fee_bps: float,
     round_trip_slippage_bps: float = DEFAULT_ROUND_TRIP_SLIPPAGE_BPS,
+    bnb_discount_pct: float = 0.0,
 ) -> dict[str, float]:
     """Return per-trade cost fractions relative to entry notional."""
     _validate_rates(entry_fee_bps, exit_fee_bps, round_trip_slippage_bps)
+    if not np.isfinite(bnb_discount_pct) or not 0 <= bnb_discount_pct <= 100:
+        raise ValueError("bnb_discount_pct must be between 0 and 100.")
+    discount = 1.0 - bnb_discount_pct / 100.0
     if side not in (-1, 1):
         raise ValueError("side must be +1 (long) or -1 (short).")
     if exit_reason not in {"take_profit", "stop_loss", "time"}:
@@ -43,8 +47,8 @@ def calculate_trade_costs(
     exit_ratio = 1.0 + gross_return if side == 1 else 1.0 - gross_return
     if not np.isfinite(exit_ratio) or exit_ratio <= 0:
         raise ValueError("Exit notional ratio must be positive.")
-    entry_fee = entry_fee_bps / 10_000.0
-    exit_fee = exit_fee_bps * exit_ratio / 10_000.0
+    entry_fee = entry_fee_bps * discount / 10_000.0
+    exit_fee = exit_fee_bps * exit_ratio * discount / 10_000.0
     slippage = round_trip_slippage_bps / 10_000.0
     return {
         "entry_commission_return": float(entry_fee),
@@ -64,6 +68,7 @@ def build_execution_scenarios(
     maker_fee_bps: float = DEFAULT_MAKER_FEE_BPS,
     taker_fee_bps: float = DEFAULT_TAKER_FEE_BPS,
     round_trip_slippage_bps: float = DEFAULT_ROUND_TRIP_SLIPPAGE_BPS,
+    bnb_discount_pct: float = 0.0,
 ) -> dict[str, dict[str, np.ndarray]]:
     """Return legacy, conditional TP-maker, and all-taker net trade arrays.
 
@@ -71,6 +76,9 @@ def build_execution_scenarios(
     maker fill. It is not a guaranteed limit-order execution model.
     """
     _validate_rates(maker_fee_bps, taker_fee_bps, round_trip_slippage_bps)
+    if not np.isfinite(bnb_discount_pct) or not 0 <= bnb_discount_pct <= 100:
+        raise ValueError("bnb_discount_pct must be between 0 and 100.")
+    discount = 1.0 - bnb_discount_pct / 100.0
     gross = np.asarray(gross_returns, dtype=float)
     side = np.asarray(sides, dtype=np.int8)
     reasons = np.asarray(exit_reasons, dtype=object)
@@ -97,11 +105,11 @@ def build_execution_scenarios(
     }
     output: dict[str, dict[str, np.ndarray]] = {}
     for name, (entry_rate, exit_rates) in profiles.items():
-        entry_fee = np.full(len(gross), entry_rate / 10_000.0, dtype=float)
+        entry_fee = np.full(len(gross), entry_rate * discount / 10_000.0, dtype=float)
         exit_ratio = np.where(side == 1, 1.0 + gross, 1.0 - gross)
         if len(exit_ratio) and ((~np.isfinite(exit_ratio)).any() or (exit_ratio <= 0).any()):
             raise ValueError("Exit notional ratio must be positive and finite.")
-        exit_fee = exit_rates * exit_ratio / 10_000.0
+        exit_fee = exit_rates * exit_ratio * discount / 10_000.0
         slippage = np.full(len(gross), round_trip_slippage_bps / 10_000.0, dtype=float)
         total_cost = entry_fee + exit_fee + slippage
         output[name] = {
