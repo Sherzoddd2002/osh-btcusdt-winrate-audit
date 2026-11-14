@@ -132,7 +132,7 @@ def _train_frozen_model(train_candles: pd.DataFrame) -> tuple[dict, dict]:
     )
     X_all, feature_names = pv.make_features(train_candles)
     valid, warmup_rows = hunt._contiguous_label_valid_mask(
-        labels_all, X_all, min_rows=BARS_PER_DAY * 455,
+        labels_all, X_all, min_rows=BARS_PER_DAY * 455 + 100,
     )
     labels = labels_all.loc[valid].reset_index(drop=True)
     X = X_all.loc[valid].reset_index(drop=True).replace([np.inf, -np.inf], np.nan)
@@ -378,12 +378,18 @@ def run(args: argparse.Namespace) -> dict:
         labels_forward_all, X_forward_all, min_rows=1,
     )
     if not valid_forward.any():
-        raise ValueError("No fully warmed-up and fully closed forward outcomes yet.")
-    labels_forward = labels_forward_all.loc[valid_forward].reset_index(drop=True)
-    X_forward = X_forward_all.loc[valid_forward].reset_index(drop=True).replace(
+        raise ValueError("No fully warmed-up and closed forward outcomes yet.")
+    # Keep the final H invalid-label rows in the aligned arrays. The executor
+    # already stops H rows before the end, so truncating here would discard a
+    # second H-bar window and misalign the intended 96-bar signal horizon.
+    first_ready = int(forward_warmup_rows)
+    labels_forward = labels_forward_all.iloc[first_ready:].reset_index(drop=True)
+    X_forward = X_forward_all.iloc[first_ready:].reset_index(drop=True).replace(
         [np.inf, -np.inf], np.nan
     )
-    signal_times = forward_candles.loc[valid_forward, "candle_time"].reset_index(drop=True)
+    signal_times = forward_candles.iloc[first_ready:]["candle_time"].reset_index(drop=True)
+    if not labels_forward["valid"].iloc[:-HORIZON_BARS].all():
+        raise ValueError("Forward label timeline has an internal invalid row after warm-up.")
 
     p_long = hunt.predict_side_proba(
         artifact["model_long"], artifact["classes_long"], X_forward
@@ -440,7 +446,7 @@ def run(args: argparse.Namespace) -> dict:
     )
     primary_costs = scenarios["taker_entry_tp_maker_stop_time_taker"]
     all_taker_costs = scenarios["taker_entry_taker_exit"]
-    n_forward_bars = int(len(signal_times))
+    n_forward_bars = max(1, int(len(signal_times) - HORIZON_BARS))
 
     primary_metrics = _metric_bundle(
         primary_costs["net_return"],
