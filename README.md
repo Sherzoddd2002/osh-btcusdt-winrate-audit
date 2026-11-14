@@ -423,6 +423,20 @@ $env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
 
 high_winrate_hunt_1d_fixed.json ichida 7 konfiguratsiya, 5 ta purged walk-forward fold, 180 kunlik untouched holdout, 6 va 10 bps xarajat ssenariylari, funding PnL, Wilson interval, block-bootstrap interval va $25/$50/$100 position cap bo'yicha $100 hisob simulyatsiyasi saqlanadi.
 
+**2026-11-14 risk-attribution yangilanishi:**
+- Eksperiment versiyasi: `OSH-HIGH-WINRATE-RISK-ATTRIBUTION-2026-11-14-v1`.
+- Har bir LONG/SHORT savdoning o'z exit vaqtigacha OHLC path high/low qiymati saqlanadi; MAE, MFE, holding time va exit reason bo'yicha attribution har bir OOS fold va pooled development OOS natijasiga qo'shiladi.
+- Risk-budget simulyatsiyasi faqat 5 ta development OOS fold savdolarida bajariladi; yakuniy 180 kunlik holdout risk-policy solishtirishiga kiritilmaydi.
+- Oldindan belgilangan risk grid: equity'ning 0.25%, 0.5% va 1.0% stop-risk'i; notional `min(max_notional, 90% equity, risk_budget / (stop_distance + 6 bps cost buffer))` bilan chegaralanadi.
+- Risk tormozlari: 2% kunlik realized-loss limiti, 15% peak-to-equity drawdown'da yangi savdolarni to'xtatish, 3 ketma-ket zarar ortidan 1 signal cooldown.
+- Risk sizing dollar kapital yo'lini va drawdown'ni o'zgartiradi, ammo asosiy trade-level win rate yoki expectancy'ni yaxshilamaydi. Musbat signal edge alohida isbotlanishi shart.
+- MAE/MFE to'liq exit shamining OHLC diapazonidan olinadi. Sham ichidagi aniq tick ketma-ketligi noma'lum bo'lgani uchun bu adverse excursion konservativ stress-proxy, aniq liquidation yoki order-book modeli emas.
+
+Yangi risk moduli uchun regression testlar:
+```powershell
+.\\.venv\\Scripts\\python.exe -m unittest tests.test_risk_management_1d -v
+```
+
 **Arxiv natijasi haqida ogohlantirish:** repodagi high_winrate_hunt_1d.json eski, tuzatilmagan skript tomonidan 2026-11-14 da yaratilgan. Unda short PnL, funding timing/feature, exit duration va hisob-kitob xatolari bor edi. U faqat tarixiy audit dalili; yangi model natijasi yoki foyda isboti emas. Tuzatilgan natijani alohida high_winrate_hunt_1d_fixed.json fayliga qayta yarating.
 
 
