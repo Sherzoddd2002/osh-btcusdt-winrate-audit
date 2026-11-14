@@ -39,8 +39,9 @@ CONFIGS = [
     ("C7_asym_0.75_1.00_FUND",  0.75, 1.00, True),
 ]
 
-FEE_BPS_PRIMARY = 6.0
-FEE_BPS_STRESS = 10.0
+MAKER_FEE_PER_SIDE_BPS = 2.0
+TAKER_FEE_PER_SIDE_BPS = 5.0
+SLIPPAGE_ROUND_TRIP_BPS = 2.0
 INITIAL_CAPITAL = 100.0
 CASH_RESERVE_PCT = 10.0
 POSITION_CAPS = (25.0, 50.0, 100.0)
@@ -210,10 +211,10 @@ def asymmetric_barrier_labels(
             if is_short:
                 stop_fill = np.maximum(open_[k], sl)
                 take_fill = tp
-                exits[stop] = e[stop] / stop_fill[stop] - 1.0
-                exits[take] = e[take] / take_fill[take] - 1.0
+                exits[stop] = (e[stop] - stop_fill[stop]) / e[stop]
+                exits[take] = (e[take] - take_fill[take]) / e[take]
                 horizon_price = close[rows + h]
-                exits[timed] = e[timed] / horizon_price[timed] - 1.0
+                exits[timed] = (e[timed] - horizon_price[timed]) / e[timed]
             else:
                 stop_fill = np.minimum(open_[k], sl)
                 take_fill = tp
@@ -237,7 +238,9 @@ def asymmetric_barrier_labels(
 
         usable = valid
         long_horizon[start:end][usable] = close[rows[usable] + h] / e[usable] - 1.0
-        short_horizon[start:end][usable] = e[usable] / close[rows[usable] + h] - 1.0
+        short_horizon[start:end][usable] = (
+            e[usable] - close[rows[usable] + h]
+        ) / e[usable]
 
     valid_out = (
         np.isfinite(long_exit) & np.isfinite(short_exit)
