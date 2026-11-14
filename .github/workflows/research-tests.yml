@@ -2,9 +2,9 @@ name: research-tests
 
 on:
   push:
-    branches: [main, "research/**"]
+    branches: [main, "research/**", "demo/**"]
   pull_request:
-    branches: [main]
+    branches: [main, "research/**"]
 
 permissions:
   contents: read
