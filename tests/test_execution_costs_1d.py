@@ -48,6 +48,32 @@ class ExecutionCostTests(unittest.TestCase):
         expected = 0.001 - row["total_cost_return"][0] - 0.0002
         self.assertAlmostEqual(row["net_return"][0], expected, places=12)
 
+    def test_bnb_discount_reduces_commission_only(self):
+        plain = build_execution_scenarios(
+            np.array([0.01]), np.array([1]),
+            np.array(["take_profit"], dtype=object), np.zeros(1),
+        )[SCENARIO_TAKER_ENTRY_TP_MAKER]
+        discounted = build_execution_scenarios(
+            np.array([0.01]), np.array([1]),
+            np.array(["take_profit"], dtype=object), np.zeros(1),
+            bnb_discount_pct=10.0,
+        )[SCENARIO_TAKER_ENTRY_TP_MAKER]
+        self.assertAlmostEqual(
+            discounted["commission_return"][0],
+            plain["commission_return"][0] * 0.90,
+            places=12,
+        )
+        self.assertAlmostEqual(
+            discounted["slippage_return"][0],
+            plain["slippage_return"][0],
+            places=12,
+        )
+        self.assertAlmostEqual(
+            discounted["total_cost_return"][0] * 10_000,
+            8.318,
+            places=8,
+        )
+
     def test_short_exit_notional_uses_short_exit_value(self):
         costs = calculate_trade_costs(
             -0.02, -1, "stop_loss", entry_fee_bps=5, exit_fee_bps=5
