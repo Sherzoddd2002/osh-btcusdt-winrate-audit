@@ -628,12 +628,16 @@ def _execute_signals(
     fund_marks: np.ndarray,
     sl_mult: float,
     horizon_bars: int | None = None,
+    entry_cooldown_bars: int | None = None,
 ) -> dict:
-    """Apply frozen thresholds, independent exits and funding per selected side."""
+    """Apply frozen thresholds with separate exit horizon and entry cooldown."""
     n = len(times)
     max_horizon = H if horizon_bars is None else int(horizon_bars)
+    cooldown = H if entry_cooldown_bars is None else int(entry_cooldown_bars)
     if max_horizon < 1:
         raise ValueError("horizon_bars must be positive.")
+    if cooldown < 1:
+        raise ValueError("entry_cooldown_bars must be positive.")
     if not (len(p_long) == len(p_short) == len(lab) == n):
         raise ValueError("Signals, timestamps and labels are not aligned.")
 
@@ -642,7 +646,7 @@ def _execute_signals(
     stop_distances, entry_dates = [], []
     last_entry = -10**9
     for i in range(max(0, n - max_horizon)):
-        if i - last_entry < max_horizon:
+        if i - last_entry < cooldown:
             continue
         go_long = np.isfinite(p_long[i]) and p_long[i] >= thr_long
         go_short = np.isfinite(p_short[i]) and p_short[i] >= thr_short
