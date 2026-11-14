@@ -1023,6 +1023,10 @@ def main() -> None:
             "last_candle_utc": str(df["candle_time"].iloc[-1]),
             "development_holdout_cut_utc": str(dev_cut_time),
             "holdout_days": HOLDOUT_DAYS,
+            "holdout_model_protocol": (
+                "refit on the 365 days immediately before a separate 90-day calibration tail; "
+                "freeze model and thresholds for the untouched 180-day holdout"
+            ),
             "horizon_bars": H,
             "horizon_days": 1,
             "selection": f"top {TOP_PCT:.0%} per side from frozen calibration quantiles; <=1 entry/day",
