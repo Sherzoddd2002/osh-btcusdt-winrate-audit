@@ -423,4 +423,7 @@ $env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
 
 high_winrate_hunt_1d_fixed.json ichida 7 konfiguratsiya, 5 ta purged walk-forward fold, 180 kunlik untouched holdout, 6 va 10 bps xarajat ssenariylari, funding PnL, Wilson interval, block-bootstrap interval va $25/$50/$100 position cap bo'yicha $100 hisob simulyatsiyasi saqlanadi.
 
+**Arxiv natijasi haqida ogohlantirish:** repodagi high_winrate_hunt_1d.json eski, tuzatilmagan skript tomonidan 2026-11-14 da yaratilgan. Unda short PnL, funding timing/feature, exit duration va hisob-kitob xatolari bor edi. U faqat tarixiy audit dalili; yangi model natijasi yoki foyda isboti emas. Tuzatilgan natijani alohida high_winrate_hunt_1d_fixed.json fayliga qayta yarating.
+
+
 **Muhim:** $100 simulyatsiyasi 1x, 10% cash reserve va pozitsiya notionalini joriy equity'ning 90%idan oshirmaslik faraziga asoslangan. Bu exchange liquidation, order-book, maker fill ehtimoli yoki real slippage modelini qamramaydi. Funding mark-price proxy haqiqiy Binance markPrice emas. Hech qanday natija live order yuborishga ruxsat bermaydi; ijobiy natija chiqsa ham keyingi mustaqil forward/shadow sinov talab qilinadi.
