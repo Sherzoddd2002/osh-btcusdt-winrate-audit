@@ -45,7 +45,7 @@ class AsymmetricBarrierTests(unittest.TestCase):
         frame.loc[i + 2, "close"] = entry * (1 - 0.40 * sigma)
 
         with patch.object(hunt, "VOL_WIN", 4):
-            labels = hunt.asymmetric_barrier_labels(frame, h, 0.5, 1.0, chunk_size=7)
+            labels = hunt.asymmetric_barrier_labels(frame, h, 0.5, 1.0, vol_win=4, chunk_size=7)
 
         self.assertEqual(int(labels.loc[i, "long_label"]), 1)
         self.assertEqual(int(labels.loc[i, "short_label"]), 1)
@@ -72,7 +72,7 @@ class AsymmetricBarrierTests(unittest.TestCase):
         frame.loc[i + 2, "close"] = entry * (1 + 1.25 * sigma)
 
         with patch.object(hunt, "VOL_WIN", 4):
-            labels = hunt.asymmetric_barrier_labels(frame, h, 0.5, 1.0)
+            labels = hunt.asymmetric_barrier_labels(frame, h, 0.5, 1.0, vol_win=4)
 
         self.assertEqual(int(labels.loc[i, "long_label"]), 1)
         self.assertAlmostEqual(
@@ -96,7 +96,7 @@ class AsymmetricBarrierTests(unittest.TestCase):
         frame.loc[i + 1, "close"] = entry
 
         with patch.object(hunt, "VOL_WIN", 4):
-            labels = hunt.asymmetric_barrier_labels(frame, h, 0.5, 1.0)
+            labels = hunt.asymmetric_barrier_labels(frame, h, 0.5, 1.0, vol_win=4)
         self.assertEqual(int(labels.loc[i, "long_label"]), -1)
         self.assertEqual(int(labels.loc[i, "short_label"]), -1)
 
