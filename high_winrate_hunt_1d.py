@@ -863,15 +863,16 @@ def run_config(
         if fold_expectancies else 0.0
     )
 
-    # Refit the final, frozen holdout model using only development history:
-    # a 365-day training window, followed by a separate 90-day calibration tail.
-    # The 180-day holdout itself is never used for fitting or threshold choice.
+    # Refit the final frozen holdout model using the same expanding-history
+    # training policy as the OOS folds. Keep a separate 90-day calibration tail;
+    # purge H+2 labels before it. The untouched holdout is never used for fitting.
     final_calibration_rows = BARS_PER_DAY * 90
-    final_training_rows = BARS_PER_DAY * TRAIN_DAYS
     final_calibration_start = cut_idx - final_calibration_rows
-    final_training_start = final_calibration_start - final_training_rows
-    if final_training_start < 0 or final_calibration_start <= 0:
-        raise ValueError("Not enough development history for final 365d train + 90d calibration.")
+    if final_calibration_start < BARS_PER_DAY * TRAIN_DAYS:
+        raise ValueError(
+            "Not enough development history for the expanding train and 90d calibration."
+        )
+    final_training_start = 0
     ml, cls_l, ms, cls_s, thr_l, thr_s = _train_predict(
         X, y_long, y_short, w_long, w_short,
         final_training_start, final_calibration_start, cut_idx,
@@ -1062,8 +1063,8 @@ def main() -> None:
                 "strict as-of backward join; exact signal/settlement timestamp matches excluded"
             ),
             "holdout_model_protocol": (
-                "refit on the 365 days immediately before a separate 90-day calibration tail; "
-                "freeze model and thresholds for the untouched 180-day holdout"
+                "expanding development history (same policy as OOS folds) up to a purged "
+                "90-day calibration tail; freeze model and thresholds for the untouched 180-day holdout"
             ),
             "horizon_bars": H,
             "horizon_days": 1,
