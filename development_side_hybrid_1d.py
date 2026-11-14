@@ -72,6 +72,7 @@ def _benchmark_with_execution_fees(
     maker_fee_bps: float,
     taker_fee_bps: float,
     round_trip_slippage_bps: float,
+    bnb_discount_pct: float,
     use_maker_exit: bool,
 ) -> np.ndarray:
     """24h long benchmark under legacy Maker/Maker or Taker/Taker costs."""
@@ -91,6 +92,7 @@ def _benchmark_with_execution_fees(
             entry_fee_bps=fee,
             exit_fee_bps=fee,
             round_trip_slippage_bps=round_trip_slippage_bps,
+            bnb_discount_pct=bnb_discount_pct,
         )
         values.append(gross - costs["total_cost_return"] + funding)
     return np.asarray(values, dtype=float)
@@ -134,7 +136,7 @@ def run_variant(
     candles: pd.DataFrame,
     X_base: pd.DataFrame,
     funding_arrays: tuple[np.ndarray, np.ndarray, np.ndarray],
-    fee_schedule: tuple[float, float, float],
+    fee_schedule: tuple[float, float, float, float],
 ) -> dict:
     labels_all = hunt.asymmetric_barrier_labels(
         candles, H, tp_long, SL_MULT, tp_mult_short=tp_short
@@ -206,13 +208,14 @@ def run_variant(
         execution = hunt._execute_signals(
             p_l, p_s, thr_l, thr_s, test_labels, test_times, ft, fr, fm, SL_MULT
         )
-        maker_fee_bps, taker_fee_bps, slippage_bps = fee_schedule
+        maker_fee_bps, taker_fee_bps, slippage_bps, bnb_discount_pct = fee_schedule
         fee_scenarios = build_execution_scenarios(
             execution["gross"], execution["sides"], execution["exit_reasons"],
             execution["funding"],
             maker_fee_bps=maker_fee_bps,
             taker_fee_bps=taker_fee_bps,
             round_trip_slippage_bps=slippage_bps,
+            bnb_discount_pct=bnb_discount_pct,
         )
         execution["net_legacy"] = fee_scenarios[SCENARIO_LEGACY_MAKER_MAKER]["net_return"]
         execution["net_primary"] = fee_scenarios[SCENARIO_TAKER_ENTRY_TP_MAKER]["net_return"]
@@ -220,13 +223,15 @@ def run_variant(
         benchmark = _benchmark_with_execution_fees(
             test_labels, test_times, ft, fr, fm,
             maker_fee_bps=maker_fee_bps, taker_fee_bps=taker_fee_bps,
-            round_trip_slippage_bps=slippage_bps, use_maker_exit=False,
+            round_trip_slippage_bps=slippage_bps, bnb_discount_pct=bnb_discount_pct,
+            use_maker_exit=False,
         )
         benchmark_stress = benchmark.copy()
         benchmark_legacy = _benchmark_with_execution_fees(
             test_labels, test_times, ft, fr, fm,
             maker_fee_bps=maker_fee_bps, taker_fee_bps=taker_fee_bps,
-            round_trip_slippage_bps=slippage_bps, use_maker_exit=True,
+            round_trip_slippage_bps=slippage_bps, bnb_discount_pct=bnb_discount_pct,
+            use_maker_exit=True,
         )
         for scenario_name, parts in fee_scenarios.items():
             for part_name, values in parts.items():
@@ -399,8 +404,9 @@ def run_development_hunt(
     df_all: pd.DataFrame,
     funding_all: pd.DataFrame,
     holdout_days: int = HOLDOUT_DAYS,
-    fee_schedule: tuple[float, float, float] = (
-        DEFAULT_MAKER_FEE_BPS, DEFAULT_TAKER_FEE_BPS, DEFAULT_ROUND_TRIP_SLIPPAGE_BPS
+    fee_schedule: tuple[float, float, float, float] = (
+        DEFAULT_MAKER_FEE_BPS, DEFAULT_TAKER_FEE_BPS,
+        DEFAULT_ROUND_TRIP_SLIPPAGE_BPS, 0.0,
     ),
 ) -> dict:
     if holdout_days < 1:
@@ -460,6 +466,7 @@ def run_development_hunt(
                 "maker_per_side": fee_schedule[0],
                 "taker_per_side": fee_schedule[1],
                 "round_trip_slippage": fee_schedule[2],
+                "bnb_discount_pct": fee_schedule[3],
                 "source": "configurable assumptions; verify personal rates in Binance account",
             },
             "primary_costs": (
@@ -520,6 +527,7 @@ def main() -> None:
     parser.add_argument("--maker-fee-bps", type=float, default=DEFAULT_MAKER_FEE_BPS)
     parser.add_argument("--taker-fee-bps", type=float, default=DEFAULT_TAKER_FEE_BPS)
     parser.add_argument("--round-trip-slippage-bps", type=float, default=DEFAULT_ROUND_TRIP_SLIPPAGE_BPS)
+    parser.add_argument("--bnb-discount-pct", type=float, default=0.0)
     parser.add_argument("--out", default="development_side_hybrid_1d.json")
     args = parser.parse_args()
 
@@ -536,7 +544,7 @@ def main() -> None:
 
     result = run_development_hunt(
         all_candles, funding, args.holdout_days,
-        (args.maker_fee_bps, args.taker_fee_bps, args.round_trip_slippage_bps),
+        (args.maker_fee_bps, args.taker_fee_bps, args.round_trip_slippage_bps, args.bnb_discount_pct),
     )
     output = Path(args.out)
     output.parent.mkdir(parents=True, exist_ok=True)
