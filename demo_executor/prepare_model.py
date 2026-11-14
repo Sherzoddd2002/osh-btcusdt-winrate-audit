@@ -41,9 +41,25 @@ def prepare(args):
         raise RuntimeError("Model and lock must both exist or both be absent; inspect before repair.")
     if model_path.exists():
         lock = frozen._read_json(lock_path)
+        expected_lock = {
+            "strategy_id": frozen.STRATEGY_ID,
+            "discovery_report_sha256": report_hash,
+            "holdout_start_utc": holdout_start.isoformat(),
+            "historical_data_end_utc": historical_end.isoformat(),
+            "forward_start_utc": forward_start.isoformat(),
+            "paper_only": True,
+            "live_orders": False,
+            "demo_execution_allowed": True,
+        }
+        for key, value in expected_lock.items():
+            if lock.get(key) != value:
+                raise RuntimeError(f"Existing frozen model lock mismatch for {key}; refusing reuse.")
         if lock.get("model_artifact_sha256") != digest(model_path):
             raise RuntimeError("Existing frozen model hash does not match its lock.")
-        print(json.dumps({"status": "REUSED_LOCKED_MODEL", "thresholds": lock["thresholds_locked"]}, indent=2))
+        required_thresholds = lock.get("thresholds_locked", {})
+        if not all(k in required_thresholds for k in ("long", "short")):
+            raise RuntimeError("Existing frozen model lock has no LONG/SHORT thresholds.")
+        print(json.dumps({"status": "REUSED_LOCKED_MODEL", "thresholds": required_thresholds}, indent=2))
         return
 
     db_url = args.db_url or os.getenv(
