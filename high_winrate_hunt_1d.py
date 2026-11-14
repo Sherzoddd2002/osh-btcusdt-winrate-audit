@@ -295,7 +295,7 @@ def funding_features(df: pd.DataFrame, funding: pd.DataFrame) -> pd.DataFrame:
     merged = pd.merge_asof(
         left, right,
         left_on="signal_time", right_on="settled_at",
-        direction="backward", allow_exact_matches=True,
+        direction="backward", allow_exact_matches=False,
     ).sort_values("row_id")
 
     age_hours = (
