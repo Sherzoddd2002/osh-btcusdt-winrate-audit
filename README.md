@@ -140,7 +140,7 @@ Open `http://127.0.0.1:8765` and press **Demo API check**. Confirm that it repor
 - The only exchange host is `https://demo-fapi.binance.com`. No Live endpoint, URL override or production fallback exists.
 - One-way position mode is required. The app uses isolated margin and 1x leverage; it does not change position mode.
 - It skips signals when Binance's current minimum quantity/notional exceeds the $50 position cap. It never silently increases order size.
-- Market entry is followed by a reduce-only STOP_MARKET stop and a post-only GTX take-profit. The 96-bar time exit uses a reduce-only market close.
+- Market entry is followed by a reduce-only STOP_MARKET Algo order (`POST /fapi/v1/algoOrder`, `triggerPrice`) and a post-only GTX LIMIT take-profit (`POST /fapi/v1/order`). The conditional stop is queried/canceled through the Algo API; the 96-bar time exit uses a reduce-only market close. Binance moved USDⓈ-M conditional order types to the Algo service from 2025-12-09.
 - One entry per 96 completed 15m bars; a 15% Demo-equity drawdown disables new entries. Existing positions remain under management.
 - Unknown order responses are reconciled by client order ID rather than blindly retrying market orders.
 - If the process or PC stops, open Demo orders may remain at Binance. Check the Demo account manually before restarting.
