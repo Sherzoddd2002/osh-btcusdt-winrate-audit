@@ -207,9 +207,20 @@ class DemoEngine:
             if trade and abs(positions) > 1e-12:
                 tp_ids = {x.get("origClientOrderId") for x in orders}
                 sl_ids = {x.get("clientAlgoId") for x in algo_orders}
+                try:
+                    saved_sl = client.algo_order(SYMBOL, trade.get("sl_id"))
+                    sl_status = str(saved_sl.get("algoStatus", "")).upper()
+                except BinanceAPIError as exc:
+                    if exc.code not in {-2011, -2013}:
+                        raise
+                    sl_status = "MISSING"
+                sl_recoverable = (
+                    trade.get("sl_id") in sl_ids
+                    or sl_status in {"TRIGGERED", "TRIGGERING", "FINISHED"}
+                )
                 if (
                     trade.get("tp_id") not in tp_ids
-                    or trade.get("sl_id") not in sl_ids
+                    or not sl_recoverable
                     or tp_ids - {trade.get("tp_id")}
                     or sl_ids - {trade.get("sl_id")}
                 ):
@@ -527,7 +538,7 @@ class DemoEngine:
         amount = self.position_amount(client.positions(SYMBOL))
         if abs(amount) <= 1e-12:
             self._cancel_owned(trade.get("tp_id"))
-            self._cancel_owned(trade.get("sl_id"))
+            self._cancel_algo_owned(trade.get("sl_id"))
             self.state["trade"] = None
             self._save()
             self._event("DEMO_POSITION_CLOSED", side=trade.get("side"),
