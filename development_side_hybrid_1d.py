@@ -227,6 +227,7 @@ def run_variant(
         execution = hunt._execute_signals(
             p_l, p_s, thr_l, thr_s, test_labels, test_times, ft, fr, fm, SL_MULT,
             horizon_bars=horizon,
+            entry_cooldown_bars=H,
         )
         maker_fee_bps, taker_fee_bps, slippage_bps, bnb_discount_pct = fee_schedule
         fee_scenarios = build_execution_scenarios(
@@ -505,15 +506,18 @@ def run_development_hunt(
                 "not independent validation."
             ),
             "selection": (
-                "top 10% calibrated TP probability per side; at most one entry "
-                "per configured time-exit horizon"
+                "top 10% calibrated TP probability per side; fixed 96-bar "
+                "minimum gap between entries in every time-exit variant"
             ),
             "time_exit_grid_bars": list(time_exit_grid),
+            "entry_cooldown_bars": H,
+            "entry_cooldown_minutes": H * hunt.TF_MINUTES,
             "barrier_volatility_horizon_bars": BARRIER_VOLATILITY_HORIZON_BARS,
             "time_exit_sweep_design": (
                 "C2 stability candidate and C3 high-win-rate comparator only; "
                 "H1 is excluded after 2/5 positive folds. Time-exit horizon changes "
-                "while TP/SL sigma scaling stays fixed at 96 bars."
+                "while TP/SL sigma scaling stays fixed at 96 bars and new-entry "
+                "cooldown stays fixed at 96 bars."
             ),
             "bootstrap_familywise_coverage_pct": 95.0,
             "bootstrap_familywise_test_count": familywise_test_count,
