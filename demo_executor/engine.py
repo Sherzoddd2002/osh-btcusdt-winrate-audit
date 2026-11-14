@@ -311,7 +311,11 @@ class DemoEngine:
         cap = min(POSITION_CAP, available * 0.90)
         price = self._client().ticker_price(SYMBOL)
         rules = self.rules or symbol_rules(self._client().exchange_info(SYMBOL), SYMBOL)
-        qty = quantity_for_cap(cap, price, rules["market_step_size"], rules["market_min_qty"], rules["min_notional"])
+        try:
+            qty = quantity_for_cap(cap, price, rules["market_step_size"], rules["market_min_qty"], rules["min_notional"])
+        except ValueError as exc:
+            self._event("SIGNAL_SKIPPED_EXCHANGE_MINIMUM", side=side, reason=str(exc), position_cap_usd=cap)
+            return
         sigma = sigma_from_history(frame)
         self._enter(side, qty, sigma, candle_ms, {"p_long": p_long, "p_short": p_short})
 
@@ -340,6 +344,11 @@ class DemoEngine:
             avg = safe_float(entry.get("cumQuote")) / filled
         if str(entry.get("status", "")).upper() != "FILLED" or filled <= 0 or avg <= 0:
             if filled > 0:
+                self.state["trade"] = {
+                    "side": side, "quantity": filled, "tp_id": None, "sl_id": None,
+                    "phase": "EXIT_REQUESTED", "signal_candle_open_ms": int(candle_ms),
+                }
+                self._save()
                 self._close_reduce_only("PARTIAL_ENTRY")
             self._event("ENTRY_NOT_FILLED", status=entry.get("status"), executed_qty=filled)
             return
@@ -418,6 +427,7 @@ class DemoEngine:
 
     def _close_reduce_only(self, reason):
         trade = self.state.get("trade") or {}
+        trade["phase"] = "EXIT_REQUESTED"
         self._cancel_owned(trade.get("tp_id"))
         self._cancel_owned(trade.get("sl_id"))
         rows = self._client().positions(SYMBOL)
@@ -430,7 +440,10 @@ class DemoEngine:
         qty = decimal_floor_step(abs(amount), rules["market_step_size"])
         if qty <= 0:
             raise RuntimeError("Could not derive a valid reduce-only close quantity.")
-        close_id = random_client_id("OSHCL")
+        close_id = trade.get("close_id") or random_client_id("OSHCL")
+        trade["close_id"] = close_id
+        self.state["trade"] = trade
+        self._save()
         params = {
             "symbol": SYMBOL, "side": "SELL" if amount > 0 else "BUY",
             "type": "MARKET", "quantity": format_decimal(qty),
@@ -445,9 +458,14 @@ class DemoEngine:
                 self._event("REDUCE_ONLY_CLOSE_UNKNOWN", reason=reason, client_order_id=close_id)
                 raise RuntimeError("Reduce-only close result unknown; inspect Demo account.") from exc
         self._event("REDUCE_ONLY_CLOSE_SENT", reason=reason, status=result.get("status"), order_id=result.get("orderId"))
-        if self.position_amount(self._client().positions(SYMBOL)) == 0:
+        remaining = self.position_amount(self._client().positions(SYMBOL))
+        if abs(remaining) <= 1e-12:
             self.state["trade"] = None
-            self._save()
+        else:
+            trade["close_id"] = None
+            trade["phase"] = "EXIT_REQUESTED"
+            self.state["trade"] = trade
+        self._save()
 
     def _monitor_trade(self, candle_ms):
         trade = self.state.get("trade")
@@ -465,6 +483,19 @@ class DemoEngine:
             return
 
         if trade.get("phase") == "EXIT_REQUESTED":
+            close_id = trade.get("close_id")
+            if close_id:
+                try:
+                    close_status = str(client.order(SYMBOL, close_id).get("status", "")).upper()
+                    if close_status in {"NEW", "PARTIALLY_FILLED"}:
+                        return
+                except BinanceAPIError as exc:
+                    if exc.code not in {-2011, -2013}:
+                        raise
+            trade["close_id"] = None
+            self.state["trade"] = trade
+            self._save()
+            self._close_reduce_only("RETRY_REMAINING_POSITION")
             return
         tp_status, sl_status = "UNKNOWN", "UNKNOWN"
         try:
