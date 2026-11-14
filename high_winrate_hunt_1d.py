@@ -519,6 +519,8 @@ def fit_side_model(
         random_state=42,
         n_jobs=-1,
         verbosity=-1,
+        use_missing=True,
+        zero_as_missing=False,
     )
     x_train = X.iloc[:fit_end]
     y_train = encoded[:fit_end]
@@ -758,9 +760,11 @@ def run_config(
     funding_arrays: tuple[np.ndarray, np.ndarray, np.ndarray],
 ) -> dict:
     X = pd.concat([X_base, X_funding], axis=1) if use_funding else X_base
-    X = X.replace([np.inf, -np.inf], np.nan).fillna(0.0)
-    if not np.isfinite(X.to_numpy(dtype=float)).all():
-        raise ValueError("Feature matrix contains non-finite values after safe fill.")
+    # Keep genuine missing features as NaN. LightGBM handles NaN natively;
+    # converting them to zero would make "missing" indistinguishable from neutral.
+    X = X.replace([np.inf, -np.inf], np.nan)
+    if np.isinf(X.to_numpy(dtype=float)).any():
+        raise ValueError("Feature matrix still contains +/- infinity.")
 
     cut_idx = int((times < dev_cut_time).sum())
     fold_list = pv.make_folds(
@@ -945,6 +949,42 @@ def run_config(
     }
 
 
+def _contiguous_label_valid_mask(
+    labels: pd.DataFrame,
+    X_base: pd.DataFrame,
+    min_rows: int = 1000,
+) -> tuple[np.ndarray, int]:
+    """Drop only the initial feature warm-up; preserve later NaN feature rows.
+
+    Internal feature NaNs are valid observations and are handled natively by
+    LightGBM. A genuine gap in label-valid timestamps is still rejected.
+    """
+    if len(labels) != len(X_base):
+        raise ValueError("Labels and base features are not row-aligned.")
+    if min_rows < 1:
+        raise ValueError("min_rows must be positive.")
+
+    label_valid = labels["valid"].to_numpy(dtype=bool)
+    feature_complete = X_base.notna().all(axis=1).to_numpy(dtype=bool)
+    first_ready = np.flatnonzero(label_valid & feature_complete)
+    if first_ready.size == 0:
+        raise ValueError("No label-valid row exists after base-feature warm-up.")
+
+    warmup_rows = int(first_ready[0])
+    valid = label_valid.copy()
+    valid[:warmup_rows] = False
+    valid_indices = np.flatnonzero(valid)
+
+    if valid_indices.size < min_rows:
+        raise ValueError("Too few valid label rows after feature warm-up.")
+    if valid_indices.size > 1 and not np.equal(np.diff(valid_indices), 1).all():
+        raise ValueError(
+            "Label-valid timeline itself contains internal invalid rows; "
+            "refusing to compress time."
+        )
+    return valid, warmup_rows
+
+
 def gate_result(name: str, result: dict | None, error: str | None = None) -> dict:
     if result is None:
         return {
@@ -1107,19 +1147,23 @@ def main() -> None:
         )
         try:
             labels = asymmetric_barrier_labels(df, H, tp_mult, sl_mult)
-            valid = (
-                labels["valid"].to_numpy(dtype=bool)
-                & X_base.notna().all(axis=1).to_numpy(dtype=bool)
-            )
+            valid, warmup_rows = _contiguous_label_valid_mask(labels, X_base)
             label_df = labels.loc[valid].reset_index(drop=True)
             times = df.loc[valid, "candle_time"].reset_index(drop=True)
-            if len(times) < 1000:
-                raise ValueError("Too few valid label rows.")
             deltas = times.diff().dropna()
             if not deltas.eq(pd.Timedelta(minutes=TF_MINUTES)).all():
                 raise ValueError(
-                    "Valid training rows are not contiguous 15m bars; refusing to compress time."
+                    "Label-valid timestamps are not contiguous 15m bars; refusing to compress time."
                 )
+            retained_nan_rows = int(X_base.loc[valid].isna().any(axis=1).sum())
+            retained_nan_cells = int(X_base.loc[valid].isna().sum().sum())
+            print(
+                f"[features] initial_warmup_rows_excluded={warmup_rows}; "
+                f"retained_rows={int(valid.sum())}; "
+                f"retained_rows_with_nan={retained_nan_rows}; "
+                f"retained_nan_cells={retained_nan_cells}",
+                flush=True,
+            )
             Xb = X_base.loc[valid].reset_index(drop=True)
             Xf = X_funding.loc[valid].reset_index(drop=True)
             result = run_config(
