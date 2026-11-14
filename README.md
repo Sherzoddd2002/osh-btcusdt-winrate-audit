@@ -416,9 +416,9 @@ high_winrate_hunt_1d.py oldingi yuqori-win-rate tajribasidagi muhim mantiqiy xat
 PowerShell:
 ~~~powershell
 $env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
-.\\.venv\\Scripts\\python.exe -m compileall -q .
-.\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v
-.\\.venv\\Scripts\\python.exe high_winrate_hunt_1d.py --table public.btcusdt_15m --funding-csv .\\binance_btcusdt_funding_history.csv --data-end-utc "2026-10-31T23:45:00Z" --out high_winrate_hunt_1d_fixed.json
+.\.venv\Scripts\python.exe -m compileall -q .
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe high_winrate_hunt_1d.py --table public.btcusdt_15m --funding-csv .\binance_btcusdt_funding_history.csv --data-end-utc "2026-10-31T23:45:00Z" --out high_winrate_hunt_1d_fixed.json
 ~~~
 
 high_winrate_hunt_1d_fixed.json ichida 7 konfiguratsiya, 5 ta purged walk-forward fold, 180 kunlik untouched holdout, 6 va 10 bps xarajat ssenariylari, funding PnL, Wilson interval, block-bootstrap interval va $25/$50/$100 position cap bo'yicha $100 hisob simulyatsiyasi saqlanadi.
