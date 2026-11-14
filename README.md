@@ -1,3 +1,23 @@
+# OSH BTCUSDT — H96 C2 yangi dashboard
+
+> **Joriy sayt natijasi (2026-11-14): H96 C2, DISCOVERY ONLY / NO-GO.** Tarixiy development OOS sinovida 241 ta bitim, 58.92% net win rate, +9.463 bps expectancy, PF 1.1596 va 5/8 development check qayd etilgan. Bu real daromad yoki kelajak kafolati emas; jonli order yo‘q.
+
+- **Primary:** $100 boshlang‘ich kapital → $121.06 (+21.06%), maksimal DD 15.84%.
+- **All-Taker stress:** $100 → $117.02 (+17.02%), maksimal DD 16.38%.
+- **Keyingi paper cap:** $50; Primary DD 8.74%, All-Taker DD 9.02%.
+- **Fold barqarorligi:** 4/5 ijobiy (80%); bitta fold manfiy.
+- **Hali NO-GO:** win rate 60% dan past, PF 1.25 dan past va familywise bootstrap quyi chegarasi 0 dan katta emas.
+
+Yangi statik dashboard: [OSH Quant Lab — H96 C2](https://sherzoddd2002.github.io/osh-btcusdt-winrate-audit/)
+
+Mashina o‘qiy oladigan agregat snapshot: [h96_c2_results_snapshot.json](h96_c2_results_snapshot.json).
+
+Frozen forward paper runner hozircha alohida [PR #4](https://github.com/Sherzoddd2002/osh-btcusdt-winrate-audit/pull/4) branchida. U hali bu `main` branchga qo‘shilmagan; forward natija ham hali yo‘q. Runner stale candle va stale funding holatida fail-closed ishlaydi. Final 180 kunlik holdout parametr tanlash uchun ishlatilmagan.
+
+**Cheklovlar:** 15m OHLC passive Maker limit fill/navbat ustunligini isbotlamaydi. Funding hisobida avvalgi yopilgan BTCUSDT 15m close Mark Price proxy sifatida ishlatilgan, bu haqiqiy Binance Mark Price emas. $100 cap drawdown 15% risk chegarasidan yuqori.
+
+---
+
 # OSH · BTCUSDT 15m — halol win-rate hisoboti
 
 **Statik tadqiqot dashboard'i.** Tuzatilgan ML pipeline'ning haqiqiy ma'lumotlar bo'yicha
