@@ -316,6 +316,16 @@ class DemoEngine:
         except ValueError as exc:
             self._event("SIGNAL_SKIPPED_EXCHANGE_MINIMUM", side=side, reason=str(exc), position_cap_usd=cap)
             return
+        limit_qty = decimal_floor_step(qty, rules["limit_step_size"])
+        if limit_qty != qty or qty < DecimalValue(rules["limit_min_qty"]):
+            self._event(
+                "SIGNAL_SKIPPED_LOT_SIZE_MISMATCH",
+                side=side,
+                market_qty=format_decimal(qty),
+                compatible_limit_qty=format_decimal(limit_qty),
+                reason="Market and protective LIMIT quantity filters do not accept the same size.",
+            )
+            return
         sigma = sigma_from_history(frame)
         self._enter(side, qty, sigma, candle_ms, {"p_long": p_long, "p_short": p_short})
 
@@ -355,6 +365,19 @@ class DemoEngine:
 
         tp, sl = barrier_prices(side, avg, sigma)
         rules = self.rules or symbol_rules(client.exchange_info(SYMBOL), SYMBOL)
+        exact_filled = DecimalValue(filled)
+        if (
+            decimal_floor_step(exact_filled, rules["market_step_size"]) != exact_filled
+            or decimal_floor_step(exact_filled, rules["limit_step_size"]) != exact_filled
+            or exact_filled < DecimalValue(rules["limit_min_qty"])
+        ):
+            self.state["trade"] = {
+                "side": side, "quantity": filled, "tp_id": None, "sl_id": None,
+                "phase": "EXIT_REQUESTED", "signal_candle_open_ms": int(candle_ms),
+            }
+            self._save()
+            self._close_reduce_only("FILLED_QUANTITY_NOT_COMPATIBLE_WITH_PROTECTIVE_FILTERS")
+            raise RuntimeError("Filled quantity is incompatible with protective exit filters.")
         if side == "LONG":
             tp_price = round_price_to_tick(tp, rules["tick_size"], "down")
             sl_price = round_price_to_tick(sl, rules["tick_size"], "up")
@@ -528,6 +551,11 @@ class DemoEngine:
             self.state["trade"] = trade
             self._save()
             self._close_reduce_only("TIME_EXIT_96_BARS")
+
+
+def DecimalValue(value):
+    from decimal import Decimal
+    return Decimal(str(value))
 
 
 def DecimalQty(value, step):
