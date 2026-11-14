@@ -27,6 +27,7 @@ TRAIN_DAYS = 365
 TEST_DAYS = 90
 HOLDOUT_DAYS = 180
 VOL_WIN = 96
+GO_CANDIDATE_COUNT = 6  # C6 is a deliberate trap demo, not a deployable candidate.
 DATA_END_UTC = pd.Timestamp("2026-10-31 23:45:00", tz="UTC")
 
 CONFIGS = [
@@ -363,20 +364,26 @@ def wilson_interval(wins: int, n: int, z: float = 1.96) -> tuple[float | None, f
 
 
 def block_bootstrap_ci(
-    values: np.ndarray, block: int = 20, reps: int = 2000, seed: int = 42
+    values: np.ndarray,
+    block: int = 20,
+    reps: int = 2000,
+    seed: int = 42,
+    alpha: float = 0.05,
 ) -> tuple[float | None, float | None]:
     values = np.asarray(values, dtype=float)
-    if block < 1 or reps < 1:
-        raise ValueError("block and reps must be positive.")
+    if block < 1 or reps < 1 or not 0 < alpha < 1:
+        raise ValueError("block/reps must be positive and alpha must be in (0, 1).")
     if len(values) < 2 * block:
         return None, None
+    if not np.isfinite(values).all():
+        raise ValueError("Bootstrap input contains non-finite values.")
     rng = np.random.default_rng(seed)
     count = int(np.ceil(len(values) / block))
     means = np.empty(reps)
     for i in range(reps):
         starts = rng.integers(0, len(values) - block + 1, size=count)
         means[i] = np.concatenate([values[s:s + block] for s in starts])[:len(values)].mean()
-    low, high = np.percentile(means, [2.5, 97.5])
+    low, high = np.percentile(means, [100 * alpha / 2, 100 * (1 - alpha / 2)])
     return float(low * 10_000), float(high * 10_000)
 
 
@@ -686,9 +693,13 @@ def _metrics_with_ci(
     benchmark: np.ndarray,
     n_bars: int,
     key: str,
+    bootstrap_alpha: float = 0.05,
+    bootstrap_reps: int = 2000,
 ) -> dict:
     result = trade_metrics(execution[key], execution["gross"], benchmark, n_bars)
-    ci = block_bootstrap_ci(execution[key])
+    ci = block_bootstrap_ci(
+        execution[key], alpha=bootstrap_alpha, reps=bootstrap_reps
+    )
     result["bootstrap_ci95_expectancy_bps"] = [
         round(ci[0], 3) if ci[0] is not None else None,
         round(ci[1], 3) if ci[1] is not None else None,
@@ -880,11 +891,23 @@ def run_config(
     hold_benchmark_stress = _long_benchmark(
         hold_labels, hold_times, ft, fr, fm, stress=True
     )
+    # Six candidate configurations share the same final holdout. Use a
+    # Bonferroni-adjusted two-sided interval to control family-wise confidence
+    # at 95%; C6 is a deliberately invalid trap demo and is excluded.
+    family_alpha = 0.05 / GO_CANDIDATE_COUNT
     hold_primary = _metrics_with_ci(
-        hold_execution, hold_benchmark, len(hold_times), "net_primary"
+        hold_execution, hold_benchmark, len(hold_times), "net_primary",
+        bootstrap_alpha=family_alpha, bootstrap_reps=10_000,
     )
     hold_stress = _metrics_with_ci(
-        hold_execution, hold_benchmark_stress, len(hold_times), "net_stress"
+        hold_execution, hold_benchmark_stress, len(hold_times), "net_stress",
+        bootstrap_alpha=family_alpha, bootstrap_reps=10_000,
+    )
+    hold_primary["bootstrap_familywise_95_over_6_bps"] = (
+        hold_primary.pop("bootstrap_ci95_expectancy_bps")
+    )
+    hold_stress["bootstrap_familywise_95_over_6_bps"] = (
+        hold_stress.pop("bootstrap_ci95_expectancy_bps")
     )
 
     if len(hold_execution["indices"]):
@@ -944,18 +967,21 @@ def gate_result(name: str, result: dict | None, error: str | None = None) -> dic
         "holdout_pf_gt_1": hold.get("profit_factor") is not None and hold["profit_factor"] > 1.0,
         "holdout_stress_expectancy_positive": stress.get("expectancy_bps") is not None and stress["expectancy_bps"] > 0,
         "holdout_min_30_trades": hold.get("trades", 0) >= 30,
-        "holdout_bootstrap_lower_gt_zero": (
-            hold.get("bootstrap_ci95_expectancy_bps", [None, None])[0] is not None
-            and hold["bootstrap_ci95_expectancy_bps"][0] > 0
+        "holdout_familywise_95_ci_lower_gt_zero": (
+            hold.get("bootstrap_familywise_95_over_6_bps", [None, None])[0] is not None
+            and hold["bootstrap_familywise_95_over_6_bps"][0] > 0
         ),
     }
     passed = int(sum(bool(v) for v in checks.values()))
+    verdict = "GO_TO_SHADOW_ONLY" if passed == len(checks) else "NO-GO"
+    if name.endswith("_TRAP"):
+        verdict = "TRAP_DEMO_ONLY"
     return {
         "config": name,
         "checks": checks,
         "checks_passed": passed,
         "checks_total": len(checks),
-        "verdict": "GO_TO_SHADOW_ONLY" if passed == len(checks) else "NO-GO",
+        "verdict": verdict,
     }
 
 
