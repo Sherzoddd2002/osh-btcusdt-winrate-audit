@@ -83,6 +83,20 @@ class AsymmetricBarrierTests(unittest.TestCase):
         self.assertEqual(int(labels.loc[i, "short_label"]), 1)
         self.assertEqual(int(labels.loc[i, "long_holding_bars"]), 1)
         self.assertEqual(int(labels.loc[i, "short_holding_bars"]), 2)
+        self.assertAlmostEqual(
+            float(labels.loc[i, "long_path_high"]), float(frame.loc[i + 1, "high"])
+        )
+        self.assertAlmostEqual(
+            float(labels.loc[i, "long_path_low"]), float(frame.loc[i + 1, "low"])
+        )
+        self.assertAlmostEqual(
+            float(labels.loc[i, "short_path_high"]),
+            float(frame.loc[i + 1:i + 3, "high"].max()),
+        )
+        self.assertAlmostEqual(
+            float(labels.loc[i, "short_path_low"]),
+            float(frame.loc[i + 1:i + 3, "low"].min()),
+        )
 
     def test_tp_gap_does_not_assume_price_improvement(self):
         frame = market_frame()
