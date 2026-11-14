@@ -96,3 +96,53 @@ Do not manually edit the model, lock, thresholds, or report. Keep local artifact
 - Earlier v2/v3 reports and pages are legacy research snapshots; the H96 C2 dashboard above is the current development OOS summary.
 
 GitHub Pages source: main / (root). Merge the dashboard update PR into main to publish it.
+
+
+## Local Binance Futures Demo terminal
+
+The public GitHub Pages dashboard is informational only. It cannot access a local `.env` file, so Demo order execution is a separate app served only from `127.0.0.1`.
+
+### Setup (Windows PowerShell)
+
+Use Demo Trading API credentials only. Existing local environment names supported by the app are `BINANCE_DEMO_API_KEY` / `BINANCE_DEMO_API_SECRET`, `BINANCE_FUTURES_API_KEY` / `BINANCE_FUTURES_API_SECRET`, or `BINANCE_API_KEY` / `BINANCE_API_SECRET` (also `BINANCE_SECRET_KEY`). The API host is hard-coded to `https://demo-fapi.binance.com`; these names do not provide a way to select the Live API.
+
+Install the additional dependencies:
+
+~~~powershell
+python -m pip install -r requirements.txt
+~~~
+
+Freeze the H96 C2 model once using only pre-holdout candles. Use the local discovery-report path that was generated during the time-exit sweep:
+
+~~~powershell
+python -m demo_executor.prepare_model --table public.btcusdt_15m --discovery-report .\development_time_exit_sweep_1d.json --historical-data-end-utc "2026-10-31T23:45:00Z" --forward-start-utc "2026-11-01T00:00:00Z"
+~~~
+
+The local `forward_paper_h96_c2_model.joblib` and `forward_paper_h96_c2_lock.json` files are ignored by Git. Existing artifacts are hash-checked and reused; changed artifacts are not silently retrained.
+
+First check the Demo API connection with order sending disabled:
+
+~~~dotenv
+OSH_ENABLE_DEMO_ORDERS=false
+~~~
+
+Then start the local app:
+
+~~~powershell
+python -m demo_executor.app
+~~~
+
+Open `http://127.0.0.1:8765` and press **Demo API check**. Confirm that it reports the Futures Demo base URL, the expected BTCUSDT filters, One-way position mode, and your Demo balance. Only after this check, set `OSH_ENABLE_DEMO_ORDERS=true` in the local `.env`, restart the app, and press **Start strategy**.
+
+### Execution controls
+
+- The process binds only to `127.0.0.1`; the browser receives no API key or secret.
+- The only exchange host is `https://demo-fapi.binance.com`. No Live endpoint, URL override or production fallback exists.
+- One-way position mode is required. The app uses isolated margin and 1x leverage; it does not change position mode.
+- It skips signals when Binance's current minimum quantity/notional exceeds the $50 position cap. It never silently increases order size.
+- Market entry is followed by a reduce-only STOP_MARKET stop and a post-only GTX take-profit. The 96-bar time exit uses a reduce-only market close.
+- One entry per 96 completed 15m bars; a 15% Demo-equity drawdown disables new entries. Existing positions remain under management.
+- Unknown order responses are reconciled by client order ID rather than blindly retrying market orders.
+- If the process or PC stops, open Demo orders may remain at Binance. Check the Demo account manually before restarting.
+
+This is an execution integration test, not validation of profitability. H96 C2 remains DISCOVERY ONLY / NO-GO (58.92% historical OOS win rate, PF 1.1596, 5/8 development gates). Demo fills do not demonstrate real-market Maker priority or live performance. Keep all actual credentials, the root `.env`, model artifacts and runtime state off GitHub.
