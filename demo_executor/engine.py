@@ -28,6 +28,10 @@ STRATEGY_ID = "OSH-BTCUSDT-15M-H96-C2-FORWARD-PAPER-v1"
 SYMBOL = os.getenv("OSH_SYMBOL", "BTCUSDT").upper()
 POSITION_CAP = float(os.getenv("OSH_POSITION_CAP_USD", "50"))
 MAX_DRAWDOWN_PCT = float(os.getenv("OSH_MAX_DRAWDOWN_PCT", "15"))
+if not 0 < POSITION_CAP <= 50:
+    raise ValueError("OSH_POSITION_CAP_USD must be > 0 and no greater than the locked $50 cap.")
+if not 0 < MAX_DRAWDOWN_PCT <= 15:
+    raise ValueError("OSH_MAX_DRAWDOWN_PCT must be > 0 and no greater than 15%.")
 MODEL_PATH = Path(os.getenv("OSH_MODEL_ARTIFACT", "forward_paper_h96_c2_model.joblib"))
 LOCK_PATH = Path(os.getenv("OSH_MODEL_LOCK", "forward_paper_h96_c2_lock.json"))
 if not MODEL_PATH.is_absolute():
@@ -119,10 +123,27 @@ class DemoEngine:
             raise RuntimeError("Model lock must be paper_only=true and live_orders=false.")
         if lock.get("demo_execution_allowed") is not True:
             raise RuntimeError("This model lock does not allow Demo execution.")
+        expected = {
+            "tp_long_sigma": 0.75, "tp_short_sigma": 0.75, "sl_sigma": 1.0,
+            "time_exit_bars": 96, "volatility_horizon_bars": 96,
+            "entry_cooldown_bars": 96, "position_cap_usd": 50,
+            "leverage": 1, "margin_type": "ISOLATED",
+        }
+        locked = lock.get("parameters", {})
+        if any(locked.get(key) != value for key, value in expected.items()):
+            raise RuntimeError("Model lock parameters do not match the frozen H96 C2 configuration.")
         if self.model is None or self.model_sha != sha:
             artifact = joblib.load(MODEL_PATH)
             if artifact.get("strategy_id") != STRATEGY_ID:
                 raise RuntimeError("Unexpected model strategy id.")
+            thresholds = lock.get("thresholds_locked", {})
+            if (
+                float(thresholds.get("long", -1)) != float(artifact["threshold_long"])
+                or float(thresholds.get("short", -1)) != float(artifact["threshold_short"])
+            ):
+                raise RuntimeError("Locked probability thresholds do not match the model artifact.")
+            if not artifact.get("feature_names"):
+                raise RuntimeError("Frozen model has no feature schema.")
             self.model, self.model_sha = artifact, sha
         return self.model
 
@@ -193,6 +214,8 @@ class DemoEngine:
 
     def start(self):
         with self.lock:
+            if self.thread and self.thread.is_alive():
+                raise RuntimeError("Demo engine is already running.")
             if not self.orders_enabled:
                 raise RuntimeError("OSH_ENABLE_DEMO_ORDERS is false. Keep it false until the Demo API check passes.")
             self._load_model()
@@ -364,9 +387,15 @@ class DemoEngine:
             )
             return
         sigma = sigma_from_history(frame)
+        if not self.accept_entries:
+            self._event("ENTRY_ABORTED_STOP_REQUEST", side=side)
+            return
         self._enter(side, qty, sigma, candle_ms, {"p_long": p_long, "p_short": p_short})
 
     def _enter(self, side, qty, sigma, candle_ms, probs):
+        if not self.accept_entries:
+            self._event("ENTRY_ABORTED_STOP_REQUEST", side=side)
+            return
         client = self._client()
         entry_id = random_client_id("OSHEN")
         # Persist cooldown before POST; do not blindly retry a timed-out MARKET order.
