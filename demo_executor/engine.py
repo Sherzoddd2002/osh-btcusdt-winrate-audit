@@ -485,7 +485,8 @@ class DemoEngine:
         if abs(remaining) <= 1e-12:
             self.state["trade"] = None
         else:
-            trade["close_id"] = None
+            order_status = str(result.get("status", "")).upper()
+            trade["close_id"] = close_id if order_status in {"NEW", "PARTIALLY_FILLED"} else None
             trade["phase"] = "EXIT_REQUESTED"
             self.state["trade"] = trade
         self._save()
