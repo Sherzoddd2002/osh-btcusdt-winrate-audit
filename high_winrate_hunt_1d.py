@@ -19,6 +19,7 @@ import pandas as pd
 import pipeline_v2 as pv
 import research_v3 as rv
 
+EXPERIMENT_VERSION = "OSH-HIGH-WINRATE-FIXED-2026-11-14-v1"
 BARS_PER_DAY = 96
 H = 96
 TOP_PCT = 0.10
@@ -1001,6 +1002,7 @@ def main() -> None:
     args = parser.parse_args()
 
     print("=== OSH HIGH-WINRATE HUNT 1d — CORRECTNESS HARDENED / PAPER ONLY ===", flush=True)
+    print(f"[version] {EXPERIMENT_VERSION}", flush=True)
     print(
         "Costs: maker 2bps/side on entry+exit notional + 2bps RT slippage; "
         "stress taker 5bps/side on entry+exit notional; "
@@ -1048,6 +1050,7 @@ def main() -> None:
     dev_cut_time = pd.Timestamp(df["candle_time"].iloc[dev_end])
     results = {
         "metadata": {
+            "experiment_version": EXPERIMENT_VERSION,
             "generated_at_utc": datetime.now(timezone.utc).isoformat(),
             "data_source": f"PostgreSQL {args.table}",
             "data_rows": int(len(df)),
