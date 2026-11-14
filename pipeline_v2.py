@@ -30,6 +30,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 
 import numpy as np
@@ -54,15 +55,21 @@ REQUIRED = [
 def load_from_db(db_url: str, table: str) -> pd.DataFrame:
     from sqlalchemy import create_engine
 
-    engine = create_engine(db_url)
-    df = pd.read_sql(
-        f"""
-        SELECT to_timestamp(open_time / 1000.0) AS candle_time, *
-        FROM {table}
-        ORDER BY open_time ASC
-        """,
-        engine,
-    )
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*[.][A-Za-z_][A-Za-z0-9_]*", table):
+        raise ValueError("Unsafe table name. Expected schema.table.")
+    engine = create_engine(db_url, pool_pre_ping=True)
+    try:
+        with engine.connect() as connection:
+            df = pd.read_sql_query(
+                f"""
+                SELECT to_timestamp(open_time / 1000.0) AS candle_time, *
+                FROM {table}
+                ORDER BY open_time ASC
+                """,
+                connection,
+            )
+    finally:
+        engine.dispose()
     return _normalise(df)
 
 
@@ -105,31 +112,44 @@ def load_synthetic(n: int = 80_000, seed: int = 7) -> pd.DataFrame:
 
 
 def _normalise(df: pd.DataFrame) -> pd.DataFrame:
+    """Normalize only; refuse to silently discard or repair research candles."""
     missing = [c for c in REQUIRED if c not in df.columns]
     if missing:
         raise ValueError(f"Missing columns: {missing}")
 
-    df = df.copy()
-    if "ignore_value" in df.columns:
-        df = df.drop(columns=["ignore_value"])
-    df["candle_time"] = pd.to_datetime(df["candle_time"], utc=True, errors="coerce")
-    for c in REQUIRED[1:]:
-        df[c] = pd.to_numeric(df[c], errors="coerce")
+    out = df.copy()
+    if "ignore_value" in out.columns:
+        out = out.drop(columns=["ignore_value"])
+    out["candle_time"] = pd.to_datetime(out["candle_time"], utc=True, errors="coerce")
+    for col in REQUIRED[1:]:
+        out[col] = pd.to_numeric(out[col], errors="coerce")
 
-    df = (df.dropna(subset=["candle_time", "open", "high", "low", "close"])
-            .sort_values("candle_time")
-            .drop_duplicates(subset=["candle_time"], keep="last")
-            .reset_index(drop=True))
+    if out[REQUIRED].isna().any().any():
+        bad = out[REQUIRED].isna().sum()
+        raise ValueError(f"Missing/non-numeric required market values: {bad[bad > 0].to_dict()}")
+    out = out.sort_values("candle_time").reset_index(drop=True)
+    if out["candle_time"].duplicated().any():
+        raise ValueError("Duplicate candle_time rows detected; refusing automatic deduplication.")
 
-    dt = df["candle_time"].diff().dropna()
+    dt = out["candle_time"].diff().dropna()
     gaps = int((dt != pd.Timedelta(minutes=TF_MIN)).sum())
-    zeros = int((df[["open", "high", "low", "close"]] <= 0).any(axis=1).sum())
-    print(f"[data] rows={len(df):,}  gaps={gaps:,}  nonpositive_prices={zeros:,}  "
-          f"{df['candle_time'].min()} -> {df['candle_time'].max()}")
     if gaps:
-        print("[data] WARNING: irregular intervals. Splits by row index are still"
-              " chronological, but inspect the gaps before trusting labels.")
-    return df
+        raise ValueError(f"Found {gaps} non-{TF_MIN}-minute intervals; research labels would cross gaps.")
+
+    o, h, l, close = (out[k].to_numpy(float) for k in ("open", "high", "low", "close"))
+    invalid_ohlc = (o <= 0) | (h <= 0) | (l <= 0) | (close <= 0) | (h < np.maximum(o, close)) | (l > np.minimum(o, close)) | (h < l)
+    if invalid_ohlc.any():
+        raise ValueError(f"Found {int(invalid_ohlc.sum())} invalid OHLC rows.")
+    if (out[["volume", "quote_volume", "trade_count", "taker_buy_base_volume", "taker_buy_quote_volume"]] < 0).any().any():
+        raise ValueError("Negative volume or trade-count values detected.")
+    if (out["taker_buy_base_volume"] > out["volume"] + 1e-8).any():
+        raise ValueError("taker_buy_base_volume exceeds total volume.")
+    if (out["taker_buy_quote_volume"] > out["quote_volume"] + 1e-6).any():
+        raise ValueError("taker_buy_quote_volume exceeds quote volume.")
+
+    print(f"[data] rows={len(out):,}  gaps=0  duplicates=0  invalid_ohlc=0  "
+          f"{out['candle_time'].min()} -> {out['candle_time'].max()}")
+    return out
 
 
 # ---------------------------------------------------------------------
@@ -223,61 +243,63 @@ def triple_barrier_labels(
     sl_mult: float = 1.0,
     cost_bps: float = 10.0,
 ) -> pd.DataFrame:
-    """Label +1 / -1 / 0 using barriers sized by PAST volatility only.
-
-    sigma_t uses returns up to t (available at signal time) — never future vol.
-    Barriers are symmetric in GROSS terms; a +1 label additionally requires
-    that the profit target clears the round-trip cost. Low-volatility regimes
-    where no target can beat costs are therefore labelled 0 automatically.
-    """
-    c = df["close"].astype(float)
-    o = df["open"].astype(float)
-    ret_cc = np.log(c / c.shift(1))
-
-    sigma = (ret_cc.rolling(vol_window, min_periods=vol_window // 2).std()
+    """OHLC triple barrier using past volatility, next-open entry and adverse gap fills."""
+    if horizon < 1 or vol_window < 2 or cost_bps < 0:
+        raise ValueError("Invalid horizon, volatility window, or trading cost.")
+    c = df["close"].astype(float).to_numpy()
+    o = df["open"].astype(float).to_numpy()
+    hi = df["high"].astype(float).to_numpy()
+    lo = df["low"].astype(float).to_numpy()
+    ret_cc = np.log(pd.Series(c) / pd.Series(c).shift(1))
+    sigma = (ret_cc.rolling(vol_window, min_periods=max(2, vol_window // 2)).std()
              * np.sqrt(horizon)).to_numpy()
     cost_ret = cost_bps / 10_000.0
-    upper = pt_mult * sigma
-    lower = -sl_mult * sigma
+    barrier_vol = np.maximum(sigma, cost_ret * 1.5)
+    upper = pt_mult * barrier_vol
+    lower = -sl_mult * barrier_vol
+    entry = np.full(len(df), np.nan)
+    entry[:-1] = o[1:]
+    fwd_h = np.full(len(df), np.nan)
+    exit_ret = np.full(len(df), np.nan)
+    label3 = np.zeros(len(df), dtype=float)
 
-    entry = o.shift(-1).to_numpy()                    # enter at NEXT candle open
-    fwd = np.column_stack([
-        (c.shift(-j).to_numpy() / np.where(entry > 0, entry, np.nan)) - 1
-        for j in range(1, horizon + 1)
-    ])
+    for i in range(len(df) - horizon):
+        if not np.isfinite(entry[i]) or entry[i] <= 0 or not np.isfinite(upper[i]):
+            continue
+        tp = entry[i] * (1.0 + upper[i])
+        sl = entry[i] * (1.0 + lower[i])
+        resolved = False
+        for j in range(1, horizon + 1):
+            k = i + j
+            hit_up = hi[k] >= tp
+            hit_dn = lo[k] <= sl
+            if not (hit_up or hit_dn):
+                continue
+            if hit_dn:  # same-candle double touch is a stop-loss
+                fill = min(o[k], sl)
+                label3[i] = -1
+            else:
+                fill = max(o[k], tp)
+                label3[i] = 1
+            exit_ret[i] = fill / entry[i] - 1.0
+            resolved = True
+            break
+        if not resolved:
+            exit_ret[i] = c[i + horizon] / entry[i] - 1.0
+            label3[i] = 0
+        fwd_h[i] = c[i + horizon] / entry[i] - 1.0
 
-    u = fwd >= upper[:, None]
-    d = fwd <= lower[:, None]
-    first_u = np.where(u.any(1), u.argmax(1), horizon + 1)
-    first_d = np.where(d.any(1), d.argmax(1), horizon + 1)
-    label3 = np.where(first_u < first_d, 1, np.where(first_d < first_u, -1, 0))
-
-    # Realistic exit: stop at the first barrier that is touched, otherwise
-    # hold to the horizon. If both barriers are touched in the same bar we
-    # conservatively assume the LOSS barrier was hit first.
-    hit_up = first_u < first_d
-    hit_dn = first_d < first_u
-    any_hit = (first_u <= horizon - 1) | (first_d <= horizon - 1)
-    exit_ret = np.where(any_hit,
-                        np.where(hit_up, upper, lower),
-                        fwd[:, -1])
-
-    y_long = ((label3 == 1) & (upper > cost_ret)).astype("int8")
-
+    y_long = ((label3 == 1) & (upper > cost_ret)).astype(float)
+    valid = np.isfinite(fwd_h) & np.isfinite(exit_ret) & np.isfinite(sigma) & (entry > 0)
+    sample_weight = (1.0 / horizon) * np.clip(
+        np.abs(fwd_h) / (sigma + EPS), 0.25, 3.0
+    )
     out = pd.DataFrame({
-        "label3": label3,
-        "y_long": y_long,
-        "fwd_ret_h": fwd[:, -1],
-        "exit_ret": exit_ret,
-        "sigma": sigma,
-        # overlapping labels -> down-weight; larger moves -> up-weight
-        "sample_weight": (1.0 / horizon)
-                         * np.clip(np.abs(fwd[:, -1]) / (sigma + EPS), 0.25, 3.0),
+        "label3": label3, "y_long": y_long, "fwd_ret_h": fwd_h,
+        "exit_ret": exit_ret, "sigma": sigma, "sample_weight": sample_weight,
+        "valid": valid,
     }, index=df.index)
-
-    valid = np.isfinite(fwd).all(1) & np.isfinite(sigma) & (entry > 0)
     out.loc[~valid, ["label3", "y_long", "fwd_ret_h", "exit_ret", "sample_weight"]] = np.nan
-    out["valid"] = valid
     return out
 
 
@@ -303,27 +325,34 @@ def build_model(n_estimators: int = 220):
         )
 
 
-def fit_with_early_stop(model, X, y, w):
-    """Chronological internal validation = last 15% of the TRAIN fold."""
+def fit_with_early_stop(model, X, y, w, embargo: int = 0):
+    """Use a chronological validation tail with a label-horizon purge before it."""
     import inspect
 
     cut = int(len(X) * 0.85)
+    fit_end = cut - max(0, int(embargo))
+    if fit_end < 2 or cut >= len(X):
+        raise ValueError("Training fold too short for purged early stopping.")
+    x_train, y_train, w_train = X.iloc[:fit_end], y.iloc[:fit_end], w.iloc[:fit_end]
+    x_valid, y_valid = X.iloc[cut:], y.iloc[cut:]
+
     try:
         from lightgbm import early_stopping
-        model.set_params(n_estimators=400)
-        kwargs = {"eval_metric": "binary_logloss",
-                  "callbacks": [early_stopping(30, verbose=False)]}
-        params = inspect.signature(model.fit).parameters
-        if "eval_X" in params:
-            kwargs["eval_X"] = X.iloc[cut:]
-            kwargs["eval_y"] = y.iloc[cut:]
-        else:  # older lightgbm
-            kwargs["eval_set"] = [(X.iloc[cut:], y.iloc[cut:])]
-        model.fit(X.iloc[:cut], y.iloc[:cut], sample_weight=w.iloc[:cut], **kwargs)
+    except ImportError:
+        model.fit(x_train, y_train, sample_weight=w_train)
         return model
-    except Exception:
-        model.fit(X.iloc[:cut], y.iloc[:cut], sample_weight=w.iloc[:cut])
-        return model
+
+    model.set_params(n_estimators=400)
+    kwargs = {"eval_metric": "binary_logloss",
+              "callbacks": [early_stopping(30, verbose=False)]}
+    params = inspect.signature(model.fit).parameters
+    if "eval_X" in params:
+        kwargs["eval_X"] = x_valid
+        kwargs["eval_y"] = y_valid
+    else:
+        kwargs["eval_set"] = [(x_valid, y_valid)]
+    model.fit(x_train, y_train, sample_weight=w_train, **kwargs)
+    return model
 
 
 # ---------------------------------------------------------------------
@@ -367,28 +396,34 @@ def non_overlapping(mask_idx: np.ndarray, horizon: int) -> np.ndarray:
 def evaluate_fold(
     prob: np.ndarray, y: np.ndarray,
     exit_ret: np.ndarray, hold_ret: np.ndarray,
-    cost_bps: float, horizon: int, top_pct: float = 0.05,
+    cost_bps: float, horizon: int, threshold: float,
 ) -> dict:
+    """Evaluate only predictions exceeding a frozen TRAIN-derived threshold."""
+    if not np.isfinite(threshold):
+        raise ValueError("A finite train-calibrated threshold is required.")
     cost = cost_bps / 10_000.0
-    k = max(20, int(len(prob) * top_pct))
-    top = np.argsort(prob)[::-1][:k]
-    sel = non_overlapping(np.sort(top), horizon)
+    candidates = np.flatnonzero(np.asarray(prob, dtype=float) >= threshold)
+    sel = non_overlapping(candidates, horizon)
     if len(sel) == 0:
-        return {"trades": 0}
+        return {
+            "trades": 0, "gross_bps_list": [], "mean_gross_bps": None,
+            "mean_net_bps": None, "median_net_bps": None,
+            "win_rate_after_cost_pct": None, "per_trade_sharpe": None,
+            "compounded_net_pct": None, "benchmark_mean_net_bps": None,
+            "edge_vs_benchmark_bps": None, "precision_label_pct": None,
+        }
 
-    gross = exit_ret[sel]
+    gross = np.asarray(exit_ret, dtype=float)[sel]
     net = gross - cost
     hit = float((net > 0).mean())
     mean_net_bps = float(net.mean() * 10_000)
     sharpe = float(net.mean() / (net.std() + EPS))
-
-    # naive benchmark: trade every `horizon` bars, long only, hold to horizon
     bench_idx = non_overlapping(np.arange(len(prob)), horizon)
-    bench = hold_ret[bench_idx] - cost
+    bench = np.asarray(hold_ret, dtype=float)[bench_idx] - cost
 
     return {
-        "trades": len(sel),
-        "precision_label_pct": float(y[sel].mean() * 100),
+        "trades": int(len(sel)),
+        "precision_label_pct": float(np.asarray(y)[sel].mean() * 100),
         "gross_bps_list": [float(x * 10_000) for x in gross],
         "mean_gross_bps": float(gross.mean() * 10_000),
         "mean_net_bps": mean_net_bps,
@@ -396,8 +431,10 @@ def evaluate_fold(
         "win_rate_after_cost_pct": hit * 100,
         "per_trade_sharpe": sharpe,
         "compounded_net_pct": float((np.prod(1 + net) - 1) * 100),
-        "benchmark_mean_net_bps": float(bench.mean() * 10_000),
-        "edge_vs_benchmark_bps": float((net.mean() - bench.mean()) * 10_000),
+        "benchmark_mean_net_bps": float(bench.mean() * 10_000) if len(bench) else None,
+        "edge_vs_benchmark_bps": (
+            float((net.mean() - bench.mean()) * 10_000) if len(bench) else None
+        ),
     }
 
 
@@ -467,13 +504,16 @@ def main() -> None:
 
     rows = []
     for i, (tr0, tr1, te0, te1) in enumerate(folds, 1):
+        # Reserve the train tail exclusively for threshold calibration.
+        # It is not used for fitting or early stopping.
+        cal0 = max(tr0 + 100, tr1 - test_len)
+        if cal0 >= tr1:
+            raise ValueError("Training fold is too short for a separate calibration tail.")
         model = build_model()
         model = fit_with_early_stop(
-            model, X.iloc[tr0:tr1], y.iloc[tr0:tr1], w.iloc[tr0:tr1]
+            model, X.iloc[tr0:cal0], y.iloc[tr0:cal0], w.iloc[tr0:cal0],
+            embargo=args.horizon + 2,
         )
-
-        # threshold from the TRAIN tail only (calibration), never from test
-        cal0 = tr1 - test_len
         p_cal = model.predict_proba(X.iloc[cal0:tr1])[:, 1]
         thr = float(np.quantile(p_cal, 1 - args.top_pct))
 
@@ -482,7 +522,7 @@ def main() -> None:
 
         res = evaluate_fold(p_test, y_test,
                             r_exit[te0:te1], r_hold[te0:te1],
-                            args.cost_bps, args.horizon, args.top_pct)
+                            args.cost_bps, args.horizon, threshold=thr)
         # constant baseline uses the TRAIN base rate, never the test labels
         train_base = float(y.iloc[tr0:tr1].mean())
         res.update({
@@ -497,9 +537,11 @@ def main() -> None:
             "test_pass_rate_pct": float((p_test >= thr).mean() * 100),
         })
         rows.append(res)
+        net_display = res["mean_net_bps"]
+        net_text = f"{net_display:+.2f}bps" if net_display is not None else "no trades"
         print(f"[fold {i}] AUC={res['roc_auc']:.4f}  Brier={res['brier']:.4f} "
               f"(const {res['brier_constant']:.4f})  trades={res['trades']}  "
-              f"net={res['mean_net_bps']:+.2f}bps  pass={res['test_pass_rate_pct']:.1f}%")
+              f"net={net_text}  pass={res['test_pass_rate_pct']:.1f}%")
 
     rep = pd.DataFrame(rows)
     net = rep["mean_net_bps"]

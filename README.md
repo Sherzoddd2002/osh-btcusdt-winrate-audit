@@ -8,6 +8,23 @@ xavf ostida emas.
 > tarixiy qog'oz savdo (backtest) bo'lib, kelajakdagi natijani kafolatlamaydi.
 > `live_orders = false` — sayt faqat analytics uchun.
 
+> **METODOLOGIK HOLAT — MUHIM:** ushbu branch'da v2/v3 tadqiqot kodi jiddiy qayta mustahkamlandi.
+> Quyida ko'rsatilgan eski dashboard va `v3_results.json` raqamlari yangi kod bilan qayta
+> hisoblanmagan; ular faqat tarixiy/arxiv natijalaridir. Yangi natijani faqat o'zingizning
+> PostgreSQL ma'lumotingizda testlar o'tgach qayta yarating. Hozircha hech qanday strategiya
+> GO deb tasdiqlanmaydi; jonli savdo o'chirilgan.
+
+## Yangi hardening branch
+
+- Branch: `research/v3-hardening-derivatives-data`
+- Qattiq 15m interval / dublikat / OHLC / hajm validatsiyasi; qatorlarni jimgina tashlab yubormaydi.
+- Train threshold endi test oynasidan top-5% rank qilish bilan almashtirilmagan: alohida train calibration tail ishlatiladi.
+- Future OHLC barrier, bir shamda ikki to'siq tegsa konservativ stop, gap-through stop yomonroq open narxda.
+- 2m cross-asset feature faqat source bar yopilib, BTC candle close vaqti kelganidan keyin mavjud deb olinadi.
+- Audit import qilinganda DB'ga ulanmaydi; birinchi `NaT` diff uzilish deb sanalmaydi.
+- Regression testlar va GitHub Actions CI qo'shildi.
+- Eski news / ablation skripti non-causal bo'lgani uchun ataylab bloklandi.
+
 ---
 
 ## Natija (qisqa)
@@ -86,32 +103,173 @@ shu sababli AUC ko'tariladi. Bu statistik mahorat, lekin iqtisodiy edge emas:
 
 ---
 
-## Qayta ishga tushirish
+## Qayta ishga tushirish (hardening branch)
 
-```bash
-# 1) Haqiqiy PostgreSQL ma'lumoti bilan (parol pgpass.conf orqali o'qiladi)
-python pipeline_v2.py --table public.btcusdt_15m --cost-bps 10 --folds 10 \
-  --train-days 365 --test-days 90 --out report.json
+> Quyidagi buyruqlar yangi branch kodiga tegishli. Eski reportlar avtomatik yangilanmaydi;
+> ular faqat lokal qayta hisobdan keyin yangi natija bo'ladi.
 
-# 2) Yoki hech qanday DB siz, sintetik self-test
-python pipeline_v2.py --synthetic --rows 80000 --folds 4 --cost-bps 10
+### 1. Muhit va testlar
 
-# 3) Dashboard'ni qayta yig'ish
-python build_dashboard.py --report report.json --out .
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m compileall -q .
+python -m unittest discover -s tests -v
 ```
 
-`pipeline_v2.py` quyidagilarni qiladi:
+### 2. PostgreSQL audit
 
-1. `make_features()` — faqat `t` sham yopilishida ma'lum bo'lgan 37 ta stasionar feature
-   (training/serving symmetry).
-2. `triple_barrier_labels()` — `σ = std(log ret, 96) · √h` faqat **o'tmish** ma'lumotidan;
-   to'siqlar `±σ`; `y=1` faqat maqsad xarajatdan oshganda; ustma-ust label'lar `1/h` og'irlikda.
-3. `make_folds()` — xronologik expanding train + 6 sham embargo + 90 kunlik test,
-   **eng so'nggi** 10 fold olinadi.
-4. Threshold har fold'da faqat train oxiridan kalibrlanadi; testga tegilmaydi.
-5. `non_overlapping()` — pozitsiyalar ustma-ust tushmaydi; barrier-exit PnL.
-6. `wilson_ci()` — win rate uchun 95% ishonch oralig'i.
-7. `GO` faqat: median net > 0 **va** musbat fold'lar ≥ 75% **va** median AUC > 0.52.
+Parolni buyruq satriga yoki Git'ga yozmang. PostgreSQL `pgpass.conf` yoki maxfiy
+environment variable'dan foydalaning.
+
+```powershell
+$env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
+python audit_btc_integrity.py --table public.btcusdt_15m --out integrity_report.json
+```
+
+### 3. V3 kauzal tadqiqot
+
+```powershell
+python research_v3.py --table public.btcusdt_15m --cost-bps 10 --folds 5 --train-days 365 --test-days 90 --holdout-days 180 --out v3_results.json
+```
+
+Faqat BTC bazasini tekshirish:
+
+```powershell
+python research_v3.py --table public.btcusdt_15m --no-external --out v3_base_only.json
+```
+
+### 4. 1 kunlik selektiv signal sinovi (2% / 5% / 10%)
+
+Savdo sonini ko'paytirishga emas, eng yuqori ishonchli signallarni ajratishga mo'ljallangan
+alohida sinov. U **faqat 1d BASE** modelini tekshiradi va har bir walk-forward fold'da
+modelni bir marta o'qitib, aynan o'sha modelning kalibrlash ehtimollaridan uchta threshold
+oladi. Shu sababli 2%, 5% va 10% variantlari bir xil model va bir xil test davrlarida
+taqqoslanadi.
+
+PowerShell:
+
+```powershell
+$env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
+.\.venv\Scripts\python.exe selectivity_sweep_1d.py --table public.btcusdt_15m --cost-bps 10 --selection-pcts 0.02,0.05,0.10 --folds 5 --train-days 365 --test-days 90 --holdout-days 180 --out selectivity_sweep_1d.json
+```
+
+Natijalar `selectivity_sweep_1d.json` fayliga yoziladi. Har bir variant uchun OOS va
+alohida holdout win rate, Wilson 95% interval, net expectancy, Profit Factor, o'rtacha
+net yutuq/zarar, payoff ratio, maksimal trade-sequence drawdown, ketma-ket zararlar,
+fold natijalari va GO/NO-GO eshiklari ko'rsatiladi.
+
+**Muhim metodologiya:** 2% / 5% / 10% — kalibrlash oynasidagi UP va DOWN ehtimollarining
+har biri uchun alohida yuqori kvantil. Bu testda aynan shuncha savdo bo'ladi degani emas;
+real signal va bajarilgan savdo ulushi alohida o'lchanadi. Threshold test va holdout
+boshlanishidan oldin muzlatiladi. Bir nechta variantni ko'rib chiqqandan keyin holdout'da
+eng yaxshisini tanlab olish mumkin emas — variantni development fold'laridan tanlab,
+keyingi yangi forward davrida bir marta tasdiqlash kerak.
+
+Bu script faqat tarixiy paper-research; real order yubormaydi. Hatto barcha GO
+mezoni bajarilgan taqdirda ham, bu live trading uchun kafolat yoki ruxsat emas: keyingi
+mustaqil forward sinov, ijro xarajatlari va risk nazorati alohida talab qilinadi.
+
+`WIDE_GLD_AUX_2MIN.csv` ichidagi `datetime` 2-daqiqalik barning **open** vaqti
+deb qabul qilinadi; kod qiymatni 2 daqiqadan keyin mavjud deb hisoblaydi. CSV timestamp'i
+aslida close time bo'lsa, `--source-bar-minutes 0` ishlating. Semantika tekshirilmasdan
+xasset natijasini dalil deb qabul qilmang.
+
+### 5. $100 kapital: komissiya, slippage va funding stress-sinovi
+
+Bu tajriba 1 kunlik BASE modelni turli ijro xarajatlari ostida qayta o'qitadi. U faqat
+oldingi 10 bps natijasiga keyin komissiya qo'shmaydi: model barrier-label xarajati har
+bir **komissiya + slippage** yig'indisi uchun qayta quriladi. Bir xil jami xarajatga ega
+fee/slippage juftliklari bir xil fold modelidan foydalanadi.
+
+Standart Regular User taxminlari (akkauntning shaxsiy Fee Rate jadvalini tekshiring):
+maker **2 bps/side** (0.02%), taker **5 bps/side** (0.05%). Shuning uchun:
+maker/maker = 4 bps round-trip; maker/taker = 7 bps; taker/taker = 10 bps.
+Slippage 0/2/5 bps — bozor chuqurligidan o'lchangan fakt emas, balki foydalanuvchi
+tanlaydigan round-trip stress farazlari. `--bnb-discount-pct 10` BNB chegirmasini
+alohida tekshiradi; faqat USDⓈ-M Futures wallet'da komissiyani BNB bilan to'lashga
+yetarli BNB bo'lsa qo'llanadi.
+
+Funding `8h` deb taxmin qilinmaydi. `--funding-source auto` (standart) avval
+Binance USDⓈ-M `/fapi/v1/fundingRate` REST API'sini sinaydi; DNS/ulanish muammosida
+rasmiy Binance Vision `futures/um/monthly/fundingRate` arxivlariga o'tadi. FundingRate
+uchun joriy oyning kunlik ZIP fayllari mavjud deb faraz qilinmaydi: tugallanmagan oy
+REST API yoki alohida tekshirilgan CSV orqali olinishi kerak. Arxivlarning SHA-256
+`.CHECKSUM` fayli mavjud bo'lsa tekshiriladi; ZIP ichidagi CSV schema va funding
+vaqtlarining uzluksizligi ham tekshiriladi.
+
+Agar REST API ochilmasa, lekin Vision ishlasa, `--allow-vision-monthly-truncate`
+parametri bilan **joriy tugallanmagan oy shamlarini chiqarib tashlab**, oxirgi to'liq
+oyning oxirigacha bo'lgan tarixiy sinovni alohida belgi bilan bajarish mumkin.
+Bu to'liq davr natijasi emas; JSON metadata'da truncation va oxirgi qamrab olingan
+vaqt yoziladi. Parametr berilmasa skript joriy oyning funding ma'lumoti yo'qligida
+hisobni to'xtatadi.
+
+REST API `fundingTime/fundingRate/markPrice` beradi. Vision arxivida esa
+`calc_time/funding_interval_hours/last_funding_rate` bor, haqiqiy settlement
+`markPrice` yo'q. Shu sabab arxiv yo'li ishlatilganda funding hisobida funding
+vaqtigacha yopilgan oxirgi BTCUSDT 15m candle close narxi **mark-price proxy** sifatida
+ishlatiladi. Bu haqiqiy Binance mark price emas va JSON hisobotda alohida belgilanadi.
+Funding long/short yo'nalishi, pozitsiya muddati va settlement vaqtiga qarab hisoblanadi.
+15m sham ichidagi aniq fill soniyasi ko'rinmagani uchun kirish/chiqish chegara shamidagi
+funding to'lovi hisoblanadi, ehtimoliy funding krediti esa olinmaydi.
+
+Agar to'g'ridan-to'g'ri arxiv yo'lidan foydalanmoqchi bo'lsangiz, `--funding-source vision`
+qo'shing. `--funding-source api` esa REST API xatosida fallback qilmaydi.
+
+```powershell
+$env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
+.\.venv\Scripts\python.exe capital_fee_stress_1d.py --table public.btcusdt_15m --fetch-funding --funding-source vision --allow-vision-monthly-truncate --funding-csv .\binance_btcusdt_funding_history.csv --maker-fee-bps 2 --taker-fee-bps 5 --bnb-discount-pct 0 --slippage-bps 0,2,5 --selection-pcts 0.02,0.05,0.10 --position-caps 25,50,100 --initial-capital 100 --cash-reserve-pct 10 --folds 5 --train-days 365 --test-days 90 --holdout-days 180 --out capital_fee_stress_1d.json
+```
+
+Natija `capital_fee_stress_1d.json` ichida 3 fee rejimi × 3 slippage rejimi × 3
+signal selektivligi bilan solishtiriladi. Har bir variant uchun OOS va untouched
+holdout win rate/95% CI, Profit Factor, net expectancy, komissiya, slippage, funding
+to'lovi va krediti, drawdown, hamda $25/$50/$100 pozitsiya-cap bilan $100 hisobning
+yakuniy balansi beriladi. OOS va holdout balanslari **har biri mustaqil $100 dan boshlanadi**;
+ularning PnL qiymatlarini bir-biriga qo'shmang.
+
+**Ko'p variantni tanlash ogohlantirishi:** 27 ta kombinatsiyadan eng yaxshisini holdout
+natijasiga qarab tanlash mumkin emas. Nomzodni faqat development fold'larida tanlang,
+so'ng uni hali ko'rilmagan yangi forward davrida bir marta tasdiqlang. Bu usul holdout'ni
+optimallashtirish ma'lumotiga aylantirib yubormaslik uchun kerak.
+
+`cash-reserve-pct 10` sabab $100 cap ssenariysi dastlab $90 nominal bilan boshlanadi;
+$25 va $50 cap esa mos ravishda $25/$50 dan boshlanadi. Kapital tushsa pozitsiya
+90% joriy balans bilan chegaralanadi; yuqoriga qarab tanlangan cap'dan oshmaydi.
+Bu 1x, zaxirali qog'oz simulyatsiya, lekin exchange liquidation/maintenance margin,
+order-book queue yoki maker order fill ehtimolini modellashtirmaydi. Maker/maker
+natijasi maker fill kafolati emas.
+
+Funding API ham, Binance Vision arxivi ham tarmoqdan ochilmasa, Binance funding CSV'sini
+`--funding-csv` bilan bering; funding ma'lumoti bo'lmasa skript uni nol deb taxmin qilib
+GO bermaydi. Hisob ma'lumotlari va fee tier akkauntga bog'liq.
+
+Rasmiy manbalar: [USDⓈ-M fee rate table](https://www.binance.com/en-BH/fee/futureFee),
+[Binance Futures fees and funding](https://www.binance.com/en/support/faq/detail/98488a516eb84e3eb34605683dffd554),
+[Funding rate history API](https://developers.binance.com/docs/derivatives/usds-margined-futures/market-data/rest-api/Get-Funding-Rate-History).
+
+
+### 6. V2 bazaviy pipeline
+
+```powershell
+python pipeline_v2.py --table public.btcusdt_15m --cost-bps 10 --folds 5 --train-days 365 --test-days 90 --out report.json
+```
+
+Sintetik self-test kod ishga tushishini tekshiradi, bozor edge'ini emas:
+
+```powershell
+python pipeline_v2.py --synthetic --rows 80000 --folds 4 --cost-bps 10
+```
+
+### 7. Eskirgan tajriba va eski natijalar
+
+`ablation_experiment.py` non-causal test ranking va external timestamp muammolari sabab
+ataylab o'chirilgan. `ablation_results.json`, `v3_results.json`, `index.html`,
+`research-v3.html` va `external-audit.html` yangi hardening kodidan oldingi arxiv
+natijalaridir. Qayta hisoblanmaguncha ularni yangi model natijasi sifatida ko'rsatmang.
 
 To'liq nazariy qo'llanma: [`QOLLANMA.md`](QOLLANMA.md).
 
@@ -238,3 +396,111 @@ Bularsiz eng to'g'ri qaror — savdo qilmaslik va saytni analytics vositasi sifa
 ---
 
 *OSH research · barcha raqamlar tarixiy paper-backtest · investitsiya maslahati emas.*
+
+
+## 6. Tuzatilgan assimetrik 1 kunlik eksperiment (paper only)
+
+high_winrate_hunt_1d.py oldingi yuqori-win-rate tajribasidagi muhim mantiqiy xatolarni tuzatadi:
+- Long va short uchun alohida barrier label, exit reason va holding duration.
+- Har ikki yo'nalish uchun alohida model, hatto TP/SL simmetrik bo'lganda ham.
+- Model-fit/early-stopping oynasi kalibrlash oynasidan kamida H+2 sham oldin tugaydi.
+- Funding rolling feature'lari takrorlangan 15m qatorlarda emas, haqiqiy settlement hodisalarida 1D/3D/30D vaqt oynalari bilan hisoblanadi.
+- Funding PnL settlement mark price mavjud bo'lmagani uchun oldingi yopilgan 15m close proxy bilan baholanadi; boundary settlement'da to'lov olinadi, kredit esa hisobga olinmaydi.
+- TP gap-fill barrier narxidan yaxshiroq deb olinmaydi; stop gap esa salbiyroq open bilan hisoblanadi.
+- Short foyda/zarari boshlang'ich notional bo'yicha `(entry - exit) / entry` formula bilan o'lchanadi; reciprocal-price formula ishlatilmaydi.
+- Maker/taker fee kirish va chiqish notionaliga alohida qo'llanadi; slippage round-trip faraz sifatida ko'rsatiladi.
+- Barrier exit sodir bo'lgan so'nggi 15m shamdagi funding kreditlari vaqt noaniqligi sabab hisobga olinmaydi; to'lovlar esa konservativ tarzda olinadi.
+- Holdout modeli OOS fold'lardagi kabi expanding-train tartibida, barcha oldingi development tarixi bilan o'qitiladi; oxirgi 90 kun alohida kalibrlash oynasi, keyingi 180 kun esa muzlatilgan holdout.
+- 6 ta haqiqiy nomzod bir xil holdout'da tekshirilgani uchun expectancy bootstrap intervali Bonferroni usulida oilaviy 95% darajaga tuzatiladi; C6 trap GO nomzodi emas.
+
+PowerShell:
+~~~powershell
+$env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
+.\.venv\Scripts\python.exe -m compileall -q .
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe high_winrate_hunt_1d.py --table public.btcusdt_15m --funding-csv .\binance_btcusdt_funding_history.csv --data-end-utc "2026-10-31T23:45:00Z" --out high_winrate_hunt_1d_fixed.json
+~~~
+
+high_winrate_hunt_1d_fixed.json ichida 7 konfiguratsiya, 5 ta purged walk-forward fold, 180 kunlik untouched holdout, 6 va 10 bps xarajat ssenariylari, funding PnL, Wilson interval, block-bootstrap interval va $25/$50/$100 position cap bo'yicha $100 hisob simulyatsiyasi saqlanadi.
+
+**2026-11-14 risk-attribution yangilanishi:**
+- Eksperiment versiyasi: `OSH-HIGH-WINRATE-RISK-ATTRIBUTION-2026-11-14-v1`.
+- Har bir LONG/SHORT savdoning o'z exit vaqtigacha OHLC path high/low qiymati saqlanadi; MAE, MFE, holding time va exit reason bo'yicha attribution har bir OOS fold va pooled development OOS natijasiga qo'shiladi.
+- Risk-budget simulyatsiyasi faqat 5 ta development OOS fold savdolarida bajariladi; yakuniy 180 kunlik holdout risk-policy solishtirishiga kiritilmaydi.
+- Oldindan belgilangan risk grid: equity'ning 0.25%, 0.5% va 1.0% stop-risk'i; notional `min(max_notional, 90% equity, risk_budget / (stop_distance + 6 bps cost buffer))` bilan chegaralanadi.
+- Risk tormozlari: 2% kunlik realized-loss limiti, 15% peak-to-equity drawdown'da yangi savdolarni to'xtatish, 3 ketma-ket zarar ortidan 1 signal cooldown.
+- Risk sizing dollar kapital yo'lini va drawdown'ni o'zgartiradi, ammo asosiy trade-level win rate yoki expectancy'ni yaxshilamaydi. Musbat signal edge alohida isbotlanishi shart.
+- MAE/MFE to'liq exit shamining OHLC diapazonidan olinadi. Sham ichidagi aniq tick ketma-ketligi noma'lum bo'lgani uchun bu adverse excursion konservativ stress-proxy, aniq liquidation yoki order-book modeli emas.
+
+Yangi risk moduli uchun regression testlar:
+```powershell
+.\\.venv\\Scripts\\python.exe -m unittest tests.test_risk_management_1d -v
+```
+
+**Arxiv natijasi haqida ogohlantirish:** repodagi high_winrate_hunt_1d.json eski, tuzatilmagan skript tomonidan 2026-11-14 da yaratilgan. Unda short PnL, funding timing/feature, exit duration va hisob-kitob xatolari bor edi. U faqat tarixiy audit dalili; yangi model natijasi yoki foyda isboti emas. Tuzatilgan natijani alohida high_winrate_hunt_1d_fixed.json fayliga qayta yarating.
+
+
+**Muhim:** $100 simulyatsiyasi 1x, 10% cash reserve va pozitsiya notionalini joriy equity'ning 90%idan oshirmaslik faraziga asoslangan. Bu exchange liquidation, order-book, maker fill ehtimoli yoki real slippage modelini qamramaydi. Funding mark-price proxy haqiqiy Binance markPrice emas. Hech qanday natija live order yuborishga ruxsat bermaydi; ijobiy natija chiqsa ham keyingi mustaqil forward/shadow sinov talab qilinadi.
+
+### 7. Side-specific TP development hunt (holdout excluded)
+
+`development_side_hybrid_1d.py` taqqoslaydi:
+- C2: LONG/SHORT TP = 0.75σ, SL = 1.00σ.
+- C3: LONG/SHORT TP = 0.50σ, SL = 1.00σ.
+- H1 discovery hypothesis: LONG TP = 0.50σ, SHORT TP = 0.75σ, SL = 1.00σ.
+
+H1 gipotezasi oldingi development OOS side-attribution'dan kelib chiqqan: C3 LONG tomoni yuqoriroq win rate, C2 SHORT tomoni esa kuchliroq net expectancy ko'rsatgan. Bu ularning agregat statistikasi alohida model bilan birlashtirilganda shu natija albatta takrorlanadi degani emas; signal to'qnashuvi, threshold va non-overlap qoidalari qayta hisoblanadi.
+
+Skript 180 kunlik yakuniy holdout'ni feature/label yaratishdan **oldin** kesib tashlaydi. U holdout uchun model fit, probability threshold, variant tanlash, risk sizing yoki natija hisoblamaydi. H1 oldingi OOS tahlilidan ilhomlanganligi sababli bu discovery-only; mustaqil forward paper davri talab qilinadi.
+
+```powershell
+$env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
+
+.\.venv\Scripts\python.exe development_side_hybrid_1d.py `
+    --table public.btcusdt_15m `
+    --funding-csv .\binance_btcusdt_funding_history.csv `
+    --data-end-utc "2026-10-31T23:45:00Z" `
+    --holdout-days 180 `
+    --out development_side_hybrid_1d.json
+```
+
+Maqsad mezonlari bitta natijada birgalikda tekshiriladi: net win rate ≥60%, net expectancy >0, PF ≥1.25, kamida 80% musbat OOS fold, bootstrap CI pastki chegarasi >0 va taker stress expectancy >0. Ushbu discovery run'da ham shu mezonlar bajarilishi live savdoga ruxsat bermaydi.
+
+
+
+## 8. Exit-aware Binance execution-cost audit (side-hybrid discovery)
+
+```powershell
+$env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
+.\.venv\Scripts\python.exe -m compileall -q .
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+
+.\.venv\Scripts\python.exe development_side_hybrid_1d.py `
+    --table public.btcusdt_15m `
+    --funding-csv .\binance_btcusdt_funding_history.csv `
+    --data-end-utc "2026-10-31T23:45:00Z" `
+    --holdout-days 180 `
+    --maker-fee-bps 2 `
+    --taker-fee-bps 5 `
+    --round-trip-slippage-bps 2 `
+    --bnb-discount-pct 0 `
+    --out development_side_hybrid_execution_1d.json
+```
+
+This runner reports three fee assumptions on the **same selected trades**:
+
+1. Legacy Maker/Maker on every fill — optimistic comparison only.
+2. Taker entry; TP exit Maker conditional on a passive limit fill; Stop Loss and TIME exit Taker — the headline execution-aware scenario.
+3. Taker entry and Taker exit for every exit reason — conservative fee stress.
+
+Maker/Taker rates are configurable in bps per side (defaults: Maker 2 bps, Taker 5 bps).
+The optional BNB discount reduces commission only, never slippage or funding; set it
+to 10 only when the account actually has Futures BNB fee discount enabled and enough
+BNB to pay fees. Enter your own account rates from Binance's Fee Rate page; never
+share API keys or secrets. Binance exposes a signed per-symbol commission-rate
+endpoint for account-specific rates.
+
+The TP-Maker case is conditional, not guaranteed: 15m OHLC cannot establish queue
+priority or prove a passive limit order was filled. The all-Taker scenario must also
+be examined. Round-trip slippage is an explicit assumption, not measured order-book
+replay. The final holdout is excluded from this discovery runner. No live orders are sent.

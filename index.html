@@ -61,6 +61,8 @@
   footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
   .legend{display:flex;flex-wrap:wrap;gap:18px;font-size:12px;color:var(--muted);margin-bottom:12px}
   .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .archive-warning{background:#fff5e6;border:1px solid #f0d9ad;border-left:5px solid #b45309;border-radius:10px;padding:15px 18px;margin:16px 0}
+  .archive-warning strong{color:#92400e}
 </style>
 </head>
 <body>
@@ -73,6 +75,13 @@
   </div>
   <span class="badge badge-safe"><span class="dot"></span> PAPER / SHADOW MODE</span>
 </header>
+
+<div class="archive-warning" role="alert">
+  <strong>ARXIV DASHBOARD — bu raqamlar yangi hardening kodi bilan qayta hisoblanmagan.</strong>
+  Bu sahifa eski backtest reportini ko'rsatadi. V2 pipeline'da test oynasi bo'yicha top-5%
+  ranking xatosi topilgan va yangi branch'da tuzatilgan. Ushbu KPI, win-rate va GO/NO-GO
+  qarorlari qayta hisoblanmaguncha amaldagi strategiya bahosi emas.
+</div>
 
 <div class="safety">
   <strong>Xavfsiz rejim — hech qanday tavakkal yo'q</strong>
