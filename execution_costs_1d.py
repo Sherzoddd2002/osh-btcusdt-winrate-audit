@@ -16,6 +16,18 @@ SCENARIO_LEGACY_MAKER_MAKER = "legacy_maker_entry_maker_exit"
 SCENARIO_TAKER_ENTRY_TP_MAKER = "taker_entry_tp_maker_stop_time_taker"
 SCENARIO_TAKER_ALL = "taker_entry_taker_exit"
 
+# Stable schema used by the fold-level aggregation and reporting layer.
+SCENARIO_COMPONENT_KEYS = (
+    "gross_return",
+    "funding_return",
+    "entry_commission_return",
+    "exit_commission_return",
+    "slippage_return",
+    "commission_return",
+    "total_cost_return",
+    "net_return",
+)
+
 
 def _validate_rates(maker_fee_bps: float, taker_fee_bps: float, slippage_bps: float) -> None:
     rates = (maker_fee_bps, taker_fee_bps, slippage_bps)
