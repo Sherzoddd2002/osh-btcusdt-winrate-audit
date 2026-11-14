@@ -456,11 +456,11 @@ Skript 180 kunlik yakuniy holdout'ni feature/label yaratishdan **oldin** kesib t
 ```powershell
 $env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
 
-.\\.venv\\Scripts\\python.exe development_side_hybrid_1d.py \\
-    --table public.btcusdt_15m \\
-    --funding-csv .\\binance_btcusdt_funding_history.csv \\
-    --data-end-utc "2026-10-31T23:45:00Z" \\
-    --holdout-days 180 \\
+.\.venv\Scripts\python.exe development_side_hybrid_1d.py `
+    --table public.btcusdt_15m `
+    --funding-csv .\binance_btcusdt_funding_history.csv `
+    --data-end-utc "2026-10-31T23:45:00Z" `
+    --holdout-days 180 `
     --out development_side_hybrid_1d.json
 ```
 
