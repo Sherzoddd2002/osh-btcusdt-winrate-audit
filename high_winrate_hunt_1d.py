@@ -177,7 +177,7 @@ def asymmetric_barrier_labels(
             tp_hits = (lo_w <= tp[:, None]) if is_short else (hi_w >= tp[:, None])
             sl_hits = (hi_w >= sl[:, None]) if is_short else (lo_w <= sl[:, None])
             any_hits = tp_hits | sl_hits
-            has_hit = any_hits.any(axis=1)
+            has_hit = any_hits.any(axis=1) & valid
             first = any_hits.argmax(axis=1)
             k = rows + first + 1
             first_tp = tp_hits[local, first]
@@ -500,6 +500,12 @@ def fit_side_model(
     w_train = np.asarray(sample_weight, dtype=float)[:fit_end]
     x_valid = X.iloc[cut:]
     y_valid = encoded[cut:]
+    expected_train_classes = np.arange(len(classes), dtype=np.int8)
+    if not np.array_equal(np.unique(y_train), expected_train_classes):
+        raise ValueError(
+            "Purged model-fit segment lost an outcome class; refusing a model "
+            "whose early-stopping validation contains an unseen class."
+        )
 
     fit_kwargs = {
         "eval_metric": "multi_logloss",
@@ -717,6 +723,7 @@ def run_config(
 
     fold_results = []
     pooled_primary, pooled_stress, pooled_gross = [], [], []
+    pooled_benchmark_primary, pooled_benchmark_stress = [], []
     last_model_state = None
     total_oos_bars = 0
 
@@ -739,8 +746,11 @@ def run_config(
         benchmark = _long_benchmark(
             test_labels, test_times, ft, fr, fm, FEE_BPS_PRIMARY
         )
+        benchmark_stress = _long_benchmark(
+            test_labels, test_times, ft, fr, fm, FEE_BPS_STRESS
+        )
         primary = _metrics_with_ci(execution, benchmark, te1 - te0, "net_primary")
-        stress = _metrics_with_ci(execution, benchmark, te1 - te0, "net_stress")
+        stress = _metrics_with_ci(execution, benchmark_stress, te1 - te0, "net_stress")
         primary.update({
             "fold": fold_no,
             "test_start": str(test_times.iloc[0]),
@@ -755,6 +765,8 @@ def run_config(
         pooled_primary.extend(execution["net_primary"].tolist())
         pooled_stress.extend(execution["net_stress"].tolist())
         pooled_gross.extend(execution["gross"].tolist())
+        pooled_benchmark_primary.extend(benchmark.tolist())
+        pooled_benchmark_stress.extend(benchmark_stress.tolist())
         total_oos_bars += te1 - te0
         last_model_state = model_state
 
@@ -770,13 +782,13 @@ def run_config(
     # contiguous blocks of executed trades, not independent IID observations.
     oos_primary = _metrics_with_ci(
         pooled_execution,
-        np.asarray([], dtype=float),
+        np.asarray(pooled_benchmark_primary, dtype=float),
         total_oos_bars,
         "net_primary",
     )
     oos_stress = _metrics_with_ci(
         pooled_execution,
-        np.asarray([], dtype=float),
+        np.asarray(pooled_benchmark_stress, dtype=float),
         total_oos_bars,
         "net_stress",
     )
@@ -802,11 +814,14 @@ def run_config(
     hold_benchmark = _long_benchmark(
         hold_labels, hold_times, ft, fr, fm, FEE_BPS_PRIMARY
     )
+    hold_benchmark_stress = _long_benchmark(
+        hold_labels, hold_times, ft, fr, fm, FEE_BPS_STRESS
+    )
     hold_primary = _metrics_with_ci(
         hold_execution, hold_benchmark, len(hold_times), "net_primary"
     )
     hold_stress = _metrics_with_ci(
-        hold_execution, hold_benchmark, len(hold_times), "net_stress"
+        hold_execution, hold_benchmark_stress, len(hold_times), "net_stress"
     )
 
     if len(hold_execution["indices"]):
@@ -979,7 +994,10 @@ def main() -> None:
         )
         try:
             labels = asymmetric_barrier_labels(df, H, tp_mult, sl_mult)
-            valid = labels["valid"].to_numpy(dtype=bool)
+            valid = (
+                labels["valid"].to_numpy(dtype=bool)
+                & X_base.notna().all(axis=1).to_numpy(dtype=bool)
+            )
             label_df = labels.loc[valid].reset_index(drop=True)
             times = df.loc[valid, "candle_time"].reset_index(drop=True)
             if len(times) < 1000:
@@ -1014,10 +1032,15 @@ def main() -> None:
             results["gates"].append(gate_result(name, None, message))
             print(f"[{name}] INVALID / NO-GO: {message}", flush=True)
 
-    all_pass = bool(results["gates"]) and all(g["verdict"] == "GO_TO_SHADOW_ONLY" for g in results["gates"])
+    candidate_gates = [
+        g for g in results["gates"] if not g["config"].endswith("_TRAP")
+    ]
+    all_pass = any(g["verdict"] == "GO_TO_SHADOW_ONLY" for g in candidate_gates)
     results["summary"] = {
         "configs_evaluated": int(sum("status" not in results["configs"][g["config"]] for g in results["gates"])),
         "configs_total": len(CONFIGS),
+        "candidate_configs_total": len(candidate_gates),
+        "trap_demo_excluded_from_go_decision": True,
         "any_config_passed_all_gates": all_pass,
         "overall_verdict": "GO_TO_SHADOW_ONLY" if all_pass else "NO-GO",
         "note": (
