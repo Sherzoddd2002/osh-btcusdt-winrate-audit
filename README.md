@@ -407,6 +407,9 @@ high_winrate_hunt_1d.py oldingi yuqori-win-rate tajribasidagi muhim mantiqiy xat
 - Funding rolling feature'lari takrorlangan 15m qatorlarda emas, haqiqiy settlement hodisalarida 1D/3D/30D vaqt oynalari bilan hisoblanadi.
 - Funding PnL settlement mark price mavjud bo'lmagani uchun oldingi yopilgan 15m close proxy bilan baholanadi; boundary settlement'da to'lov olinadi, kredit esa hisobga olinmaydi.
 - TP gap-fill barrier narxidan yaxshiroq deb olinmaydi; stop gap esa salbiyroq open bilan hisoblanadi.
+- Short foyda/zarari boshlang'ich notional bo'yicha `(entry - exit) / entry` formula bilan o'lchanadi; reciprocal-price formula ishlatilmaydi.
+- Maker/taker fee kirish va chiqish notionaliga alohida qo'llanadi; slippage round-trip faraz sifatida ko'rsatiladi.
+- Barrier exit sodir bo'lgan so'nggi 15m shamdagi funding kreditlari vaqt noaniqligi sabab hisobga olinmaydi; to'lovlar esa konservativ tarzda olinadi.
 - Holdout 180 kun va har konfiguratsiyaga bir marta. C6 trap namoyishi umumiy GO qaroriga nomzod konfiguratsiya sifatida kiritilmaydi.
 
 PowerShell:
