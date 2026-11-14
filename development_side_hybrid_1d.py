@@ -42,6 +42,11 @@ VARIANTS = (
     ("C3_BASE_TP_0.50_BOTH", 0.50, 0.50),
     ("H1_HYBRID_LONG_0.50_SHORT_0.75", 0.50, 0.75),
 )
+# H1 is excluded from the next experiment after only 2/5 positive folds.
+# C2 is the stability candidate; C3 remains the high-win-rate comparator.
+TIME_EXIT_VARIANTS = VARIANTS[:2]
+TIME_EXIT_GRID_BARS = (48, 64, 96)
+BARRIER_VOLATILITY_HORIZON_BARS = 96
 
 
 def _json_safe(value):
@@ -74,14 +79,18 @@ def _benchmark_with_execution_fees(
     round_trip_slippage_bps: float,
     bnb_discount_pct: float,
     use_maker_exit: bool,
+    horizon_bars: int = H,
 ) -> np.ndarray:
-    """24h long benchmark under legacy Maker/Maker or Taker/Taker costs."""
+    """Non-overlapping long benchmark under the configured time exit."""
+    horizon = int(horizon_bars)
+    if horizon < 1:
+        raise ValueError("horizon_bars must be positive.")
     values = []
-    for i in range(0, max(0, len(times) - H), H):
+    for i in range(0, max(0, len(times) - horizon), horizon):
         gross = float(labels["long_horizon_exit"].iloc[i])
         entry_price = float(labels["entry_price"].iloc[i])
         entry_time = pd.Timestamp(times.iloc[i + 1])
-        exit_time = pd.Timestamp(times.iloc[i + H]) + pd.Timedelta(minutes=hunt.TF_MINUTES)
+        exit_time = pd.Timestamp(times.iloc[i + horizon]) + pd.Timedelta(minutes=hunt.TF_MINUTES)
         funding = hunt.funding_pnl_for_trade(
             1, entry_time, exit_time, entry_price,
             funding_times_ns, funding_rates, funding_marks,
@@ -137,9 +146,16 @@ def run_variant(
     X_base: pd.DataFrame,
     funding_arrays: tuple[np.ndarray, np.ndarray, np.ndarray],
     fee_schedule: tuple[float, float, float, float],
+    horizon_bars: int = H,
+    bootstrap_alpha: float = 0.05,
 ) -> dict:
+    horizon = int(horizon_bars)
+    if horizon < 1:
+        raise ValueError("horizon_bars must be positive.")
     labels_all = hunt.asymmetric_barrier_labels(
-        candles, H, tp_long, SL_MULT, tp_mult_short=tp_short
+        candles, horizon, tp_long, SL_MULT,
+        tp_mult_short=tp_short,
+        volatility_horizon=BARRIER_VOLATILITY_HORIZON_BARS,
     )
     valid, warmup_rows = hunt._contiguous_label_valid_mask(labels_all, X_base)
     labels = labels_all.loc[valid].reset_index(drop=True)
@@ -156,7 +172,7 @@ def run_variant(
         cut_idx,
         BARS_PER_DAY * TRAIN_DAYS,
         BARS_PER_DAY * TEST_DAYS,
-        H + 2,
+        horizon + 2,
         FOLDS,
     )
     if len(folds) != FOLDS:
@@ -197,7 +213,8 @@ def run_variant(
     for fold_no, (tr0, tr1, te0, te1) in enumerate(folds, 1):
         cal0 = max(tr0 + 100, tr1 - BARS_PER_DAY * min(90, TRAIN_DAYS))
         model_state = hunt._train_predict(
-            X, y_long, y_short, w_long, w_short, tr0, cal0, tr1
+            X, y_long, y_short, w_long, w_short, tr0, cal0, tr1,
+            horizon_bars=horizon,
         )
         ml, cls_l, ms, cls_s, thr_l, thr_s = model_state
         X_test = X.iloc[te0:te1]
@@ -207,7 +224,8 @@ def run_variant(
         test_times = times.iloc[te0:te1].reset_index(drop=True)
 
         execution = hunt._execute_signals(
-            p_l, p_s, thr_l, thr_s, test_labels, test_times, ft, fr, fm, SL_MULT
+            p_l, p_s, thr_l, thr_s, test_labels, test_times, ft, fr, fm, SL_MULT,
+            horizon_bars=horizon,
         )
         maker_fee_bps, taker_fee_bps, slippage_bps, bnb_discount_pct = fee_schedule
         fee_scenarios = build_execution_scenarios(
@@ -226,6 +244,7 @@ def run_variant(
             maker_fee_bps=maker_fee_bps, taker_fee_bps=taker_fee_bps,
             round_trip_slippage_bps=slippage_bps, bnb_discount_pct=bnb_discount_pct,
             use_maker_exit=False,
+            horizon_bars=horizon,
         )
         benchmark_stress = benchmark.copy()
         benchmark_legacy = _benchmark_with_execution_fees(
@@ -233,18 +252,22 @@ def run_variant(
             maker_fee_bps=maker_fee_bps, taker_fee_bps=taker_fee_bps,
             round_trip_slippage_bps=slippage_bps, bnb_discount_pct=bnb_discount_pct,
             use_maker_exit=True,
+            horizon_bars=horizon,
         )
         for scenario_name, parts in fee_scenarios.items():
             for part_name, values in parts.items():
                 pooled_fee_parts[scenario_name][part_name].extend(values.tolist())
         primary = hunt._metrics_with_ci(
-            execution, benchmark, te1 - te0, "net_primary"
+            execution, benchmark, te1 - te0, "net_primary",
+            bootstrap_alpha=bootstrap_alpha,
         )
         stress = hunt._metrics_with_ci(
-            execution, benchmark_stress, te1 - te0, "net_stress"
+            execution, benchmark_stress, te1 - te0, "net_stress",
+            bootstrap_alpha=bootstrap_alpha,
         )
         legacy = hunt._metrics_with_ci(
-            execution, benchmark_legacy, te1 - te0, "net_legacy"
+            execution, benchmark_legacy, te1 - te0, "net_legacy",
+            bootstrap_alpha=bootstrap_alpha,
         )
         primary["execution_cost_assumptions"] = {
             "entry": "Taker",
@@ -266,6 +289,8 @@ def run_variant(
         primary["trade_attribution"] = attribution
         primary.update({
             "fold": fold_no,
+            "time_exit_bars": horizon,
+            "barrier_volatility_horizon_bars": BARRIER_VOLATILITY_HORIZON_BARS,
             "test_start_utc": str(test_times.iloc[0]),
             "test_end_utc": str(test_times.iloc[-1]),
             "long_trades": int((execution["sides"] == 1).sum()),
@@ -306,15 +331,15 @@ def run_variant(
     }
     primary = hunt._metrics_with_ci(
         pooled_execution, np.asarray(pooled_benchmark, dtype=float),
-        total_test_bars, "net_primary",
+        total_test_bars, "net_primary", bootstrap_alpha=bootstrap_alpha,
     )
     stress = hunt._metrics_with_ci(
         pooled_execution, np.asarray(pooled_benchmark_stress, dtype=float),
-        total_test_bars, "net_stress",
+        total_test_bars, "net_stress", bootstrap_alpha=bootstrap_alpha,
     )
     legacy = hunt._metrics_with_ci(
         pooled_execution, np.asarray(pooled_benchmark_legacy, dtype=float),
-        total_test_bars, "net_legacy",
+        total_test_bars, "net_legacy", bootstrap_alpha=bootstrap_alpha,
     )
     pooled_fee_scenarios = {
         scenario: {part: np.asarray(values, dtype=float) for part, values in parts.items()}
@@ -372,6 +397,9 @@ def run_variant(
     }
     last_primary = fold_rows[-1]["primary"]
     return {
+        "time_exit_bars": horizon,
+        "barrier_volatility_horizon_bars": BARRIER_VOLATILITY_HORIZON_BARS,
+        "bootstrap_alpha_per_test": bootstrap_alpha,
         "tp_long_sigma": tp_long,
         "tp_short_sigma": tp_short,
         "sl_sigma": SL_MULT,
@@ -410,9 +438,17 @@ def run_development_hunt(
         DEFAULT_MAKER_FEE_BPS, DEFAULT_TAKER_FEE_BPS,
         DEFAULT_ROUND_TRIP_SLIPPAGE_BPS, 0.0,
     ),
+    time_exit_grid_bars: tuple[int, ...] = TIME_EXIT_GRID_BARS,
 ) -> dict:
     if holdout_days < 1:
         raise ValueError("holdout_days must be positive.")
+    time_exit_grid = tuple(int(h) for h in time_exit_grid_bars)
+    if not time_exit_grid or any(h < 1 for h in time_exit_grid):
+        raise ValueError("time_exit_grid_bars must contain positive integers.")
+    if len(set(time_exit_grid)) != len(time_exit_grid):
+        raise ValueError("time_exit_grid_bars must not contain duplicates.")
+    familywise_test_count = len(time_exit_grid) * len(TIME_EXIT_VARIANTS)
+    bootstrap_alpha = 0.05 / familywise_test_count
     df_all = rv.validate_market_data(df_all)
     holdout_rows = BARS_PER_DAY * holdout_days
     if len(df_all) <= holdout_rows:
@@ -446,7 +482,7 @@ def run_development_hunt(
     X_base, feature_names = pv.make_features(dev)
     output = {
         "metadata": {
-            "experiment_version": "OSH-DEVELOPMENT-SIDE-HYBRID-2026-11-14-v1",
+            "experiment_version": "OSH-DEVELOPMENT-TIME-EXIT-SWEEP-2026-11-14-v1",
             "generated_at_utc": datetime.now(timezone.utc).isoformat(),
             "source": "PostgreSQL BTCUSDT 15m; development slice only",
             "development_rows": int(len(dev)),
@@ -463,7 +499,20 @@ def run_development_hunt(
                 "development OOS side attribution. This run is discovery research, "
                 "not independent validation."
             ),
-            "selection": "top 10% calibrated TP probability per side; at most one entry per 96 bars",
+            "selection": (
+                "top 10% calibrated TP probability per side; at most one entry "
+                "per configured time-exit horizon"
+            ),
+            "time_exit_grid_bars": list(time_exit_grid),
+            "barrier_volatility_horizon_bars": BARRIER_VOLATILITY_HORIZON_BARS,
+            "time_exit_sweep_design": (
+                "C2 stability candidate and C3 high-win-rate comparator only; "
+                "H1 is excluded after 2/5 positive folds. Time-exit horizon changes "
+                "while TP/SL sigma scaling stays fixed at 96 bars."
+            ),
+            "bootstrap_familywise_coverage_pct": 95.0,
+            "bootstrap_familywise_test_count": familywise_test_count,
+            "bootstrap_alpha_per_test": bootstrap_alpha,
             "fee_schedule_bps": {
                 "maker_per_side": fee_schedule[0],
                 "taker_per_side": fee_schedule[1],
@@ -489,25 +538,32 @@ def run_development_hunt(
         "variants": {},
     }
 
-    for name, tp_long, tp_short in VARIANTS:
-        print(
-            f"\n--- {name}: LONG TP={tp_long}σ / SHORT TP={tp_short}σ / SL={SL_MULT}σ ---",
-            flush=True,
-        )
-        result = run_variant(
-            name, tp_long, tp_short, dev, X_base, funding_arrays, fee_schedule
-        )
-        output["variants"][name] = result
-        stats = result["pooled_oos_primary"]
-        print(
-            f"[{name}] WR={stats.get('win_rate_pct')}% "
-            f"EXP={stats.get('expectancy_bps')}bps "
-            f"PF={stats.get('profit_factor')} "
-            f"positive_folds={result['positive_oos_folds_pct']}% "
-            f"checks={result['checks_passed']}/{result['checks_total']} "
-            f"{result['verdict']}",
-            flush=True,
-        )
+    for horizon in time_exit_grid:
+        for name, tp_long, tp_short in TIME_EXIT_VARIANTS:
+            variant_key = f"H{horizon}_{name}"
+            print(
+                f"\n--- {variant_key}: LONG TP={tp_long}σ / SHORT TP={tp_short}σ "
+                f"/ SL={SL_MULT}σ / TIME={horizon} bars ---",
+                flush=True,
+            )
+            result = run_variant(
+                name, tp_long, tp_short, dev, X_base, funding_arrays, fee_schedule,
+                horizon_bars=horizon, bootstrap_alpha=bootstrap_alpha,
+            )
+            result["variant_key"] = variant_key
+            result["bootstrap_familywise_test_count"] = familywise_test_count
+            output["variants"][variant_key] = result
+            stats = result["pooled_oos_primary"]
+            stress = result["pooled_oos_all_taker"]
+            print(
+                f"[{variant_key}] WR={stats.get('win_rate_pct')}% "
+                f"EXP={stats.get('expectancy_bps')}bps PF={stats.get('profit_factor')} "
+                f"ALL_TAKER_EXP={stress.get('expectancy_bps')}bps "
+                f"positive_folds={result['positive_oos_folds_pct']}% "
+                f"checks={result['checks_passed']}/{result['checks_total']} "
+                f"{result['verdict']}",
+                flush=True,
+            )
     return _json_safe(output)
 
 
@@ -530,7 +586,12 @@ def main() -> None:
     parser.add_argument("--taker-fee-bps", type=float, default=DEFAULT_TAKER_FEE_BPS)
     parser.add_argument("--round-trip-slippage-bps", type=float, default=DEFAULT_ROUND_TRIP_SLIPPAGE_BPS)
     parser.add_argument("--bnb-discount-pct", type=float, default=0.0)
-    parser.add_argument("--out", default="development_side_hybrid_1d.json")
+    parser.add_argument(
+        "--time-exit-grid",
+        default="48,64,96",
+        help="Comma-separated time-exit horizons in 15m bars; TP/SL volatility scale remains 96 bars.",
+    )
+    parser.add_argument("--out", default="development_time_exit_sweep_1d.json")
     args = parser.parse_args()
 
     cutoff = pd.Timestamp(args.data_end_utc)
@@ -544,9 +605,16 @@ def main() -> None:
         funding["funding_time"] <= cutoff + pd.Timedelta(minutes=15)
     ].reset_index(drop=True)
 
+    try:
+        time_exit_grid = tuple(
+            int(item.strip()) for item in args.time_exit_grid.split(",") if item.strip()
+        )
+    except ValueError as exc:
+        raise SystemExit("--time-exit-grid must be comma-separated positive integers.") from exc
     result = run_development_hunt(
         all_candles, funding, args.holdout_days,
         (args.maker_fee_bps, args.taker_fee_bps, args.round_trip_slippage_bps, args.bnb_discount_pct),
+        time_exit_grid_bars=time_exit_grid,
     )
     output = Path(args.out)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -555,13 +623,15 @@ def main() -> None:
         encoding="utf-8",
     )
     print(f"\n[report] {output.resolve()}", flush=True)
-    print("\n=== DEVELOPMENT-ONLY FINAL TABLE ===", flush=True)
+    print("\n=== DEVELOPMENT-ONLY TIME-EXIT SWEEP ===", flush=True)
     for name, row in result["variants"].items():
         stats = row["pooled_oos_primary"]
+        stress = row["pooled_oos_all_taker"]
         print(
-            f"{name:<34} WR={stats.get('win_rate_pct')}% "
+            f"{name:<42} WR={stats.get('win_rate_pct')}% "
             f"EXP={stats.get('expectancy_bps')}bps PF={stats.get('profit_factor')} "
-            f"trades={stats.get('trades')} {row['verdict']}"
+            f"ALL_TAKER={stress.get('expectancy_bps')}bps "
+            f"folds={row['positive_oos_folds_pct']}% {row['verdict']}"
         )
     print(
         "\nFinal 180-day holdout was excluded. Discovery results require a later "
