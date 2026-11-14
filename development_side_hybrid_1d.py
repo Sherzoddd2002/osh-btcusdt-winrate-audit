@@ -148,6 +148,7 @@ def run_variant(
     fee_schedule: tuple[float, float, float, float],
     horizon_bars: int = H,
     bootstrap_alpha: float = 0.05,
+    bootstrap_reps: int = 10_000,
 ) -> dict:
     horizon = int(horizon_bars)
     if horizon < 1:
@@ -257,17 +258,16 @@ def run_variant(
         for scenario_name, parts in fee_scenarios.items():
             for part_name, values in parts.items():
                 pooled_fee_parts[scenario_name][part_name].extend(values.tolist())
+        # Fold-level intervals are descriptive; familywise adjustment applies
+        # to the six pooled primary hypotheses below.
         primary = hunt._metrics_with_ci(
             execution, benchmark, te1 - te0, "net_primary",
-            bootstrap_alpha=bootstrap_alpha,
         )
         stress = hunt._metrics_with_ci(
             execution, benchmark_stress, te1 - te0, "net_stress",
-            bootstrap_alpha=bootstrap_alpha,
         )
         legacy = hunt._metrics_with_ci(
             execution, benchmark_legacy, te1 - te0, "net_legacy",
-            bootstrap_alpha=bootstrap_alpha,
         )
         primary["execution_cost_assumptions"] = {
             "entry": "Taker",
@@ -331,15 +331,19 @@ def run_variant(
     }
     primary = hunt._metrics_with_ci(
         pooled_execution, np.asarray(pooled_benchmark, dtype=float),
-        total_test_bars, "net_primary", bootstrap_alpha=bootstrap_alpha,
+        total_test_bars, "net_primary",
+        bootstrap_alpha=bootstrap_alpha, bootstrap_reps=bootstrap_reps,
     )
+    primary["bootstrap_familywise_coverage_pct"] = 95.0
+    primary["bootstrap_familywise_test_count"] = int(0.05 / bootstrap_alpha)
+    primary["bootstrap_ci_nominal_coverage_pct"] = round((1.0 - bootstrap_alpha) * 100.0, 4)
     stress = hunt._metrics_with_ci(
         pooled_execution, np.asarray(pooled_benchmark_stress, dtype=float),
-        total_test_bars, "net_stress", bootstrap_alpha=bootstrap_alpha,
+        total_test_bars, "net_stress",
     )
     legacy = hunt._metrics_with_ci(
         pooled_execution, np.asarray(pooled_benchmark_legacy, dtype=float),
-        total_test_bars, "net_legacy", bootstrap_alpha=bootstrap_alpha,
+        total_test_bars, "net_legacy",
     )
     pooled_fee_scenarios = {
         scenario: {part: np.asarray(values, dtype=float) for part, values in parts.items()}
@@ -400,6 +404,7 @@ def run_variant(
         "time_exit_bars": horizon,
         "barrier_volatility_horizon_bars": BARRIER_VOLATILITY_HORIZON_BARS,
         "bootstrap_alpha_per_test": bootstrap_alpha,
+        "bootstrap_reps_pooled_primary": bootstrap_reps,
         "tp_long_sigma": tp_long,
         "tp_short_sigma": tp_short,
         "sl_sigma": SL_MULT,
@@ -513,6 +518,12 @@ def run_development_hunt(
             "bootstrap_familywise_coverage_pct": 95.0,
             "bootstrap_familywise_test_count": familywise_test_count,
             "bootstrap_alpha_per_test": bootstrap_alpha,
+            "bootstrap_reps_pooled_primary": 10_000,
+            "bootstrap_ci_note": (
+                "Pooled primary expectancy uses 10,000 block-bootstrap replicates "
+                "and per-test alpha 0.05/N for familywise 95% coverage across N variants. "
+                "Fold intervals are descriptive nominal 95% intervals."
+            ),
             "fee_schedule_bps": {
                 "maker_per_side": fee_schedule[0],
                 "taker_per_side": fee_schedule[1],
