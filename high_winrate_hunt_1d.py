@@ -319,13 +319,15 @@ def funding_pnl_for_trade(
     fund_times_ns: np.ndarray,
     fund_rates: np.ndarray,
     fund_marks: np.ndarray,
+    exit_bar_open_time: pd.Timestamp | None = None,
 ) -> float:
-    """Funding return relative to entry notional; ambiguous boundary credits ignored.
+    """Funding return relative to entry notional; ambiguous credits are ignored.
 
     Event cashflow as a fraction of entry notional is
     -side * funding_rate * (settlement mark proxy / entry price).
-    Funding at an exact entry/exit timestamp is ambiguous from 15m OHLC;
-    include payments but ignore credits at those boundaries.
+    Include entry-boundary payments but ignore credits. At a barrier exit,
+    the exact intrabar exit time is unknown; any settlement during that final
+    15m exit candle is treated conservatively (payments charged, credits ignored).
     """
     if side not in (-1, 1) or not np.isfinite(entry_price) or entry_price <= 0:
         raise ValueError("Invalid funding trade side or entry price.")
@@ -340,8 +342,13 @@ def funding_pnl_for_trade(
     rates = fund_rates[lo:hi]
     marks = fund_marks[lo:hi]
     cashflows = -float(side) * rates * (marks / float(entry_price))
-    boundary = (event_times == entry_time.value) | (event_times == exit_time.value)
-    cashflows = np.where(boundary & (cashflows > 0), 0.0, cashflows)
+    ambiguous = (event_times == entry_time.value) | (event_times == exit_time.value)
+    if exit_bar_open_time is not None:
+        exit_bar_start_ns = pd.Timestamp(exit_bar_open_time).value
+        if exit_bar_start_ns < entry_time.value or exit_bar_start_ns > exit_time.value:
+            raise ValueError("Exit-candle open must lie within the trade interval.")
+        ambiguous |= event_times >= exit_bar_start_ns
+    cashflows = np.where(ambiguous & (cashflows > 0), 0.0, cashflows)
     return float(cashflows.sum())
 
 
@@ -610,10 +617,15 @@ def _execute_signals(
 
         entry_price = float(lab["entry_price"].iloc[i])
         entry_time = pd.Timestamp(times.iloc[i + 1])
-        exit_time = pd.Timestamp(times.iloc[i + held]) + pd.Timedelta(minutes=TF_MINUTES)
+        exit_bar_open = pd.Timestamp(times.iloc[i + held])
+        exit_time = exit_bar_open + pd.Timedelta(minutes=TF_MINUTES)
+        reason_col = "long_exit_reason" if side == 1 else "short_exit_reason"
+        exit_reason = str(lab[reason_col].iloc[i])
+        uncertain_exit_bar = exit_bar_open if exit_reason in {"take_profit", "stop_loss"} else None
         f_pnl = funding_pnl_for_trade(
             side, entry_time, exit_time, entry_price,
             fund_times_ns, fund_rates, fund_marks,
+            exit_bar_open_time=uncertain_exit_bar,
         )
         indices.append(i)
         sides.append(side)
