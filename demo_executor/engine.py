@@ -204,37 +204,52 @@ class DemoEngine:
             orders = client.open_orders(SYMBOL)
             algo_orders = client.open_algo_orders(SYMBOL)
             trade = self.state.get("trade")
-            if trade and abs(positions) > 1e-12:
-                tp_ids = {x.get("origClientOrderId") for x in orders}
-                sl_ids = {x.get("clientAlgoId") for x in algo_orders}
-                try:
-                    saved_sl = client.algo_order(SYMBOL, trade.get("sl_id"))
-                    sl_status = str(saved_sl.get("algoStatus", "")).upper()
-                except BinanceAPIError as exc:
-                    if exc.code not in {-2011, -2013}:
-                        raise
-                    sl_status = "MISSING"
-                sl_recoverable = (
-                    trade.get("sl_id") in sl_ids
-                    or sl_status in {"TRIGGERED", "TRIGGERING", "FINISHED"}
-                )
-                if (
-                    trade.get("tp_id") not in tp_ids
-                    or not sl_recoverable
-                    or tp_ids - {trade.get("tp_id")}
-                    or sl_ids - {trade.get("sl_id")}
-                ):
+            if trade:
+                # Only reconcile orders bearing the IDs persisted by this bot.
+                normal_ids = {x.get("origClientOrderId") for x in orders}
+                algo_ids = {x.get("clientAlgoId") for x in algo_orders}
+                unexpected_normal = normal_ids - {trade.get("tp_id")}
+                unexpected_algo = algo_ids - {trade.get("sl_id")}
+                if unexpected_normal or unexpected_algo:
                     raise RuntimeError(
-                        "Existing OSH BTC position must have its saved LIMIT TP and Algo STOP. "
-                        "Unexpected/missing protective orders require manual Demo reconciliation."
+                        "Unexpected BTCUSDT orders exist. The bot will not touch manual orders; "
+                        "reconcile the Demo account before restarting."
                     )
+
+                if abs(positions) > 1e-12:
+                    # Query by the saved client IDs: a filled/triggered exit may no longer
+                    # appear in openOrders/openAlgoOrders but still needs reconciliation.
+                    try:
+                        saved_tp = client.order(SYMBOL, trade.get("tp_id"))
+                        tp_status = str(saved_tp.get("status", "")).upper()
+                    except BinanceAPIError as exc:
+                        if exc.code not in {-2011, -2013}:
+                            raise
+                        tp_status = "MISSING"
+                    try:
+                        saved_sl = client.algo_order(SYMBOL, trade.get("sl_id"))
+                        sl_status = str(saved_sl.get("algoStatus", "")).upper()
+                    except BinanceAPIError as exc:
+                        if exc.code not in {-2011, -2013}:
+                            raise
+                        sl_status = "MISSING"
+
+                    if tp_status == "MISSING" or sl_status == "MISSING":
+                        raise RuntimeError(
+                            "Saved Demo position is missing its TP or Algo STOP. "
+                            "Inspect and protect/close it manually before restarting."
+                        )
+                else:
+                    # Position is already flat; only the saved protective orders may be canceled.
+                    self._cancel_owned(trade.get("tp_id"))
+                    self._cancel_algo_owned(trade.get("sl_id"))
+                    self.state["trade"] = None
+                    self._save()
+                    trade = None
             elif abs(positions) > 1e-12 or orders or algo_orders:
                 raise RuntimeError(
                     "BTCUSDT has an unrecognized position/order. Reconcile it manually in Demo."
                 )
-            elif trade:
-                self.state["trade"] = None
-                self._save()
             if not trade:
                 client.set_isolated(SYMBOL)
                 client.set_leverage(SYMBOL, 1)
