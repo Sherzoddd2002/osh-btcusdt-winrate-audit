@@ -441,3 +441,28 @@ Yangi risk moduli uchun regression testlar:
 
 
 **Muhim:** $100 simulyatsiyasi 1x, 10% cash reserve va pozitsiya notionalini joriy equity'ning 90%idan oshirmaslik faraziga asoslangan. Bu exchange liquidation, order-book, maker fill ehtimoli yoki real slippage modelini qamramaydi. Funding mark-price proxy haqiqiy Binance markPrice emas. Hech qanday natija live order yuborishga ruxsat bermaydi; ijobiy natija chiqsa ham keyingi mustaqil forward/shadow sinov talab qilinadi.
+
+### 7. Side-specific TP development hunt (holdout excluded)
+
+`development_side_hybrid_1d.py` taqqoslaydi:
+- C2: LONG/SHORT TP = 0.75σ, SL = 1.00σ.
+- C3: LONG/SHORT TP = 0.50σ, SL = 1.00σ.
+- H1 discovery hypothesis: LONG TP = 0.50σ, SHORT TP = 0.75σ, SL = 1.00σ.
+
+H1 gipotezasi oldingi development OOS side-attribution'dan kelib chiqqan: C3 LONG tomoni yuqoriroq win rate, C2 SHORT tomoni esa kuchliroq net expectancy ko'rsatgan. Bu ularning agregat statistikasi alohida model bilan birlashtirilganda shu natija albatta takrorlanadi degani emas; signal to'qnashuvi, threshold va non-overlap qoidalari qayta hisoblanadi.
+
+Skript 180 kunlik yakuniy holdout'ni feature/label yaratishdan **oldin** kesib tashlaydi. U holdout uchun model fit, probability threshold, variant tanlash, risk sizing yoki natija hisoblamaydi. H1 oldingi OOS tahlilidan ilhomlanganligi sababli bu discovery-only; mustaqil forward paper davri talab qilinadi.
+
+```powershell
+$env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
+
+.\\.venv\\Scripts\\python.exe development_side_hybrid_1d.py \\
+    --table public.btcusdt_15m \\
+    --funding-csv .\\binance_btcusdt_funding_history.csv \\
+    --data-end-utc "2026-10-31T23:45:00Z" \\
+    --holdout-days 180 \\
+    --out development_side_hybrid_1d.json
+```
+
+Maqsad mezonlari bitta natijada birgalikda tekshiriladi: net win rate ≥60%, net expectancy >0, PF ≥1.25, kamida 80% musbat OOS fold, bootstrap CI pastki chegarasi >0 va taker stress expectancy >0. Ushbu discovery run'da ham shu mezonlar bajarilishi live savdoga ruxsat bermaydi.
+
