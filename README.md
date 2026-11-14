@@ -396,3 +396,27 @@ Bularsiz eng to'g'ri qaror — savdo qilmaslik va saytni analytics vositasi sifa
 ---
 
 *OSH research · barcha raqamlar tarixiy paper-backtest · investitsiya maslahati emas.*
+
+
+## 6. Tuzatilgan assimetrik 1 kunlik eksperiment (paper only)
+
+high_winrate_hunt_1d.py oldingi yuqori-win-rate tajribasidagi muhim mantiqiy xatolarni tuzatadi:
+- Long va short uchun alohida barrier label, exit reason va holding duration.
+- Har ikki yo'nalish uchun alohida model, hatto TP/SL simmetrik bo'lganda ham.
+- Model-fit/early-stopping oynasi kalibrlash oynasidan kamida H+2 sham oldin tugaydi.
+- Funding rolling feature'lari takrorlangan 15m qatorlarda emas, haqiqiy settlement hodisalarida 1D/3D/30D vaqt oynalari bilan hisoblanadi.
+- Funding PnL settlement mark price mavjud bo'lmagani uchun oldingi yopilgan 15m close proxy bilan baholanadi; boundary settlement'da to'lov olinadi, kredit esa hisobga olinmaydi.
+- TP gap-fill barrier narxidan yaxshiroq deb olinmaydi; stop gap esa salbiyroq open bilan hisoblanadi.
+- Holdout 180 kun va har konfiguratsiyaga bir marta. C6 trap namoyishi umumiy GO qaroriga nomzod konfiguratsiya sifatida kiritilmaydi.
+
+PowerShell:
+~~~powershell
+$env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
+.\\.venv\\Scripts\\python.exe -m compileall -q .
+.\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v
+.\\.venv\\Scripts\\python.exe high_winrate_hunt_1d.py --table public.btcusdt_15m --funding-csv .\\binance_btcusdt_funding_history.csv --data-end-utc "2026-10-31T23:45:00Z" --out high_winrate_hunt_1d_fixed.json
+~~~
+
+high_winrate_hunt_1d_fixed.json ichida 7 konfiguratsiya, 5 ta purged walk-forward fold, 180 kunlik untouched holdout, 6 va 10 bps xarajat ssenariylari, funding PnL, Wilson interval, block-bootstrap interval va $25/$50/$100 position cap bo'yicha $100 hisob simulyatsiyasi saqlanadi.
+
+**Muhim:** $100 simulyatsiyasi 1x, 10% cash reserve va pozitsiya notionalini joriy equity'ning 90%idan oshirmaslik faraziga asoslangan. Bu exchange liquidation, order-book, maker fill ehtimoli yoki real slippage modelini qamramaydi. Funding mark-price proxy haqiqiy Binance markPrice emas. Hech qanday natija live order yuborishga ruxsat bermaydi; ijobiy natija chiqsa ham keyingi mustaqil forward/shadow sinov talab qilinadi.
