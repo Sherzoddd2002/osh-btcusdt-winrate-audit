@@ -191,6 +191,7 @@ def run_variant(
     pooled_holding: list[int] = []
     pooled_benchmark = []
     pooled_benchmark_stress = []
+    pooled_benchmark_legacy = []
     total_test_bars = 0
 
     for fold_no, (tr0, tr1, te0, te1) in enumerate(folds, 1):
@@ -287,6 +288,7 @@ def run_variant(
         pooled_holding.extend(execution["holding_bars"].tolist())
         pooled_benchmark.extend(benchmark.tolist())
         pooled_benchmark_stress.extend(benchmark_stress.tolist())
+        pooled_benchmark_legacy.extend(benchmark_legacy.tolist())
         total_test_bars += te1 - te0
 
     net = np.asarray(pooled_net, dtype=float)
@@ -311,7 +313,7 @@ def run_variant(
         total_test_bars, "net_stress",
     )
     legacy = hunt._metrics_with_ci(
-        pooled_execution, np.asarray(pooled_benchmark, dtype=float),
+        pooled_execution, np.asarray(pooled_benchmark_legacy, dtype=float),
         total_test_bars, "net_legacy",
     )
     pooled_fee_scenarios = {
