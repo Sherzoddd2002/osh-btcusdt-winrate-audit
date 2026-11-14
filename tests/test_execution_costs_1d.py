@@ -11,6 +11,29 @@ from execution_costs_1d import (
 
 
 class ExecutionCostTests(unittest.TestCase):
+    def test_execution_scenario_schema_is_safe_for_fold_aggregation(self):
+        from execution_costs_1d import SCENARIO_COMPONENT_KEYS
+
+        scenarios = build_execution_scenarios(
+            np.array([0.01, -0.01, 0.002]),
+            np.array([1, -1, 1]),
+            np.array(["take_profit", "stop_loss", "time"], dtype=object),
+            np.array([0.0, 0.0001, -0.0001]),
+        )
+        # Reproduce the runner's pooled fold collector. Every emitted field must
+        # have a pre-created bucket, otherwise a real-data run crashes at fold 1.
+        pooled = {
+            scenario: {component: [] for component in SCENARIO_COMPONENT_KEYS}
+            for scenario in scenarios
+        }
+        for scenario, parts in scenarios.items():
+            self.assertEqual(set(parts), set(SCENARIO_COMPONENT_KEYS))
+            for component, values in parts.items():
+                pooled[scenario][component].extend(values.tolist())
+        for parts in pooled.values():
+            self.assertEqual(len(parts["gross_return"]), 3)
+            self.assertEqual(len(parts["net_return"]), 3)
+
     def test_hybrid_uses_taker_entry_and_exit_type_specific_fee(self):
         result = build_execution_scenarios(
             np.array([0.01, -0.01, 0.005]),
