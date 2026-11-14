@@ -9,6 +9,38 @@ import pandas as pd
 import high_winrate_hunt_1d as hunt
 
 
+class FeatureTimelineMaskTests(unittest.TestCase):
+    def test_internal_nan_feature_rows_keep_their_15m_positions(self):
+        labels = pd.DataFrame({
+            "valid": [False, False, True, True, True, True, False]
+        })
+        features = pd.DataFrame({
+            "f1": [np.nan, np.nan, 1.0, 2.0, np.nan, 3.0, 4.0],
+            "f2": [np.nan, np.nan, 1.0, 2.0, 3.0, 4.0, 5.0],
+        })
+
+        valid, warmup_rows = hunt._contiguous_label_valid_mask(
+            labels, features, min_rows=3
+        )
+
+        self.assertEqual(warmup_rows, 2)
+        np.testing.assert_array_equal(
+            valid, np.array([False, False, True, True, True, True, False])
+        )
+        self.assertTrue(pd.isna(features.loc[4, "f1"]))
+
+    def test_internal_label_gap_still_fails_closed(self):
+        labels = pd.DataFrame({
+            "valid": [False, False, True, True, False, True, False]
+        })
+        features = pd.DataFrame({
+            "f1": [np.nan, np.nan, 1.0, 2.0, 3.0, 4.0, 5.0]
+        })
+
+        with self.assertRaisesRegex(ValueError, "Label-valid timeline"):
+            hunt._contiguous_label_valid_mask(labels, features, min_rows=3)
+
+
 def market_frame(n: int = 80) -> pd.DataFrame:
     pattern = np.resize(np.array([0.0010, -0.0006, 0.0008, -0.0011]), n)
     close = 100.0 * np.exp(np.cumsum(pattern))
