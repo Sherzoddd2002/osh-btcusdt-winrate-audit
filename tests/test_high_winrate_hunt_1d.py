@@ -245,6 +245,34 @@ class ExecutionHorizonTests(unittest.TestCase):
         np.testing.assert_array_equal(result["indices"], np.array([0, 2, 4]))
         np.testing.assert_array_equal(result["holding_bars"], np.array([2, 2, 2]))
 
+    def test_entry_cooldown_is_independent_of_time_exit_horizon(self):
+        n = 10
+        times = pd.Series(pd.date_range(
+            "2024-01-01T00:00:00Z", periods=n, freq="15min"
+        ))
+        labels = pd.DataFrame({
+            "long_exit": np.zeros(n),
+            "short_exit": np.zeros(n),
+            "long_holding_bars": np.full(n, 2),
+            "short_holding_bars": np.full(n, 2),
+            "long_exit_reason": np.full(n, "time", dtype=object),
+            "short_exit_reason": np.full(n, "time", dtype=object),
+            "long_path_high": np.full(n, 101.0),
+            "long_path_low": np.full(n, 99.0),
+            "short_path_high": np.full(n, 101.0),
+            "short_path_low": np.full(n, 99.0),
+            "entry_price": np.full(n, 100.0),
+            "sigma": np.full(n, 0.01),
+        })
+        empty_times = np.array([], dtype=np.int64)
+        empty_values = np.array([], dtype=float)
+        result = hunt._execute_signals(
+            np.ones(n), np.zeros(n), 0.5, 0.5, labels, times,
+            empty_times, empty_values, empty_values, 1.0,
+            horizon_bars=2, entry_cooldown_bars=4,
+        )
+        np.testing.assert_array_equal(result["indices"], np.array([0, 4, 8]))
+
     def test_non_positive_custom_horizon_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "horizon_bars"):
             hunt._execute_signals(
@@ -252,6 +280,15 @@ class ExecutionHorizonTests(unittest.TestCase):
                 pd.Series(dtype="datetime64[ns]"),
                 np.array([], dtype=np.int64), np.array([]), np.array([]), 1.0,
                 horizon_bars=0,
+            )
+
+    def test_non_positive_entry_cooldown_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "entry_cooldown_bars"):
+            hunt._execute_signals(
+                np.array([]), np.array([]), 0.5, 0.5, pd.DataFrame(),
+                pd.Series(dtype="datetime64[ns]"),
+                np.array([], dtype=np.int64), np.array([]), np.array([]), 1.0,
+                horizon_bars=2, entry_cooldown_bars=0,
             )
 
 
