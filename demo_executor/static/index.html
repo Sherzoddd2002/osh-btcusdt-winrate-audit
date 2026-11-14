@@ -61,7 +61,6 @@ async function api(url,method="GET"){
  return d;
 }
 const fmt=(v,n=3)=>v===null||v===undefined||!Number.isFinite(Number(v))?"—":Number(v).toFixed(n);
-const fmt=(v,n=3)=>v===null||v===undefined||!Number.isFinite(Number(v))?"—":Number(v).toFixed(n);
 function render(s){
  $("creds").textContent=s.credentials_configured?"FOUND":"MISSING";$("creds").className="value "+(s.credentials_configured?"green":"red");
  $("engine").textContent=s.engine_state;$("engine").className="value "+(s.engine_state.includes("RUNNING")||s.engine_state.includes("MANAGING")?"green":"amber");
@@ -87,8 +86,5 @@ $("connect").onclick=async()=>{
 };
 $("start").onclick=async()=>{if(!confirm("Faqat Binance Futures DEMO. Keyingi yangi 15m shamda signal bo‘lsa MARKET entry hamda reduce-only TP/SL orderlari yuboriladi. Davom etasizmi?"))return;setMessage("Demo strategiyasi ishga tushirilmoqda…",false);try{const r=await api("/api/start","POST");setMessage(r.message||"Demo strategiyasi ishga tushdi.",false);}catch(e){setMessage(e.message,true);}await refresh();};
 $("stop").onclick=async()=>{if(!confirm("Yangi entry signallari to‘xtatiladi. Ochiq Demo pozitsiya boshqaruvda qoladi. Davom etasizmi?"))return;setMessage("Yangi entry to‘xtatilmoqda…",false);try{const r=await api("/api/stop","POST");setMessage(r.message||"Yangi entry to‘xtatildi.",false);}catch(e){setMessage(e.message,true);}await refresh();};
-$("connect").onclick=async()=>{try{const r=await api("/api/connect","POST");alert("Demo API connected\n"+r.base_url+"\nHedge mode: "+r.hedge_mode+"\nSymbol filters: "+JSON.stringify(r.rules));}catch(e){$("err").textContent=e.message;}await refresh();};
-$("start").onclick=async()=>{if(!confirm("Faqat Binance Futures DEMO. Keyingi yangi 15m shamda signal bo‘lsa MARKET entry hamda reduce-only TP/SL orderlari yuboriladi. Davom etasizmi?"))return;try{await api("/api/start","POST");}catch(e){$("err").textContent=e.message;}await refresh();};
-$("stop").onclick=async()=>{if(!confirm("Yangi entry signallari to‘xtatiladi. Ochiq Demo pozitsiya boshqaruvda qoladi. Davom etasizmi?"))return;try{await api("/api/stop","POST");}catch(e){$("err").textContent=e.message;}await refresh();};
 refresh();setInterval(refresh,5000);
 </script></body></html>
