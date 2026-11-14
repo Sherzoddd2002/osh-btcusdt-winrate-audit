@@ -224,6 +224,15 @@ class ReportingTests(unittest.TestCase):
             [25.0, 50.0, 100.0],
         )
 
+    def test_familywise_bootstrap_interval_is_wider_than_single_test_interval(self):
+        values = np.linspace(-0.001, 0.003, 200)
+        ordinary = hunt.block_bootstrap_ci(values, block=10, reps=5000, seed=17)
+        adjusted = hunt.block_bootstrap_ci(
+            values, block=10, reps=5000, seed=17, alpha=0.05 / 6
+        )
+        self.assertLessEqual(adjusted[0], ordinary[0])
+        self.assertGreaterEqual(adjusted[1], ordinary[1])
+
     def test_funding_duplicates_and_bad_units_fail_closed(self):
         duplicate = pd.DataFrame({
             "funding_time": pd.to_datetime([
