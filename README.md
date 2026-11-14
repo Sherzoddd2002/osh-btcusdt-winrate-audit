@@ -466,3 +466,41 @@ $env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
 
 Maqsad mezonlari bitta natijada birgalikda tekshiriladi: net win rate ≥60%, net expectancy >0, PF ≥1.25, kamida 80% musbat OOS fold, bootstrap CI pastki chegarasi >0 va taker stress expectancy >0. Ushbu discovery run'da ham shu mezonlar bajarilishi live savdoga ruxsat bermaydi.
 
+
+
+## 8. Exit-aware Binance execution-cost audit (side-hybrid discovery)
+
+```powershell
+$env:OSH_DB_URL = "postgresql+psycopg2://postgres@127.0.0.1:5433/osh"
+.\.venv\Scripts\python.exe -m compileall -q .
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+
+.\.venv\Scripts\python.exe development_side_hybrid_1d.py `
+    --table public.btcusdt_15m `
+    --funding-csv .\binance_btcusdt_funding_history.csv `
+    --data-end-utc "2026-10-31T23:45:00Z" `
+    --holdout-days 180 `
+    --maker-fee-bps 2 `
+    --taker-fee-bps 5 `
+    --round-trip-slippage-bps 2 `
+    --bnb-discount-pct 0 `
+    --out development_side_hybrid_execution_1d.json
+```
+
+This runner reports three fee assumptions on the **same selected trades**:
+
+1. Legacy Maker/Maker on every fill — optimistic comparison only.
+2. Taker entry; TP exit Maker conditional on a passive limit fill; Stop Loss and TIME exit Taker — the headline execution-aware scenario.
+3. Taker entry and Taker exit for every exit reason — conservative fee stress.
+
+Maker/Taker rates are configurable in bps per side (defaults: Maker 2 bps, Taker 5 bps).
+The optional BNB discount reduces commission only, never slippage or funding; set it
+to 10 only when the account actually has Futures BNB fee discount enabled and enough
+BNB to pay fees. Enter your own account rates from Binance's Fee Rate page; never
+share API keys or secrets. Binance exposes a signed per-symbol commission-rate
+endpoint for account-specific rates.
+
+The TP-Maker case is conditional, not guaranteed: 15m OHLC cannot establish queue
+priority or prove a passive limit order was filled. The all-Taker scenario must also
+be examined. Round-trip slippage is an explicit assumption, not measured order-book
+replay. The final holdout is excluded from this discovery runner. No live orders are sent.
