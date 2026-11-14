@@ -18,8 +18,9 @@ import pandas as pd
 
 import pipeline_v2 as pv
 import research_v3 as rv
+from risk_management_1d import run_risk_budget_grid, summarize_trade_attribution
 
-EXPERIMENT_VERSION = "OSH-HIGH-WINRATE-FIXED-2026-11-14-v1"
+EXPERIMENT_VERSION = "OSH-HIGH-WINRATE-RISK-ATTRIBUTION-2026-11-14-v1"
 BARS_PER_DAY = 96
 H = 96
 TOP_PCT = 0.10
@@ -162,6 +163,10 @@ def asymmetric_barrier_labels(
     short_reason = np.full(n, "invalid", dtype=object)
     long_horizon = np.full(n, np.nan, dtype=float)
     short_horizon = np.full(n, np.nan, dtype=float)
+    long_path_high = np.full(n, np.nan, dtype=float)
+    long_path_low = np.full(n, np.nan, dtype=float)
+    short_path_high = np.full(n, np.nan, dtype=float)
+    short_path_low = np.full(n, np.nan, dtype=float)
 
     n_events = n - h
     for start in range(0, n_events, chunk_size):
@@ -210,6 +215,15 @@ def asymmetric_barrier_labels(
             reasons[take] = "take_profit"
             reasons[timed] = "time"
 
+            # Track the realized OHLC path only through this side's own exit.
+            # Long and short can resolve on different candles.
+            held_idx = np.clip(np.nan_to_num(holds, nan=1.0).astype(int) - 1, 0, h - 1)
+            row_idx = np.arange(end - start)
+            hi_path = np.maximum.accumulate(hi_w, axis=1)[row_idx, held_idx]
+            lo_path = np.minimum.accumulate(lo_w, axis=1)[row_idx, held_idx]
+            hi_path[~valid] = np.nan
+            lo_path[~valid] = np.nan
+
             if is_short:
                 stop_fill = np.maximum(open_[k], sl)
                 take_fill = tp
@@ -224,10 +238,10 @@ def asymmetric_barrier_labels(
                 exits[take] = take_fill[take] / e[take] - 1.0
                 horizon_price = close[rows + h]
                 exits[timed] = horizon_price[timed] / e[timed] - 1.0
-            return labels, exits, holds, reasons
+            return labels, exits, holds, reasons, hi_path, lo_path
 
-        ll, le, lh, lr = resolve_side(long_tp, long_sl, False)
-        slabel, se, sh, sr = resolve_side(short_tp, short_sl, True)
+        ll, le, lh, lr, lhi, llo = resolve_side(long_tp, long_sl, False)
+        slabel, se, sh, sr, shi, slo = resolve_side(short_tp, short_sl, True)
 
         long_label[start:end] = ll
         short_label[start:end] = slabel
@@ -237,6 +251,10 @@ def asymmetric_barrier_labels(
         short_hold[start:end] = sh
         long_reason[start:end] = lr
         short_reason[start:end] = sr
+        long_path_high[start:end] = lhi
+        long_path_low[start:end] = llo
+        short_path_high[start:end] = shi
+        short_path_low[start:end] = slo
 
         usable = valid
         long_horizon[start:end][usable] = close[rows[usable] + h] / e[usable] - 1.0
@@ -265,6 +283,10 @@ def asymmetric_barrier_labels(
         "short_exit_reason": short_reason,
         "long_horizon_exit": long_horizon,
         "short_horizon_exit": short_horizon,
+        "long_path_high": long_path_high,
+        "long_path_low": long_path_low,
+        "short_path_high": short_path_high,
+        "short_path_low": short_path_low,
         "sigma": sigma,
         "entry_price": entry,
         "long_sample_weight": weight_long,
@@ -590,6 +612,7 @@ def _execute_signals(
     fund_times_ns: np.ndarray,
     fund_rates: np.ndarray,
     fund_marks: np.ndarray,
+    sl_mult: float,
 ) -> dict:
     """Apply frozen thresholds, independent exits and funding per selected side."""
     n = len(times)
@@ -597,6 +620,8 @@ def _execute_signals(
         raise ValueError("Signals, timestamps and labels are not aligned.")
 
     indices, sides, gross, funding_returns, holding = [], [], [], [], []
+    exit_reasons, mae_returns, mfe_returns = [], [], []
+    stop_distances, entry_dates = [], []
     last_entry = -10**9
     for i in range(max(0, n - H)):
         if i - last_entry < H:
@@ -616,9 +641,15 @@ def _execute_signals(
         if side == 1:
             ret = float(lab["long_exit"].iloc[i])
             held = lab["long_holding_bars"].iloc[i]
+            exit_reason = str(lab["long_exit_reason"].iloc[i])
+            path_high = float(lab["long_path_high"].iloc[i])
+            path_low = float(lab["long_path_low"].iloc[i])
         else:
             ret = float(lab["short_exit"].iloc[i])
             held = lab["short_holding_bars"].iloc[i]
+            exit_reason = str(lab["short_exit_reason"].iloc[i])
+            path_high = float(lab["short_path_high"].iloc[i])
+            path_low = float(lab["short_path_low"].iloc[i])
         if not np.isfinite(ret) or not np.isfinite(held):
             continue
         held = int(held)
@@ -626,6 +657,15 @@ def _execute_signals(
             continue
 
         entry_price = float(lab["entry_price"].iloc[i])
+        sigma = float(lab["sigma"].iloc[i])
+        if not np.isfinite(path_high) or not np.isfinite(path_low) or path_high <= 0 or path_low <= 0:
+            continue
+        if side == 1:
+            mae = min(0.0, path_low / entry_price - 1.0)
+            mfe = max(0.0, path_high / entry_price - 1.0)
+        else:
+            mae = min(0.0, entry_price / path_high - 1.0)
+            mfe = max(0.0, entry_price / path_low - 1.0)
         entry_time = pd.Timestamp(times.iloc[i + 1])
         exit_bar_open = pd.Timestamp(times.iloc[i + held])
         exit_time = exit_bar_open + pd.Timedelta(minutes=TF_MINUTES)
@@ -642,6 +682,11 @@ def _execute_signals(
         gross.append(ret)
         funding_returns.append(f_pnl)
         holding.append(held)
+        exit_reasons.append(exit_reason)
+        mae_returns.append(mae)
+        mfe_returns.append(mfe)
+        stop_distances.append(sigma * sl_mult)
+        entry_dates.append(entry_time.date().isoformat())
         last_entry = i
 
     gross_arr = np.asarray(gross, dtype=float)
@@ -665,6 +710,11 @@ def _execute_signals(
         "net_primary": gross_arr - primary_cost + funding_arr,
         "net_stress": gross_arr - stress_cost + funding_arr,
         "holding_bars": np.asarray(holding, dtype=int),
+        "exit_reasons": np.asarray(exit_reasons, dtype=object),
+        "mae_returns": np.asarray(mae_returns, dtype=float),
+        "mfe_returns": np.asarray(mfe_returns, dtype=float),
+        "stop_distance_returns": np.asarray(stop_distances, dtype=float),
+        "entry_dates": np.asarray(entry_dates, dtype=object),
     }
 
 
@@ -791,6 +841,9 @@ def run_config(
     fold_results = []
     pooled_primary, pooled_stress, pooled_gross = [], [], []
     pooled_benchmark_primary, pooled_benchmark_stress = [], []
+    pooled_sides, pooled_mae, pooled_mfe = [], [], []
+    pooled_stop_distances, pooled_exit_reasons = [], []
+    pooled_entry_dates, pooled_holding_bars = [], []
     total_oos_bars = 0
 
     for fold_no, (tr0, tr1, te0, te1) in enumerate(fold_list, 1):
@@ -807,7 +860,7 @@ def run_config(
         test_times = times.iloc[te0:te1].reset_index(drop=True)
 
         execution = _execute_signals(
-            p_l, p_s, thr_l, thr_s, test_labels, test_times, ft, fr, fm
+            p_l, p_s, thr_l, thr_s, test_labels, test_times, ft, fr, fm, sl_mult
         )
         benchmark = _long_benchmark(
             test_labels, test_times, ft, fr, fm, stress=False
@@ -817,6 +870,10 @@ def run_config(
         )
         primary = _metrics_with_ci(execution, benchmark, te1 - te0, "net_primary")
         stress = _metrics_with_ci(execution, benchmark_stress, te1 - te0, "net_stress")
+        primary["trade_attribution"] = summarize_trade_attribution(
+            execution["net_primary"], execution["sides"], execution["exit_reasons"],
+            execution["mae_returns"], execution["mfe_returns"], execution["holding_bars"],
+        )
         primary.update({
             "fold": fold_no,
             "test_start": str(test_times.iloc[0]),
@@ -831,6 +888,13 @@ def run_config(
         pooled_primary.extend(execution["net_primary"].tolist())
         pooled_stress.extend(execution["net_stress"].tolist())
         pooled_gross.extend(execution["gross"].tolist())
+        pooled_sides.extend(execution["sides"].tolist())
+        pooled_mae.extend(execution["mae_returns"].tolist())
+        pooled_mfe.extend(execution["mfe_returns"].tolist())
+        pooled_stop_distances.extend(execution["stop_distance_returns"].tolist())
+        pooled_exit_reasons.extend(execution["exit_reasons"].tolist())
+        pooled_entry_dates.extend(execution["entry_dates"].tolist())
+        pooled_holding_bars.extend(execution["holding_bars"].tolist())
         pooled_benchmark_primary.extend(benchmark.tolist())
         pooled_benchmark_stress.extend(benchmark_stress.tolist())
         total_oos_bars += te1 - te0
@@ -868,6 +932,21 @@ def run_config(
         if fold_expectancies else 0.0
     )
 
+    development_attribution = summarize_trade_attribution(
+        np.asarray(pooled_primary, dtype=float), np.asarray(pooled_sides, dtype=np.int8),
+        np.asarray(pooled_exit_reasons, dtype=object), np.asarray(pooled_mae, dtype=float),
+        np.asarray(pooled_mfe, dtype=float), np.asarray(pooled_holding_bars, dtype=float),
+    )
+    # Risk overlays use development OOS folds only; the final holdout is excluded.
+    development_risk = run_risk_budget_grid(
+        np.asarray(pooled_primary, dtype=float), np.asarray(pooled_mae, dtype=float),
+        np.asarray(pooled_stop_distances, dtype=float), np.asarray(pooled_entry_dates, dtype=object),
+        risk_levels_pct=(0.25, 0.5, 1.0), initial_capital=INITIAL_CAPITAL,
+        max_notional=100.0, cash_reserve_pct=CASH_RESERVE_PCT, cost_buffer_bps=6.0,
+        daily_loss_limit_pct=2.0, max_drawdown_stop_pct=15.0,
+        max_consecutive_losses=3, cooldown_trades=1,
+    )
+
     # Refit the final frozen holdout model using the same expanding-history
     # training policy as the OOS folds. Keep a separate 90-day calibration tail;
     # purge H+2 labels before it. The untouched holdout is never used for fitting.
@@ -889,7 +968,7 @@ def run_config(
     hold_times = times.iloc[cut_idx:].reset_index(drop=True)
     hold_execution = _execute_signals(
         p_hold_l, p_hold_s, thr_l, thr_s,
-        hold_labels, hold_times, ft, fr, fm,
+        hold_labels, hold_times, ft, fr, fm, sl_mult,
     )
     hold_benchmark = _long_benchmark(
         hold_labels, hold_times, ft, fr, fm, stress=False
@@ -904,6 +983,11 @@ def run_config(
     hold_primary = _metrics_with_ci(
         hold_execution, hold_benchmark, len(hold_times), "net_primary",
         bootstrap_alpha=family_alpha, bootstrap_reps=10_000,
+    )
+    # Locked holdout attribution is descriptive only; no risk-policy selection uses it.
+    hold_primary["trade_attribution"] = summarize_trade_attribution(
+        hold_execution["net_primary"], hold_execution["sides"], hold_execution["exit_reasons"],
+        hold_execution["mae_returns"], hold_execution["mfe_returns"], hold_execution["holding_bars"],
     )
     hold_stress = _metrics_with_ci(
         hold_execution, hold_benchmark_stress, len(hold_times), "net_stress",
@@ -934,6 +1018,8 @@ def run_config(
         "funding_features": bool(use_funding),
         "feature_count": int(X.shape[1]),
         "folds": fold_results,
+        "development_oos_trade_attribution": development_attribution,
+        "development_oos_risk_budget_scenarios": development_risk,
         "positive_oos_folds_pct": round(positive_folds_pct, 2),
         "median_fold_expectancy_bps": (
             round(float(np.median(fold_expectancies)), 3) if fold_expectancies else None
@@ -1130,6 +1216,10 @@ def main() -> None:
                 "proxy only, not the true Binance markPrice"
             ),
             "ambiguous_funding_boundary": "payments charged; credits ignored",
+            "risk_management_scope": (
+                "Long/short and exit attribution plus stop-distance risk sizing use development OOS folds only; "
+                "the final 180-day holdout is excluded from risk-policy comparison."
+            ),
             "capital_model": (
                 "1x no leverage; position=min(cap,90% current equity); "
                 "no exchange liquidation/order-book fill model"
