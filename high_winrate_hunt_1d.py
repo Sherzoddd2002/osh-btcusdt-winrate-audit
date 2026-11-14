@@ -126,16 +126,28 @@ def asymmetric_barrier_labels(
     vol_win: int = VOL_WIN,
     chunk_size: int = 10_000,
     tp_mult_short: float | None = None,
+    volatility_horizon: int | None = None,
 ) -> pd.DataFrame:
     """Compute independent long/short first-touch labels in bounded-memory chunks.
 
+    The argument h controls the maximum holding / label horizon. The optional
+    volatility_horizon independently controls the sigma scale used to place
+    TP/SL barriers. Keeping it fixed allows time-exit sensitivity tests without
+    also shrinking or expanding the barriers.
     Signal is known at candle i close; entry is candle i+1 open. Same-bar
     double-touch is a loss for that side. Stops use adverse gap fills. TP fills
     are fixed at the barrier and never assume price improvement on a gap.
     """
     short_tp_mult = tp_mult if tp_mult_short is None else float(tp_mult_short)
-    if h < 1 or tp_mult <= 0 or short_tp_mult <= 0 or sl_mult <= 0 or vol_win < 2:
-        raise ValueError("h, long/short tp_mult and sl_mult must be positive; vol_win >= 2.")
+    sigma_horizon = h if volatility_horizon is None else int(volatility_horizon)
+    if (
+        h < 1 or sigma_horizon < 1 or tp_mult <= 0
+        or short_tp_mult <= 0 or sl_mult <= 0 or vol_win < 2
+    ):
+        raise ValueError(
+            "h, volatility_horizon, long/short tp_mult and sl_mult must be positive; "
+            "vol_win >= 2."
+        )
     if chunk_size < 1:
         raise ValueError("chunk_size must be positive.")
 
@@ -150,7 +162,7 @@ def asymmetric_barrier_labels(
     log_returns = np.log(pd.Series(close)).diff()
     sigma = (
         log_returns.rolling(vol_win, min_periods=max(2, vol_win // 2))
-        .std().to_numpy(dtype=float) * np.sqrt(h)
+        .std().to_numpy(dtype=float) * np.sqrt(sigma_horizon)
     )
     entry = np.full(n, np.nan, dtype=float)
     entry[:-1] = open_[1:]
@@ -615,9 +627,13 @@ def _execute_signals(
     fund_rates: np.ndarray,
     fund_marks: np.ndarray,
     sl_mult: float,
+    horizon_bars: int | None = None,
 ) -> dict:
     """Apply frozen thresholds, independent exits and funding per selected side."""
     n = len(times)
+    max_horizon = H if horizon_bars is None else int(horizon_bars)
+    if max_horizon < 1:
+        raise ValueError("horizon_bars must be positive.")
     if not (len(p_long) == len(p_short) == len(lab) == n):
         raise ValueError("Signals, timestamps and labels are not aligned.")
 
@@ -625,8 +641,8 @@ def _execute_signals(
     exit_reasons, mae_returns, mfe_returns = [], [], []
     stop_distances, entry_dates = [], []
     last_entry = -10**9
-    for i in range(max(0, n - H)):
-        if i - last_entry < H:
+    for i in range(max(0, n - max_horizon)):
+        if i - last_entry < max_horizon:
             continue
         go_long = np.isfinite(p_long[i]) and p_long[i] >= thr_long
         go_short = np.isfinite(p_short[i]) and p_short[i] >= thr_short
@@ -655,7 +671,7 @@ def _execute_signals(
         if not np.isfinite(ret) or not np.isfinite(held):
             continue
         held = int(held)
-        if held < 1 or i + held >= n:
+        if held < 1 or held > max_horizon or i + held >= n:
             continue
 
         entry_price = float(lab["entry_price"].iloc[i])
@@ -727,13 +743,17 @@ def _long_benchmark(
     fund_rates: np.ndarray,
     fund_marks: np.ndarray,
     stress: bool,
+    horizon_bars: int | None = None,
 ) -> np.ndarray:
+    horizon = H if horizon_bars is None else int(horizon_bars)
+    if horizon < 1:
+        raise ValueError("horizon_bars must be positive.")
     values = []
-    for i in range(0, max(0, len(times) - H), H):
+    for i in range(0, max(0, len(times) - horizon), horizon):
         ret = float(lab["long_horizon_exit"].iloc[i])
         entry_price = float(lab["entry_price"].iloc[i])
         entry_time = pd.Timestamp(times.iloc[i + 1])
-        exit_time = pd.Timestamp(times.iloc[i + H]) + pd.Timedelta(minutes=TF_MINUTES)
+        exit_time = pd.Timestamp(times.iloc[i + horizon]) + pd.Timedelta(minutes=TF_MINUTES)
         funding = funding_pnl_for_trade(
             1, entry_time, exit_time, entry_price,
             fund_times_ns, fund_rates, fund_marks,
@@ -771,19 +791,23 @@ def _train_predict(
     train_start: int,
     calibration_start: int,
     train_end: int,
+    horizon_bars: int | None = None,
 ) -> tuple:
-    """Train only before calibration; purge all label horizons before calibration."""
-    model_data_end = calibration_start - (H + 2)
+    """Train only before calibration; purge the configured label horizon."""
+    horizon = H if horizon_bars is None else int(horizon_bars)
+    if horizon < 1:
+        raise ValueError("horizon_bars must be positive.")
+    model_data_end = calibration_start - (horizon + 2)
     if model_data_end <= train_start or model_data_end > train_end:
         raise ValueError("Insufficient purged training observations before calibration.")
     X_train = X.iloc[train_start:model_data_end]
     ml, cls_l = fit_side_model(
         X_train, y_long[train_start:model_data_end],
-        w_long[train_start:model_data_end], H,
+        w_long[train_start:model_data_end], horizon,
     )
     ms, cls_s = fit_side_model(
         X_train, y_short[train_start:model_data_end],
-        w_short[train_start:model_data_end], H,
+        w_short[train_start:model_data_end], horizon,
     )
     X_cal = X.iloc[calibration_start:train_end]
     if len(X_cal) < 100:
