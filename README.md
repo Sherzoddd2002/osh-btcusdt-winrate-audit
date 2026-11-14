@@ -410,7 +410,8 @@ high_winrate_hunt_1d.py oldingi yuqori-win-rate tajribasidagi muhim mantiqiy xat
 - Short foyda/zarari boshlang'ich notional bo'yicha `(entry - exit) / entry` formula bilan o'lchanadi; reciprocal-price formula ishlatilmaydi.
 - Maker/taker fee kirish va chiqish notionaliga alohida qo'llanadi; slippage round-trip faraz sifatida ko'rsatiladi.
 - Barrier exit sodir bo'lgan so'nggi 15m shamdagi funding kreditlari vaqt noaniqligi sabab hisobga olinmaydi; to'lovlar esa konservativ tarzda olinadi.
-- Holdout 180 kun va har konfiguratsiyaga bir marta. C6 trap namoyishi umumiy GO qaroriga nomzod konfiguratsiya sifatida kiritilmaydi.
+- Holdout modeli faqat undan oldingi 365 kunlik train + 90 kunlik kalibrlash oynasida qayta o'qitiladi, keyin 180 kun muzlatiladi.
+- 6 ta haqiqiy nomzod bir xil holdout'da tekshirilgani uchun expectancy bootstrap intervali Bonferroni usulida oilaviy 95% darajaga tuzatiladi; C6 trap GO nomzodi emas.
 
 PowerShell:
 ~~~powershell
