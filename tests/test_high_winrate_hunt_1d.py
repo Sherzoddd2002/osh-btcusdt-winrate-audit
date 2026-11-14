@@ -130,6 +130,24 @@ class AsymmetricBarrierTests(unittest.TestCase):
                 frame, 3, 1.0, 1.0, tp_mult_short=0.0
             )
 
+    def test_time_exit_horizon_can_change_while_sigma_scale_stays_fixed(self):
+        frame = market_frame()
+        i = 20
+        with patch.object(hunt, "VOL_WIN", 4):
+            expected_sigma = (
+                np.log(frame["close"]).diff().rolling(4, min_periods=2).std().iloc[i]
+                * np.sqrt(4)
+            )
+            labels = hunt.asymmetric_barrier_labels(
+                frame, h=2, tp_mult=1000.0, sl_mult=1000.0,
+                vol_win=4, volatility_horizon=4,
+            )
+        self.assertAlmostEqual(float(labels.loc[i, "sigma"]), float(expected_sigma))
+        self.assertEqual(int(labels.loc[i, "long_holding_bars"]), 2)
+        self.assertEqual(int(labels.loc[i, "short_holding_bars"]), 2)
+        self.assertEqual(labels.loc[i, "long_exit_reason"], "time")
+        self.assertEqual(labels.loc[i, "short_exit_reason"], "time")
+
     def test_tp_gap_does_not_assume_price_improvement(self):
         frame = market_frame()
         i = 20
@@ -195,6 +213,46 @@ class AsymmetricBarrierTests(unittest.TestCase):
             labels = hunt.asymmetric_barrier_labels(frame, h, 0.5, 1.0, vol_win=4)
         self.assertEqual(int(labels.loc[i, "long_label"]), -1)
         self.assertEqual(int(labels.loc[i, "short_label"]), -1)
+
+
+class ExecutionHorizonTests(unittest.TestCase):
+    def test_custom_horizon_controls_entry_spacing_and_max_holding(self):
+        n = 8
+        times = pd.Series(pd.date_range(
+            "2024-01-01T00:00:00Z", periods=n, freq="15min"
+        ))
+        labels = pd.DataFrame({
+            "long_exit": np.zeros(n),
+            "short_exit": np.zeros(n),
+            "long_holding_bars": np.full(n, 2),
+            "short_holding_bars": np.full(n, 2),
+            "long_exit_reason": np.full(n, "time", dtype=object),
+            "short_exit_reason": np.full(n, "time", dtype=object),
+            "long_path_high": np.full(n, 101.0),
+            "long_path_low": np.full(n, 99.0),
+            "short_path_high": np.full(n, 101.0),
+            "short_path_low": np.full(n, 99.0),
+            "entry_price": np.full(n, 100.0),
+            "sigma": np.full(n, 0.01),
+        })
+        empty_times = np.array([], dtype=np.int64)
+        empty_values = np.array([], dtype=float)
+        result = hunt._execute_signals(
+            np.ones(n), np.zeros(n), 0.5, 0.5, labels, times,
+            empty_times, empty_values, empty_values, 1.0,
+            horizon_bars=2,
+        )
+        np.testing.assert_array_equal(result["indices"], np.array([0, 2, 4]))
+        np.testing.assert_array_equal(result["holding_bars"], np.array([2, 2, 2]))
+
+    def test_non_positive_custom_horizon_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "horizon_bars"):
+            hunt._execute_signals(
+                np.array([]), np.array([]), 0.5, 0.5, pd.DataFrame(),
+                pd.Series(dtype="datetime64[ns]"),
+                np.array([], dtype=np.int64), np.array([]), np.array([]), 1.0,
+                horizon_bars=0,
+            )
 
 
 class FundingTests(unittest.TestCase):
