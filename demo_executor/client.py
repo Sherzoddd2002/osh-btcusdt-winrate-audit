@@ -70,8 +70,9 @@ class BinanceDemoClient:
         self.synced = True
         return self.offset_ms
 
-    def exchange_info(self, symbol):
-        return self._request("GET", "/fapi/v1/exchangeInfo", {"symbol": symbol})
+    def exchange_info(self, symbol=None):
+        # USD-M exchangeInfo is the full public symbol/filter catalogue.
+        return self._request("GET", "/fapi/v1/exchangeInfo")
 
     def klines(self, symbol, limit=500):
         return self._request("GET", "/fapi/v1/klines",
@@ -117,7 +118,7 @@ class BinanceDemoClient:
     def open_algo_orders(self, symbol):
         result = self._request(
             "GET", "/fapi/v1/openAlgoOrders",
-            {"symbol": symbol, "algoType": "CONDITIONAL"}, signed=True
+            {"symbol": symbol}, signed=True
         )
         return result if isinstance(result, list) else [result]
 
