@@ -775,7 +775,6 @@ def run_config(
     fold_results = []
     pooled_primary, pooled_stress, pooled_gross = [], [], []
     pooled_benchmark_primary, pooled_benchmark_stress = [], []
-    last_model_state = None
     total_oos_bars = 0
 
     for fold_no, (tr0, tr1, te0, te1) in enumerate(fold_list, 1):
@@ -819,10 +818,11 @@ def run_config(
         pooled_benchmark_primary.extend(benchmark.tolist())
         pooled_benchmark_stress.extend(benchmark_stress.tolist())
         total_oos_bars += te1 - te0
-        last_model_state = model_state
 
-    if last_model_state is None:
-        raise ValueError("No final model was trained; holdout cannot be evaluated.")
+    if len(fold_results) != FOLDS:
+        raise ValueError(
+            f"Expected {FOLDS} completed OOS folds; got {len(fold_results)}."
+        )
 
     pooled_execution = {
         "net_primary": np.asarray(pooled_primary, dtype=float),
@@ -852,7 +852,19 @@ def run_config(
         if fold_expectancies else 0.0
     )
 
-    ml, cls_l, ms, cls_s, thr_l, thr_s = last_model_state
+    # Refit the final, frozen holdout model using only development history:
+    # a 365-day training window, followed by a separate 90-day calibration tail.
+    # The 180-day holdout itself is never used for fitting or threshold choice.
+    final_calibration_rows = BARS_PER_DAY * 90
+    final_training_rows = BARS_PER_DAY * TRAIN_DAYS
+    final_calibration_start = cut_idx - final_calibration_rows
+    final_training_start = final_calibration_start - final_training_rows
+    if final_training_start < 0 or final_calibration_start <= 0:
+        raise ValueError("Not enough development history for final 365d train + 90d calibration.")
+    ml, cls_l, ms, cls_s, thr_l, thr_s = _train_predict(
+        X, y_long, y_short, w_long, w_short,
+        final_training_start, final_calibration_start, cut_idx,
+    )
     X_hold = X.iloc[cut_idx:]
     p_hold_l = predict_side_proba(ml, cls_l, X_hold)[:, 2]
     p_hold_s = predict_side_proba(ms, cls_s, X_hold)[:, 2]
