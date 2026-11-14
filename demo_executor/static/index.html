@@ -14,7 +14,7 @@ h1{font-size:clamp(28px,4vw,38px);margin:25px 0 3px;letter-spacing:-.04em}h2{fon
 .columns{display:grid;grid-template-columns:1fr 1fr;gap:12px}.row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #24394b;font-size:13px}.row span{color:var(--muted)}
 .controls{display:flex;gap:9px;flex-wrap:wrap;margin:16px 0 10px}button{cursor:pointer;background:#18344c;border:1px solid #35546c;border-radius:10px;color:var(--ink);padding:10px 14px;font-weight:750}
 button.primary{background:#176b62;border-color:#329987}button.stop{background:#4c2730;border-color:#874650}button:disabled{opacity:.4;cursor:not-allowed}
-#err{white-space:pre-wrap;color:var(--red);font-size:12px;margin-top:8px}.events{font:12px/1.6 ui-monospace,Consolas,monospace;max-height:330px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+#err{white-space:pre-wrap;color:var(--red);font-size:12px;margin-top:8px}.ok{color:var(--green)!important}.events{font:12px/1.6 ui-monospace,Consolas,monospace;max-height:330px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
 footer{margin-top:24px;border-top:1px solid var(--line);padding-top:15px;color:var(--muted);font-size:12px}
 @media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}.columns{grid-template-columns:1fr}}
 @media(max-width:440px){.grid{grid-template-columns:1fr 1fr}.value{font-size:18px}}
@@ -52,7 +52,15 @@ footer{margin-top:24px;border-top:1px solid var(--line);padding-top:15px;color:v
 <script>
 const token="__OSH_SESSION__", headers={"Content-Type":"application/json","X-OSH-Session":token};
 const $=id=>document.getElementById(id);
-async function api(url,method="GET"){const r=await fetch(url,{method,headers});const d=await r.json().catch(()=>({detail:"Invalid response"}));if(!r.ok)throw Error(d.detail||r.statusText);return d;}
+let actionMessage="", actionMessageIsError=true;
+function setMessage(message,isError=true){actionMessage=message||"";actionMessageIsError=isError;$("err").textContent=actionMessage;$("err").className=actionMessage&&!isError?"ok":"";}
+async function api(url,method="GET"){
+ const r=await fetch(url,{method,headers});
+ const d=await r.json().catch(()=>({detail:"Server JSON response could not be read"}));
+ if(!r.ok){const detail=typeof d.detail==="string"?d.detail:JSON.stringify(d.detail||d);throw Error(method+" "+url+" · HTTP "+r.status+": "+(detail||r.statusText));}
+ return d;
+}
+const fmt=(v,n=3)=>v===null||v===undefined||!Number.isFinite(Number(v))?"—":Number(v).toFixed(n);
 const fmt=(v,n=3)=>v===null||v===undefined||!Number.isFinite(Number(v))?"—":Number(v).toFixed(n);
 function render(s){
  $("creds").textContent=s.credentials_configured?"FOUND":"MISSING";$("creds").className="value "+(s.credentials_configured?"green":"red");
@@ -68,9 +76,17 @@ function render(s){
  $("start").disabled=!s.credentials_configured||!s.model_ready||!s.demo_orders_enabled||s.accepting_new_entries;
  $("stop").disabled=!s.accepting_new_entries;
  const lines=(s.events||[]).map(x=>x.time_utc+"  "+x.event+"  "+Object.entries(x).filter(([k])=>!["time_utc","event"].includes(k)).map(([k,v])=>k+"="+JSON.stringify(v)).join(" "));
- $("events").textContent=lines.join("\n")||"No events."; $("err").textContent=s.last_error||"";
+ $("events").textContent=lines.join("\n")||"No events."; const visibleMessage=actionMessage||s.last_error||""; $("err").textContent=visibleMessage; $("err").className=actionMessage&&!actionMessageIsError?"ok":"";
 }
-async function refresh(){try{render(await api("/api/status"))}catch(e){$("err").textContent=e.message;}}
+async function refresh(){try{render(await api("/api/status"))}catch(e){setMessage(e.message,true);}}
+$("connect").onclick=async()=>{
+ const button=$("connect");button.disabled=true;setMessage("Demo API ulanishi tekshirilmoqda…",false);
+ try{const r=await api("/api/connect","POST");setMessage("Demo API ulandi. "+r.base_url+" · Hedge mode: "+r.hedge_mode+" · Available: "+fmt(r.account?.available_balance_usdt,2)+" USDT · BTCUSDT filters: "+JSON.stringify(r.rules),false);}
+ catch(e){setMessage(e.message,true);}
+ await refresh();button.disabled=false;
+};
+$("start").onclick=async()=>{if(!confirm("Faqat Binance Futures DEMO. Keyingi yangi 15m shamda signal bo‘lsa MARKET entry hamda reduce-only TP/SL orderlari yuboriladi. Davom etasizmi?"))return;setMessage("Demo strategiyasi ishga tushirilmoqda…",false);try{const r=await api("/api/start","POST");setMessage(r.message||"Demo strategiyasi ishga tushdi.",false);}catch(e){setMessage(e.message,true);}await refresh();};
+$("stop").onclick=async()=>{if(!confirm("Yangi entry signallari to‘xtatiladi. Ochiq Demo pozitsiya boshqaruvda qoladi. Davom etasizmi?"))return;setMessage("Yangi entry to‘xtatilmoqda…",false);try{const r=await api("/api/stop","POST");setMessage(r.message||"Yangi entry to‘xtatildi.",false);}catch(e){setMessage(e.message,true);}await refresh();};
 $("connect").onclick=async()=>{try{const r=await api("/api/connect","POST");alert("Demo API connected\n"+r.base_url+"\nHedge mode: "+r.hedge_mode+"\nSymbol filters: "+JSON.stringify(r.rules));}catch(e){$("err").textContent=e.message;}await refresh();};
 $("start").onclick=async()=>{if(!confirm("Faqat Binance Futures DEMO. Keyingi yangi 15m shamda signal bo‘lsa MARKET entry hamda reduce-only TP/SL orderlari yuboriladi. Davom etasizmi?"))return;try{await api("/api/start","POST");}catch(e){$("err").textContent=e.message;}await refresh();};
 $("stop").onclick=async()=>{if(!confirm("Yangi entry signallari to‘xtatiladi. Ochiq Demo pozitsiya boshqaruvda qoladi. Davom etasizmi?"))return;try{await api("/api/stop","POST");}catch(e){$("err").textContent=e.message;}await refresh();};
