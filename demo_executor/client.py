@@ -104,6 +104,10 @@ class BinanceDemoClient:
     def position_mode(self):
         return self._request("GET", "/fapi/v1/positionSide/dual", signed=True)
 
+    def multi_asset_mode(self):
+        """Return the account-wide USDⓈ-M Multi-Assets/Single-Asset mode."""
+        return self._request("GET", "/fapi/v1/multiAssetsMargin", signed=True)
+
     def open_orders(self, symbol):
         return self._request("GET", "/fapi/v1/openOrders", {"symbol": symbol}, signed=True)
 
