@@ -80,7 +80,7 @@ function render(s){
 async function refresh(){try{render(await api("/api/status"))}catch(e){setMessage(e.message,true);}}
 $("connect").onclick=async()=>{
  const button=$("connect");button.disabled=true;setMessage("Futures Testnet API ulanishi tekshirilmoqda…",false);
- try{const r=await api("/api/connect","POST");setMessage("Futures Testnet API ulandi. "+r.base_url+" · Hedge mode: "+r.hedge_mode+" · Available: "+fmt(r.account?.available_balance_usdt,2)+" USDT · BTCUSDT filters: "+JSON.stringify(r.rules),false);}
+ try{const r=await api("/api/connect","POST");setMessage("Futures Testnet API ulandi. "+r.base_url+" · Hedge mode: "+r.hedge_mode+" · Multi-Assets mode: "+(r.multi_assets_mode?"ON":"OFF")+" · Available: "+fmt(r.account?.available_balance_usdt,2)+" USDT · BTCUSDT filters: "+JSON.stringify(r.rules),false);}
  catch(e){setMessage(e.message,true);}
  await refresh();button.disabled=false;
 };
