@@ -26,6 +26,13 @@ INITIAL_CAPITAL_USD = 100.0
 MAX_NOTIONAL_USD = 100.0       # hard cap: never above the $100 account
 LEVERAGE = 1
 MARGIN_TYPE = "ISOLATED"
+# Fail-closed research gate: no HF tactic has passed net holdout/forward GO criteria.
+# Keep the HF Arena in PAPER/SHADOW mode until a separately reviewed release enables orders.
+TESTNET_ORDER_EXECUTION_ENABLED = False
+ORDER_EXECUTION_LOCK_REASON = (
+    "HF Testnet order execution is locked: all six tactics remain NO-GO after net-cost replay. "
+    "Use PAPER/SHADOW mode only until an independently validated forward GO and execution review."
+)
 MAX_CONCURRENT_PER_MODEL = 8
 
 # Fees are REAL and never removed. Gross is shown separately for transparency.
