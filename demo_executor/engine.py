@@ -161,7 +161,7 @@ class DemoEngine:
                 algo_orders = client.open_algo_orders(SYMBOL)
                 if abs(amount) > 1e-12 or orders or algo_orders:
                     self.state_name = "STOPPED"
-                    raise RuntimeError("Testnet BTCUSDT position or open orders exist. Nothing was deleted. Reconcile the Demo account first.")
+                    raise RuntimeError("Testnet BTCUSDT position or open orders exist. Nothing was deleted. Reconcile the Futures Testnet account first.")
             self.halt.set()
             thread = self.thread
         if thread and thread.is_alive():
@@ -194,7 +194,7 @@ class DemoEngine:
             return {"last_entry_candle_ms": None, "peak_equity": None, "trade": None}
         data = json.loads(STATE_FILE.read_text(encoding="utf-8"))
         if not isinstance(data, dict):
-            raise RuntimeError("Local Demo state is not a JSON object.")
+            raise RuntimeError("Local Testnet state is not a JSON object.")
         data.setdefault("last_entry_candle_ms", None)
         data.setdefault("peak_equity", None)
         data.setdefault("trade", None)
@@ -214,7 +214,7 @@ class DemoEngine:
 
     def _client(self):
         if self.client is None:
-            raise RuntimeError("No Futures Testnet API credentials saved. Enter Demo API credentials on the GitHub Pages terminal first.")
+            raise RuntimeError("No Futures Testnet API credentials saved. Enter Futures Testnet API credentials on the GitHub Pages terminal first.")
         return self.client
 
     def _load_model(self):
@@ -366,7 +366,7 @@ class DemoEngine:
 
                     if tp_status == "MISSING" or sl_status == "MISSING":
                         raise RuntimeError(
-                            "Saved Demo position is missing its TP or Algo STOP. "
+                            "Saved Testnet position is missing its TP or Algo STOP. "
                             "Inspect and protect/close it manually before restarting."
                         )
                 else:
@@ -411,7 +411,7 @@ class DemoEngine:
         keep = [x < now_ms for x in close_times]
         frame = frame.loc[keep].reset_index(drop=True)
         if frame.empty:
-            raise RuntimeError("No fully closed Demo Futures candles.")
+            raise RuntimeError("No fully closed Futures Testnet candles.")
         return frame, [x for x, use in zip(close_times, keep) if use]
 
     def _loop(self):
@@ -447,7 +447,7 @@ class DemoEngine:
         artifact = self._load_model()
         X, names = pv.make_features(frame)
         if list(names) != list(artifact["feature_names"]):
-            raise RuntimeError("Demo serving features differ from the frozen training schema.")
+            raise RuntimeError("Testnet serving features differ from the frozen training schema.")
         latest = X.iloc[[-1]].replace([np.inf, -np.inf], np.nan)
         p_long = float(hunt.predict_side_proba(artifact["model_long"], artifact["classes_long"], latest)[0, 2])
         p_short = float(hunt.predict_side_proba(artifact["model_short"], artifact["classes_short"], latest)[0, 2])
