@@ -281,7 +281,7 @@ class DemoEngine:
         return {
             "connected": True,
             "base_url": "https://testnet.binancefuture.com",
-            "environment": "BINANCE USDⓈ-M FUTURES DEMO",
+            "environment": "BINANCE USDⓈ-M FUTURES LEGACY TESTNET ONLY",
             "symbol": SYMBOL,
             "hedge_mode": bool(mode.get("dualSidePosition")),
             "rules": self.rules,
@@ -298,7 +298,7 @@ class DemoEngine:
         trade = self.state.get("trade")
         signal = self.last_signal or {}
         return {
-            "environment": "BINANCE USDⓈ-M FUTURES DEMO / LEGACY TESTNET HOST ONLY",
+            "environment": "BINANCE USDⓈ-M FUTURES LEGACY TESTNET ONLY",
             "base_url": "https://testnet.binancefuture.com",
             "symbol": SYMBOL,
             "paper_only": True, "live_orders": False,
