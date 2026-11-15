@@ -280,7 +280,7 @@ class DemoEngine:
         }
         return {
             "connected": True,
-            "base_url": "https://demo-fapi.binance.com",
+            "base_url": "https://testnet.binancefuture.com",
             "environment": "BINANCE USDⓈ-M FUTURES DEMO",
             "symbol": SYMBOL,
             "hedge_mode": bool(mode.get("dualSidePosition")),
@@ -298,7 +298,7 @@ class DemoEngine:
         trade = self.state.get("trade")
         signal = self.last_signal or {}
         return {
-            "environment": "BINANCE USDⓈ-M FUTURES DEMO ONLY",
+            "environment": "BINANCE USDⓈ-M FUTURES DEMO / LEGACY TESTNET HOST ONLY",
             "base_url": "https://demo-fapi.binance.com",
             "symbol": SYMBOL,
             "paper_only": True, "live_orders": False,
