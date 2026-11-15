@@ -98,9 +98,9 @@ Do not manually edit the model, lock, thresholds, or report. Keep local artifact
 GitHub Pages source: main / (root). Merge the dashboard update PR into main to publish it.
 
 
-## Local Binance Futures Demo terminal
+## Local Binance Futures Testnet terminal
 
-The public GitHub Pages dashboard is informational only. It cannot access a local `.env` file, so Demo order execution is a separate app served only from `127.0.0.1`.
+The public GitHub Pages dashboard is informational only. It cannot access a local `.env` file, so Futures Testnet order execution is a separate app served only from `127.0.0.1`.
 
 ### Setup (Windows PowerShell)
 
@@ -120,9 +120,9 @@ Freeze the H96 C2 model once using only pre-holdout candles. Use the local disco
 
 The local `forward_paper_h96_c2_model.joblib` and `forward_paper_h96_c2_lock.json` files are ignored by Git. Existing artifacts are hash-checked and reused; changed artifacts are not silently retrained.
 
-For this local Demo executor, the REST host is pinned to `https://testnet.binancefuture.com` because `demo-fapi.binance.com` is currently TLS-reset on the target network while the legacy Futures Testnet host successfully serves the public `/fapi` market-data endpoints. Binance documentation currently lists `demo-fapi.binance.com` as the primary Testnet/Demo REST URL, while its Futures SDK/testing material still references the legacy host; therefore this is a network-compatibility fallback, not a guarantee that every Demo API key will authenticate there. The first account check is read-only and must succeed before any strategy start. There is no production URL fallback.
+For this local Futures Testnet executor, the REST host is pinned to `https://testnet.binancefuture.com` because `demo-fapi.binance.com` is currently TLS-reset on the target network while the legacy Futures Testnet host successfully serves the public `/fapi` market-data endpoints. Binance documentation currently lists `demo-fapi.binance.com` as the primary Testnet/Demo REST URL, while its Futures SDK/testing material still references the legacy host; therefore this is a network-compatibility fallback, not a guarantee that every Demo API key will authenticate there. The first account check is read-only and must succeed before any strategy start. There is no production URL fallback.
 
-Start the local engine on your PC with one click: double-click `START_DEMO_ENGINE.bat` in the repository folder. The script creates `.venv` if needed, installs missing dependencies, pins the local port to `8765`, keeps Demo order sending OFF, and starts the local API. Keep its console window open while using the GitHub Pages controls.
+Start the local Testnet engine on your PC with one click: double-click `START_DEMO_ENGINE.bat` in the repository folder. The script creates `.venv` if needed, installs missing dependencies, pins the local port to `8765`, keeps Testnet order sending OFF, and starts the local API. Keep its console window open while using the GitHub Pages controls.
 
 Manual alternative:
 
@@ -132,26 +132,26 @@ $env:OSH_ENABLE_DEMO_ORDERS = "false"
 .\.venv\Scripts\python.exe -m demo_executor.app
 ~~~
 
-Open the GitHub Pages dashboard at `https://sherzoddd2002.github.io/osh-btcusdt-winrate-audit/` and use its **H96 C2 Demo terminal** section:
+Open the GitHub Pages dashboard at `https://sherzoddd2002.github.io/osh-btcusdt-winrate-audit/` and use its **H96 C2 Futures Testnet terminal** section:
 
 1. Press **Connect local engine**. In Microsoft Edge, allow this GitHub Pages origin to access localhost/local network when prompted. The browser talks only to `127.0.0.1:8765`.
-2. Enter your Demo API Key and Secret and press **Save API on this PC**. The backend stores them in Windows Credential Manager; they are not written to GitHub, browser local storage, or the repository.
+2. Enter API Key and Secret created for the Futures Testnet environment and press **Save API on this PC**. The backend stores them in Windows Credential Manager; they are not written to GitHub, browser local storage, or the repository.
 3. Press **Check Binance Demo**. Verify the fixed Demo URL, available balance, BTCUSDT exchange filters, and One-way position mode.
-4. Press **Start H96 C2** and explicitly confirm Demo order sending. This button is the only normal path that enables Demo entries for the current app process. No Live endpoint exists.
+4. Press **Start H96 C2** and explicitly confirm Testnet order sending. This button is the only normal path that enables Testnet entries for the current app process. No Live endpoint exists.
 5. **Stop new entries** prevents new trades while the engine continues managing an existing Demo position.
 6. **Reset saved API** first disables new entries, then checks the Demo account. It refuses to delete credentials if a position or regular/Algo order is present. On a safe reset, only the API credentials are deleted; model, cooldown state and audit log are preserved.
 
-The local Python engine must remain running on your computer while the GitHub Pages controls are in use. If the engine or PC stops, open Demo orders at Binance may remain; inspect the account before restarting.
+The local Python engine must remain running on your computer while the GitHub Pages controls are in use. If the engine or PC stops, open Testnet orders at Binance may remain; inspect the account before restarting.
 
 ### Execution controls
 
 - The process binds only to `127.0.0.1`; the browser receives no API key or secret.
-- The only exchange host is `https://testnet.binancefuture.com`, a non-production Futures Testnet/Demo-compatible REST host. No Live endpoint, URL override or production fallback exists.
+- The only exchange host is `https://testnet.binancefuture.com`, the non-production Futures Testnet REST host. It is separate from current Binance Futures Demo Trading (`demo.binance.com` / `demo-fapi.binance.com`). No Live endpoint, URL override or production fallback exists.
 - One-way position mode is required. The app uses isolated margin and 1x leverage; it does not change position mode.
 - It skips signals when Binance's current minimum quantity/notional exceeds the $50 position cap. It never silently increases order size.
 - Market entry is followed by a reduce-only STOP_MARKET Algo order (`POST /fapi/v1/algoOrder`, `triggerPrice`) and a post-only GTX LIMIT take-profit (`POST /fapi/v1/order`). The conditional stop is queried/canceled through the Algo API; the 96-bar time exit uses a reduce-only market close. Binance moved USDⓈ-M conditional order types to the Algo service from 2025-12-09.
 - One entry per 96 completed 15m bars; a 15% Demo-equity drawdown disables new entries. Existing positions remain under management.
 - Unknown order responses are reconciled by client order ID rather than blindly retrying market orders.
-- If the process or PC stops, open Demo orders may remain at Binance. Check the Demo account manually before restarting.
+- If the process or PC stops, open Demo orders may remain at Binance. Check the Testnet account manually before restarting.
 
-This is an execution integration test, not validation of profitability. H96 C2 remains DISCOVERY ONLY / NO-GO (58.92% historical OOS win rate, PF 1.1596, 5/8 development gates). Demo fills do not demonstrate real-market Maker priority or live performance. Keep all actual credentials, the root `.env`, model artifacts and runtime state off GitHub.
+This is a Futures Testnet execution integration test, not validation of profitability. H96 C2 remains DISCOVERY ONLY / NO-GO (58.92% historical OOS win rate, PF 1.1596, 5/8 development gates). Demo fills do not demonstrate real-market Maker priority or live performance. Keep all actual credentials, the root `.env`, model artifacts and runtime state off GitHub.
