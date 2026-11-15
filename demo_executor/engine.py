@@ -299,7 +299,7 @@ class DemoEngine:
         signal = self.last_signal or {}
         return {
             "environment": "BINANCE USDⓈ-M FUTURES DEMO / LEGACY TESTNET HOST ONLY",
-            "base_url": "https://demo-fapi.binance.com",
+            "base_url": "https://testnet.binancefuture.com",
             "symbol": SYMBOL,
             "paper_only": True, "live_orders": False,
             "credentials_configured": self.credentials_configured,
