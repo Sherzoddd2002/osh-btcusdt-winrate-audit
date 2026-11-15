@@ -7,8 +7,11 @@ from urllib.parse import urlencode
 
 import httpx
 
-# Deliberately fixed. There is no environment override or live endpoint fallback.
-DEMO_FUTURES_URL = "https://demo-fapi.binance.com"
+# Fixed non-production Futures Testnet/Demo-compatible REST host.
+# The current Demo hostname (demo-fapi.binance.com) is TLS-reset on some networks;
+# this legacy Futures Testnet hostname currently serves public /fapi endpoints.
+# No environment override and no production/live fallback are permitted.
+DEMO_FUTURES_URL = "https://testnet.binancefuture.com"
 
 
 class BinanceAPIError(RuntimeError):
