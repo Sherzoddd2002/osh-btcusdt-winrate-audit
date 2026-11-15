@@ -112,12 +112,12 @@ class DemoEngine:
         key = str(api_key or "").strip()
         secret = str(api_secret or "").strip()
         if not key or not secret or len(key) > 256 or len(secret) > 512:
-            raise ValueError("Both Demo API fields are required and must be within their size limits.")
+            raise ValueError("Both Futures Testnet API fields are required and must be within their size limits.")
         with self.lock:
             if self.thread and self.thread.is_alive():
                 raise RuntimeError("Stop the engine before replacing API credentials.")
             if self.state.get("trade"):
-                raise RuntimeError("A saved Demo position is still being tracked. Do not replace its credentials.")
+                raise RuntimeError("A saved Testnet position is still being tracked. Do not replace its credentials.")
             keyring = self._keyring_module()
             client = BinanceDemoClient(key, secret)
             try:
@@ -161,7 +161,7 @@ class DemoEngine:
                 algo_orders = client.open_algo_orders(SYMBOL)
                 if abs(amount) > 1e-12 or orders or algo_orders:
                     self.state_name = "STOPPED"
-                    raise RuntimeError("Demo BTCUSDT position or open orders exist. Nothing was deleted. Reconcile the Demo account first.")
+                    raise RuntimeError("Testnet BTCUSDT position or open orders exist. Nothing was deleted. Reconcile the Demo account first.")
             self.halt.set()
             thread = self.thread
         if thread and thread.is_alive():
@@ -214,7 +214,7 @@ class DemoEngine:
 
     def _client(self):
         if self.client is None:
-            raise RuntimeError("No Demo API credentials saved. Enter Demo API credentials on the GitHub Pages terminal first.")
+            raise RuntimeError("No Futures Testnet API credentials saved. Enter Demo API credentials on the GitHub Pages terminal first.")
         return self.client
 
     def _load_model(self):
@@ -227,7 +227,7 @@ class DemoEngine:
         if lock.get("paper_only") is not True or lock.get("live_orders") is not False:
             raise RuntimeError("Model lock must be paper_only=true and live_orders=false.")
         if lock.get("demo_execution_allowed") is not True:
-            raise RuntimeError("This model lock does not allow Demo execution.")
+            raise RuntimeError("This model lock does not allow Testnet execution.")
         expected = {
             "tp_long_sigma": 0.75, "tp_short_sigma": 0.75, "sl_sigma": 1.0,
             "time_exit_bars": 96, "volatility_horizon_bars": 96,
@@ -322,13 +322,13 @@ class DemoEngine:
     def start(self, confirm_demo_orders=False):
         with self.lock:
             if self.thread and self.thread.is_alive():
-                raise RuntimeError("Demo engine is already running.")
+                raise RuntimeError("Testnet engine is already running.")
             if not self.orders_enabled and confirm_demo_orders is not True:
-                raise RuntimeError("Explicit Demo order confirmation is required from the Start button.")
+                raise RuntimeError("Explicit Testnet order confirmation is required from the Start button.")
             self._load_model()
             info = self._connect()
             if info["hedge_mode"]:
-                raise RuntimeError("Demo Futures is in Hedge Mode. Switch it manually to One-way Mode.")
+                raise RuntimeError("Futures Testnet is in Hedge Mode. Switch it manually to One-way Mode.")
             client = self._client()
             positions = self.position_amount(client.positions(SYMBOL))
             orders = client.open_orders(SYMBOL)
@@ -343,7 +343,7 @@ class DemoEngine:
                 if unexpected_normal or unexpected_algo:
                     raise RuntimeError(
                         "Unexpected BTCUSDT orders exist. The bot will not touch manual orders; "
-                        "reconcile the Demo account before restarting."
+                        "reconcile the Testnet account before restarting."
                     )
 
                 if abs(positions) > 1e-12:
@@ -378,7 +378,7 @@ class DemoEngine:
                     trade = None
             elif abs(positions) > 1e-12 or orders or algo_orders:
                 raise RuntimeError(
-                    "BTCUSDT has an unrecognized position/order. Reconcile it manually in Demo."
+                    "BTCUSDT has an unrecognized position/order. Reconcile it manually in Futures Testnet."
                 )
             if not trade:
                 client.set_isolated(SYMBOL)
@@ -521,7 +521,7 @@ class DemoEngine:
             try:
                 entry = client.order(SYMBOL, entry_id)
             except Exception as exc:
-                self._event("ENTRY_RESULT_UNKNOWN", client_order_id=entry_id, action="manual Demo reconciliation; no retry")
+                self._event("ENTRY_RESULT_UNKNOWN", client_order_id=entry_id, action="manual Testnet reconciliation; no retry")
                 raise RuntimeError("Market entry result unknown; no duplicate order was sent.") from exc
         filled = safe_float(entry.get("executedQty"))
         avg = safe_float(entry.get("avgPrice"))
@@ -612,7 +612,7 @@ class DemoEngine:
             self._cancel_owned(tp_id)
             self._close_reduce_only("PROTECTIVE_ORDER_SETUP_FAILED")
             self._event("PROTECTION_FAILED_CLOSE_REQUESTED", error=f"{type(exc).__name__}: {exc}")
-            raise RuntimeError("Could not establish both Demo protective exits; reduce-only close requested.") from exc
+            raise RuntimeError("Could not establish both Testnet protective exits; reduce-only close requested.") from exc
         self.state["trade"]["phase"] = "PROTECTED"
         self._save()
         self._event("DEMO_ENTRY_FILLED", side=side, quantity=filled, entry_price=avg,
@@ -671,7 +671,7 @@ class DemoEngine:
                 result = self._client().order(SYMBOL, close_id)
             except Exception as exc:
                 self._event("REDUCE_ONLY_CLOSE_UNKNOWN", reason=reason, client_order_id=close_id)
-                raise RuntimeError("Reduce-only close result unknown; inspect Demo account.") from exc
+                raise RuntimeError("Reduce-only close result unknown; inspect Testnet account.") from exc
         self._event("REDUCE_ONLY_CLOSE_SENT", reason=reason, status=result.get("status"), order_id=result.get("orderId"))
         remaining = self.position_amount(self._client().positions(SYMBOL))
         if abs(remaining) <= 1e-12:
@@ -695,7 +695,7 @@ class DemoEngine:
             self.state["trade"] = None
             self._save()
             self._event("DEMO_POSITION_CLOSED", side=trade.get("side"),
-                        note="Check Demo order history for exact realized PnL, commission and funding.")
+                        note="Check Futures Testnet order history for exact realized PnL, commission and funding.")
             return
 
         if trade.get("phase") == "EXIT_REQUESTED":
