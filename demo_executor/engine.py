@@ -61,12 +61,15 @@ def safe_float(value, default=0.0):
 
 class DemoEngine:
     def __init__(self):
-        key = (os.getenv("BINANCE_DEMO_API_KEY") or os.getenv("BINANCE_FUTURES_API_KEY")
-               or os.getenv("BINANCE_API_KEY"))
-        secret = (os.getenv("BINANCE_DEMO_API_SECRET") or os.getenv("BINANCE_FUTURES_API_SECRET")
-                  or os.getenv("BINANCE_API_SECRET") or os.getenv("BINANCE_SECRET_KEY"))
+        # Generic BINANCE_API_KEY variables are deliberately ignored: they may be Live keys.
+        key = os.getenv("BINANCE_DEMO_API_KEY") or os.getenv("BINANCE_FUTURES_API_KEY")
+        secret = os.getenv("BINANCE_DEMO_API_SECRET") or os.getenv("BINANCE_FUTURES_API_SECRET")
+        stored = self._read_keyring_credentials()
+        if stored:
+            key, secret = stored
         self.credentials_configured = bool(key and secret)
         self.client = BinanceDemoClient(key, secret) if self.credentials_configured else None
+        self.credentials_source = "windows_credential_manager" if stored else ("demo_environment" if key and secret else None)
         self.orders_enabled = os.getenv("OSH_ENABLE_DEMO_ORDERS", "false").lower() == "true"
         self.lock = threading.RLock()
         self.accept_entries = False
@@ -83,6 +86,108 @@ class DemoEngine:
         self.events = []
         RUNTIME.mkdir(parents=True, exist_ok=True)
         self.state = self._read_state()
+
+    @staticmethod
+    def _keyring_module():
+        try:
+            import keyring
+        except ImportError as exc:
+            raise RuntimeError("Secure credential storage is missing. Install requirements.txt first.") from exc
+        backend = keyring.get_keyring()
+        if getattr(backend, "priority", 0) <= 0:
+            raise RuntimeError("Windows Credential Manager backend is unavailable; credentials were not saved.")
+        return keyring
+
+    @classmethod
+    def _read_keyring_credentials(cls):
+        try:
+            keyring = cls._keyring_module()
+            key = keyring.get_password("OSH_Quant_Lab_Binance_Demo", "api_key")
+            secret = keyring.get_password("OSH_Quant_Lab_Binance_Demo", "api_secret")
+            return (key, secret) if key and secret else None
+        except Exception:
+            return None
+
+    def save_credentials(self, api_key, api_secret):
+        key = str(api_key or "").strip()
+        secret = str(api_secret or "").strip()
+        if not key or not secret or len(key) > 256 or len(secret) > 512:
+            raise ValueError("Both Demo API fields are required and must be within their size limits.")
+        with self.lock:
+            if self.thread and self.thread.is_alive():
+                raise RuntimeError("Stop the engine before replacing API credentials.")
+            if self.state.get("trade"):
+                raise RuntimeError("A saved Demo position is still being tracked. Do not replace its credentials.")
+            keyring = self._keyring_module()
+            client = BinanceDemoClient(key, secret)
+            try:
+                keyring.set_password("OSH_Quant_Lab_Binance_Demo", "api_key", key)
+                keyring.set_password("OSH_Quant_Lab_Binance_Demo", "api_secret", secret)
+                if (keyring.get_password("OSH_Quant_Lab_Binance_Demo", "api_key") != key or
+                    keyring.get_password("OSH_Quant_Lab_Binance_Demo", "api_secret") != secret):
+                    raise RuntimeError("Windows Credential Manager read-back verification failed.")
+            except Exception:
+                for username in ("api_key", "api_secret"):
+                    try:
+                        keyring.delete_password("OSH_Quant_Lab_Binance_Demo", username)
+                    except Exception:
+                        pass
+                client.close()
+                raise
+            old = self.client
+            self.client = client
+            self.credentials_configured = True
+            self.credentials_source = "windows_credential_manager"
+            self.orders_enabled = False
+            self.account_state = None
+            self.rules = None
+            self.last_error = None
+            if old:
+                old.close()
+            return {"saved": True, "storage": "Windows Credential Manager", "credentials_configured": True}
+
+    def reset_credentials(self):
+        # Reset is fail-closed: it never deletes credentials while a position or order exists.
+        with self.lock:
+            self.accept_entries = False
+            if self.state.get("trade"):
+                self.state_name = "MANAGING_OPEN_DEMO_POSITION"
+                raise RuntimeError("A bot-tracked position exists. New entries are disabled, but credentials are retained so TP/SL management can continue.")
+            client = self.client
+            if client:
+                client.sync_time()
+                amount = self.position_amount(client.positions(SYMBOL))
+                orders = client.open_orders(SYMBOL)
+                algo_orders = client.open_algo_orders(SYMBOL)
+                if abs(amount) > 1e-12 or orders or algo_orders:
+                    self.state_name = "STOPPED"
+                    raise RuntimeError("Demo BTCUSDT position or open orders exist. Nothing was deleted. Reconcile the Demo account first.")
+            self.halt.set()
+            thread = self.thread
+        if thread and thread.is_alive():
+            thread.join(timeout=8)
+            if thread.is_alive():
+                raise RuntimeError("Engine has not stopped yet. Credentials were retained; retry Reset shortly.")
+        with self.lock:
+            keyring = self._keyring_module()
+            for username in ("api_key", "api_secret"):
+                try:
+                    keyring.delete_password("OSH_Quant_Lab_Binance_Demo", username)
+                except keyring.errors.PasswordDeleteError:
+                    pass
+            if self.client:
+                self.client.close()
+            self.client = None
+            self.credentials_configured = False
+            self.credentials_source = None
+            self.orders_enabled = False
+            self.accept_entries = False
+            self.account_state = None
+            self.rules = None
+            self.state_name = "STOPPED"
+            self.last_error = None
+            self.halt.clear()
+            return {"reset": True, "credentials_configured": False, "note": "Model, cooldown state and audit log were preserved."}
 
     def _read_state(self):
         if not STATE_FILE.exists():
@@ -109,7 +214,7 @@ class DemoEngine:
 
     def _client(self):
         if self.client is None:
-            raise RuntimeError("No Demo API keys found in local .env.")
+            raise RuntimeError("No Demo API credentials saved. Enter Demo API credentials on the GitHub Pages terminal first.")
         return self.client
 
     def _load_model(self):
@@ -198,6 +303,8 @@ class DemoEngine:
             "symbol": SYMBOL,
             "paper_only": True, "live_orders": False,
             "credentials_configured": self.credentials_configured,
+            "credentials_source": self.credentials_source,
+            "credential_storage": "Windows Credential Manager",
             "demo_orders_enabled": self.orders_enabled,
             "model_ready": self.model_ready(),
             "engine_state": self.state_name,
@@ -212,12 +319,12 @@ class DemoEngine:
             "events": list(reversed(self.events[-20:])),
         }
 
-    def start(self):
+    def start(self, confirm_demo_orders=False):
         with self.lock:
             if self.thread and self.thread.is_alive():
                 raise RuntimeError("Demo engine is already running.")
-            if not self.orders_enabled:
-                raise RuntimeError("OSH_ENABLE_DEMO_ORDERS is false. Keep it false until the Demo API check passes.")
+            if not self.orders_enabled and confirm_demo_orders is not True:
+                raise RuntimeError("Explicit Demo order confirmation is required from the Start button.")
             self._load_model()
             info = self._connect()
             if info["hedge_mode"]:
@@ -279,6 +386,8 @@ class DemoEngine:
             frame, _ = self._closed_candles()
             self.last_candle = frame["candle_time"].iloc[-1].isoformat()
             self.last_processed_ms = int(frame["candle_time"].iloc[-1].timestamp() * 1000)
+            # The explicit Start confirmation enables Demo order sending for this process only.
+            self.orders_enabled = True
             self.accept_entries = True
             self.halt.clear()
             self.state_name = "RUNNING_WAITING_FOR_NEXT_15M_CLOSE"
