@@ -104,7 +104,7 @@ The public GitHub Pages dashboard is informational only. It cannot access a loca
 
 ### Setup (Windows PowerShell)
 
-Use Binance USDⓈ-M Futures **Demo Trading API keys only**. Do not paste Live keys. The API host is hard-coded to `https://demo-fapi.binance.com`.
+Use Binance USDⓈ-M Futures **Demo Trading API keys only**. Do not paste Live keys. The API host is hard-coded to `https://testnet.binancefuture.com` (non-production Futures Testnet/Demo-compatible REST host).
 
 Install the dependencies (including Windows Credential Manager support):
 
@@ -119,6 +119,8 @@ Freeze the H96 C2 model once using only pre-holdout candles. Use the local disco
 ~~~
 
 The local `forward_paper_h96_c2_model.joblib` and `forward_paper_h96_c2_lock.json` files are ignored by Git. Existing artifacts are hash-checked and reused; changed artifacts are not silently retrained.
+
+For this local Demo executor, the REST host is pinned to `https://testnet.binancefuture.com` because `demo-fapi.binance.com` is currently TLS-reset on the target network while the legacy Futures Testnet host successfully serves the public `/fapi` market-data endpoints. Binance documentation currently lists `demo-fapi.binance.com` as the primary Testnet/Demo REST URL, while its Futures SDK/testing material still references the legacy host; therefore this is a network-compatibility fallback, not a guarantee that every Demo API key will authenticate there. The first account check is read-only and must succeed before any strategy start. There is no production URL fallback.
 
 Start the local engine on your PC with one click: double-click `START_DEMO_ENGINE.bat` in the repository folder. The script creates `.venv` if needed, installs missing dependencies, pins the local port to `8765`, keeps Demo order sending OFF, and starts the local API. Keep its console window open while using the GitHub Pages controls.
 
@@ -144,7 +146,7 @@ The local Python engine must remain running on your computer while the GitHub Pa
 ### Execution controls
 
 - The process binds only to `127.0.0.1`; the browser receives no API key or secret.
-- The only exchange host is `https://demo-fapi.binance.com`. No Live endpoint, URL override or production fallback exists.
+- The only exchange host is `https://testnet.binancefuture.com`, a non-production Futures Testnet/Demo-compatible REST host. No Live endpoint, URL override or production fallback exists.
 - One-way position mode is required. The app uses isolated margin and 1x leverage; it does not change position mode.
 - It skips signals when Binance's current minimum quantity/notional exceeds the $50 position cap. It never silently increases order size.
 - Market entry is followed by a reduce-only STOP_MARKET Algo order (`POST /fapi/v1/algoOrder`, `triggerPrice`) and a post-only GTX LIMIT take-profit (`POST /fapi/v1/order`). The conditional stop is queried/canceled through the Algo API; the 96-bar time exit uses a reduce-only market close. Binance moved USDⓈ-M conditional order types to the Algo service from 2025-12-09.
