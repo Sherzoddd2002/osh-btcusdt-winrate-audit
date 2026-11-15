@@ -18,7 +18,7 @@ PORT = int(os.getenv("OSH_LOCAL_PORT", "8765"))
 SESSION = secrets.token_urlsafe(32)
 HTML = Path(__file__).resolve().parent / "static" / "index.html"
 engine = DemoEngine()
-app = FastAPI(title="OSH Local Binance Demo", docs_url=None, redoc_url=None, openapi_url=None)
+app = FastAPI(title="OSH Local Binance Futures Testnet", docs_url=None, redoc_url=None, openapi_url=None)
 
 
 @app.middleware("http")
@@ -116,7 +116,7 @@ def stop(request: Request):
 
 def main():
     import uvicorn
-    print(f"OSH Futures Demo Terminal: http://127.0.0.1:{PORT}")
+    print(f"OSH Futures Testnet Terminal: http://127.0.0.1:{PORT}")
     print("API host is hard-coded to https://testnet.binancefuture.com (non-production Futures Testnet/Demo-compatible host)")
     uvicorn.run(app, host="127.0.0.1", port=PORT, log_level="warning")
 
