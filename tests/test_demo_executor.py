@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 from decimal import Decimal
+import httpx
 from unittest.mock import patch
 
 from demo_executor.client import BinanceDemoClient, DEMO_FUTURES_URL
@@ -37,6 +38,12 @@ class DemoLogicTests(unittest.TestCase):
         )
         client.close()
 
+    def test_network_error_preserves_safe_root_cause(self):
+        client = BinanceDemoClient("demo-key", "demo-secret")
+        with patch.object(client.http, "request", side_effect=httpx.ConnectError("DNS lookup failed")):
+            with self.assertRaisesRegex(RuntimeError, "ConnectError.*DNS lookup failed"):
+                client._request("GET", "/fapi/v1/time")
+        client.close()
     def test_algo_order_status_uses_client_algo_id(self):
         client = BinanceDemoClient("demo-key", "demo-secret")
         with patch.object(client, "_request", return_value={"algoStatus": "NEW"}) as request:
