@@ -97,7 +97,7 @@ footer .links{display:flex;gap:16px;flex-wrap:wrap}
 <div class="shell">
 <nav>
   <div class="brand"><div class="logo">O</div><span>OSH <span class="cyan">QUANT LAB</span></span></div>
-  <div class="navlinks"><a href="#natija">Natija</a><a href="#kapital">Kapital</a><a href="#foldlar">OOS foldlar</a><a href="#diagnostika">Diagnostika</a><a href="#model">Model</a><a href="#demo-terminal">Demo terminal</a></div>
+  <div class="navlinks"><a href="#natija">Natija</a><a href="#kapital">Kapital</a><a href="#foldlar">OOS foldlar</a><a href="#diagnostika">Diagnostika</a><a href="#model">Model</a><a href="#demo-terminal">Futures Testnet</a></div>
   <div class="status"><i class="pulse"></i> PAPER ONLY · LIVE OFF</div>
 </nav>
 <section class="hero" id="natija">
@@ -231,10 +231,10 @@ footer .links{display:flex;gap:16px;flex-wrap:wrap}
 
 
 <section class="section" id="demo-terminal">
-  <div class="section-head"><h2>H96 C2 · Binance Futures Demo terminal</h2><span class="section-sub">GitHub Pages UI · local execution engine</span></div>
+  <div class="section-head"><h2>H96 C2 · Binance Futures Testnet terminal</h2><span class="section-sub">GitHub Pages UI · local execution engine</span></div>
   <div class="demo-console">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-      <b>OSH QUANT LAB · DEMO ONLY</b>
+      <b>OSH QUANT LAB · FUTURES TESTNET ONLY</b>
       <span class="pill fail" id="demoConnectionBadge">LOCAL ENGINE DISCONNECTED</span>
     </div>
     <p class="desc">Sayt GitHub Pages’da ishlaydi. Model, API kalitlari va order boshqaruvi sizning kompyuteringizdagi lokal engine’da bajariladi. GitHub’ga API key yoki secret yuborilmaydi.</p>
@@ -249,8 +249,8 @@ footer .links{display:flex;gap:16px;flex-wrap:wrap}
       <div class="demo-stat"><small>Last decision</small><b id="demoDecision">—</b></div>
     </div>
     <div class="demo-fields">
-      <div class="demo-field"><label for="demoApiKey">Binance Futures Demo API Key</label><input id="demoApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="Demo API Key"></div>
-      <div class="demo-field"><label for="demoApiSecret">Binance Futures Demo API Secret</label><input id="demoApiSecret" type="password" autocomplete="new-password" spellcheck="false" placeholder="Demo API Secret"></div>
+      <div class="demo-field"><label for="demoApiKey">Binance Futures Testnet API Key</label><input id="demoApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="Futures Testnet API Key"></div>
+      <div class="demo-field"><label for="demoApiSecret">Binance Futures Testnet API Secret</label><input id="demoApiSecret" type="password" autocomplete="new-password" spellcheck="false" placeholder="Futures Testnet API Secret"></div>
     </div>
     <div class="demo-actions">
       <button class="primary" id="demoConnectLocal">1 · Connect local engine</button>
@@ -272,7 +272,7 @@ footer .links{display:flex;gap:16px;flex-wrap:wrap}
     </div>
     <div style="margin-top:10px"><b style="font-size:12px">Execution log</b></div>
     <div class="demo-log" id="demoLog">No events.</div>
-    <div class="callout"><b>Xavfsizlik:</b> Faqat USDⓈ-M Futures Demo ishlatiladi. API host kodda Demo manziliga mahkamlangan. Start tugmasi bosilganda order yuborishga aniq tasdiq so‘raladi. Strategiya tarixiy natijalar bo‘yicha hali DISCOVERY ONLY / NO-GO: WR 58.92%, PF 1.1596. Bu real foyda kafolati emas.</div>
+    <div class="callout"><b>Xavfsizlik:</b> Faqat USDⓈ-M Futures Testnet ishlatiladi. Bu joriy Binance Futures Demo Trading hisobidan alohida muhit. API host kodda Testnet manziliga mahkamlangan. Start tugmasi bosilganda order yuborishga aniq tasdiq so‘raladi. Strategiya tarixiy natijalar bo‘yicha hali DISCOVERY ONLY / NO-GO: WR 58.92%, PF 1.1596. Bu real foyda kafolati emas.</div>
   </div>
 </section>
 
@@ -368,7 +368,7 @@ footer .links{display:flex;gap:16px;flex-wrap:wrap}
       connected = true;
       const status = await request("/api/status");
       render(status);
-      setMessage("Lokal engine ulandi. Endi Binance Futures DEMO API kalitlarini xavfsiz saqlashingiz mumkin.", "success");
+      setMessage("Lokal engine ulandi. Endi Binance Futures TESTNET API kalitlarini xavfsiz saqlashingiz mumkin.", "success");
     } catch (error) {
       connected = false;
       sessionToken = "";
@@ -395,17 +395,17 @@ footer .links{display:flex;gap:16px;flex-wrap:wrap}
     } catch (error) { setMessage(error.message, "error"); }
   });
   $d("demoCheck").addEventListener("click", async () => {
-    setMessage("Binance USDⓈ-M Futures Demo hisobiga ulanish tekshirilmoqda…");
+    setMessage("Binance USDⓈ-M Futures Testnet hisobiga ulanish tekshirilmoqda…");
     try {
       const result = await request("/api/connect", "POST");
-      setMessage("Demo API ulandi · " + result.base_url + " · Hedge mode: " + result.hedge_mode +
+      setMessage("Futures Testnet API ulandi · " + result.base_url + " · Hedge mode: " + result.hedge_mode +
         " · Available balance: " + format(result.account?.available_balance_usdt, 2) +
         " USDT · Position: " + result.position_amount + " · Open orders: " + result.open_orders_count, "success");
       await refresh();
     } catch (error) { setMessage(error.message, "error"); }
   });
   $d("demoStart").addEventListener("click", async () => {
-    const ok = confirm("Faqat Binance Futures DEMO. Order yuborish ushbu tasdiq bilan yoqiladi. Keyingi yangi yopilgan 15m shamdagi signal asosida $50 gacha notional bilan order berilishi mumkin. Davom etasizmi?");
+    const ok = confirm("Faqat Binance Futures TESTNET. Order yuborish ushbu tasdiq bilan yoqiladi. Keyingi yangi yopilgan 15m shamdagi signal asosida $50 gacha notional bilan order berilishi mumkin. Davom etasizmi?");
     if (!ok) return;
     setMessage("H96 C2 Demo strategiyasi ishga tushirilmoqda…");
     try {
