@@ -54,6 +54,29 @@ class DemoLogicTests(unittest.TestCase):
         self.assertFalse(engine.credentials_configured)
         self.assertIsNone(engine.client)
 
+    def test_save_credentials_uses_secure_credential_store_without_returning_secret(self):
+        class FakeKeyring:
+            def __init__(self):
+                self.priority = 1
+                self.values = {}
+            def set_password(self, service, username, password):
+                self.values[(service, username)] = password
+            def get_password(self, service, username):
+                return self.values.get((service, username))
+            def delete_password(self, service, username):
+                self.values.pop((service, username), None)
+
+        with patch.object(DemoEngine, "_read_keyring_credentials", return_value=None):
+            engine = DemoEngine()
+        store = FakeKeyring()
+        with patch.object(DemoEngine, "_keyring_module", return_value=store):
+            result = engine.save_credentials("demo-key", "demo-secret")
+        self.assertTrue(result["saved"])
+        self.assertEqual(result["storage"], "Windows Credential Manager")
+        self.assertNotIn("demo-secret", repr(result))
+        self.assertEqual(store.get_password("OSH_Quant_Lab_Binance_Demo", "api_secret"), "demo-secret")
+        engine.client.close()
+
     def test_start_requires_explicit_demo_order_confirmation(self):
         engine = DemoEngine()
         engine.orders_enabled = False
