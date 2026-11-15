@@ -27,7 +27,7 @@ footer{margin-top:24px;border-top:1px solid var(--line);padding-top:15px;color:v
 <div class="grid">
 <div class="card"><div class="label">Credentials</div><div class="value" id="creds">—</div><div class="muted">secret ko‘rsatilmaydi</div></div>
 <div class="card"><div class="label">Engine</div><div class="value" id="engine">STOPPED</div><div class="muted" id="engnote">new entries off</div></div>
-<div class="card"><div class="label">Available balance</div><div class="value" id="balance">—</div><div class="muted">USDT · Demo</div></div>
+<div class="card"><div class="label">Available balance</div><div class="value" id="balance">—</div><div class="muted">USDT · Testnet</div></div>
 <div class="card"><div class="label">Max position</div><div class="value">$50</div><div class="muted">notional · 1x isolated</div></div>
 </div>
 <div class="columns">
@@ -47,7 +47,7 @@ footer{margin-top:24px;border-top:1px solid var(--line);padding-top:15px;color:v
 <div class="row"><span>TP / SL</span><b>0.75σ / 1.00σ</b></div><div class="row"><span>Time exit</span><b>96 bars / 24h</b></div>
 </section></div>
 <section class="card" style="margin-top:12px"><h2>Execution log</h2><div class="events" id="events">No events.</div></section>
-<footer><b class="amber">Muhim:</b> Stop faqat yangi entry’larni to‘xtatadi; ochiq demo pozitsiya TP/SL va time-exit bilan boshqariladi. Agar server yoki kompyuter o‘chsa, Binance Demo’dagi ochiq pozitsiya va orderlarni albatta tekshiring. Tarixiy model hali NO-GO: 58.92% WR, PF 1.1596.</footer>
+<footer><b class="amber">Muhim:</b> Stop faqat yangi entry’larni to‘xtatadi; ochiq Testnet pozitsiya TP/SL va time-exit bilan boshqariladi. Agar server yoki kompyuter o‘chsa, Futures Testnet’dagi ochiq pozitsiya va orderlarni albatta tekshiring. Tarixiy model hali NO-GO: 58.92% WR, PF 1.1596.</footer>
 </main>
 <script>
 const token="__OSH_SESSION__", headers={"Content-Type":"application/json","X-OSH-Session":token};
@@ -84,7 +84,7 @@ $("connect").onclick=async()=>{
  catch(e){setMessage(e.message,true);}
  await refresh();button.disabled=false;
 };
-$("start").onclick=async()=>{if(!confirm("Faqat Binance Futures TESTNET. Keyingi yangi 15m shamda signal bo‘lsa MARKET entry hamda reduce-only TP/SL orderlari yuboriladi. Davom etasizmi?"))return;setMessage("Testnet strategiyasi ishga tushirilmoqda…",false);try{const r=await api("/api/start","POST");setMessage(r.message||"Demo strategiyasi ishga tushdi.",false);}catch(e){setMessage(e.message,true);}await refresh();};
-$("stop").onclick=async()=>{if(!confirm("Yangi entry signallari to‘xtatiladi. Ochiq Demo pozitsiya boshqaruvda qoladi. Davom etasizmi?"))return;setMessage("Yangi entry to‘xtatilmoqda…",false);try{const r=await api("/api/stop","POST");setMessage(r.message||"Yangi entry to‘xtatildi.",false);}catch(e){setMessage(e.message,true);}await refresh();};
+$("start").onclick=async()=>{if(!confirm("Faqat Binance Futures TESTNET. Keyingi yangi 15m shamda signal bo‘lsa MARKET entry hamda reduce-only TP/SL orderlari yuboriladi. Davom etasizmi?"))return;setMessage("Testnet strategiyasi ishga tushirilmoqda…",false);try{const r=await api("/api/start","POST");setMessage(r.message||"Testnet strategiyasi ishga tushdi.",false);}catch(e){setMessage(e.message,true);}await refresh();};
+$("stop").onclick=async()=>{if(!confirm("Yangi entry signallari to‘xtatiladi. Ochiq Testnet pozitsiya boshqaruvda qoladi. Davom etasizmi?"))return;setMessage("Yangi entry to‘xtatilmoqda…",false);try{const r=await api("/api/stop","POST");setMessage(r.message||"Yangi entry to‘xtatildi.",false);}catch(e){setMessage(e.message,true);}await refresh();};
 refresh();setInterval(refresh,5000);
 </script></body></html>
