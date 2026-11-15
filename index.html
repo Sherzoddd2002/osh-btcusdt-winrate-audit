@@ -255,7 +255,7 @@ footer .links{display:flex;gap:16px;flex-wrap:wrap}
     <div class="demo-actions">
       <button class="primary" id="demoConnectLocal">1 · Connect local engine</button>
       <button id="demoSaveKeys" disabled>2 · Save API on this PC</button>
-      <button id="demoCheck" disabled>3 · Check Binance Demo</button>
+      <button id="demoCheck" disabled>3 · Check Futures Testnet</button>
       <button class="primary" id="demoStart" disabled>Start H96 C2</button>
       <button id="demoStop" disabled>Stop new entries</button>
       <button class="danger" id="demoReset" disabled>Reset saved API</button>
@@ -407,15 +407,15 @@ footer .links{display:flex;gap:16px;flex-wrap:wrap}
   $d("demoStart").addEventListener("click", async () => {
     const ok = confirm("Faqat Binance Futures TESTNET. Order yuborish ushbu tasdiq bilan yoqiladi. Keyingi yangi yopilgan 15m shamdagi signal asosida $50 gacha notional bilan order berilishi mumkin. Davom etasizmi?");
     if (!ok) return;
-    setMessage("H96 C2 Demo strategiyasi ishga tushirilmoqda…");
+    setMessage("H96 C2 Testnet strategiyasi ishga tushirilmoqda…");
     try {
       const result = await request("/api/start", "POST", { confirm_demo_orders: true });
-      setMessage(result.message || "Demo strategiyasi ishga tushdi.", "success");
+      setMessage(result.message || "Testnet strategiyasi ishga tushdi.", "success");
       await refresh();
     } catch (error) { setMessage(error.message, "error"); }
   });
   $d("demoStop").addEventListener("click", async () => {
-    if (!confirm("Yangi entry’lar to‘xtatiladi. Ochiq Demo pozitsiya boshqaruvda qoladi. Davom etasizmi?")) return;
+    if (!confirm("Yangi entry’lar to‘xtatiladi. Ochiq Testnet pozitsiya boshqaruvda qoladi. Davom etasizmi?")) return;
     try {
       const result = await request("/api/stop", "POST", {});
       setMessage(result.message || "Yangi entry’lar to‘xtatildi.", "success");
