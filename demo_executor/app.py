@@ -117,7 +117,7 @@ def stop(request: Request):
 def main():
     import uvicorn
     print(f"OSH Futures Demo Terminal: http://127.0.0.1:{PORT}")
-    print("API host is hard-coded to https://demo-fapi.binance.com")
+    print("API host is hard-coded to https://testnet.binancefuture.com (non-production Futures Testnet/Demo-compatible host)")
     uvicorn.run(app, host="127.0.0.1", port=PORT, log_level="warning")
 
 
