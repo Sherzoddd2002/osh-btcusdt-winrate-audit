@@ -39,7 +39,7 @@ if not exist "%PY%" (
   )
 )
 
-"%PY%" -c "import fastapi,uvicorn,httpx,dotenv,keyring,numpy,pandas,sklearn,lightgbm,joblib" >nul 2>&1
+"%PY%" -c "import fastapi,uvicorn,httpx,dotenv,keyring,numpy,pandas,sklearn,lightgbm,joblib,sqlalchemy,psycopg2" >nul 2>&1
 if errorlevel 1 (
   echo [SETUP] Installing missing Python dependencies from requirements.txt...
   "%PY%" -m pip install -r requirements.txt
