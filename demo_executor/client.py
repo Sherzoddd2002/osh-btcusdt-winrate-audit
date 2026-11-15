@@ -51,7 +51,17 @@ class BinanceDemoClient:
         try:
             response = self.http.request(method.upper(), url)
         except httpx.HTTPError as exc:
-            raise RuntimeError(f"Demo API network error: {type(exc).__name__}") from exc
+            cause = exc
+            while getattr(cause, "__cause__", None) is not None:
+                cause = cause.__cause__
+            detail = str(cause).strip().replace(chr(13), " ").replace(chr(10), " ")
+            if not detail:
+                detail = "no additional OS detail"
+            detail = detail[:180]
+            raise RuntimeError(
+                f"Demo API network error: {type(exc).__name__}; "
+                f"root cause: {type(cause).__name__}: {detail}"
+            ) from exc
         try:
             payload = response.json()
         except ValueError:
