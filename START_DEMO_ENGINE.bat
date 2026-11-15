@@ -22,11 +22,16 @@ if not exist "%PY%" (
   echo [SETUP] Creating the project virtual environment...
   where py >nul 2>&1
   if errorlevel 1 (
-    echo [ERROR] Python Launcher ^(py^) was not found. Install Python 3.11 or 3.12, then retry.
-    pause
-    exit /b 1
+    where python >nul 2>&1
+    if errorlevel 1 (
+      echo [ERROR] Python was not found in PATH. Activate/install Python 3.11 or 3.12, then retry.
+      pause
+      exit /b 1
+    )
+    python -m venv "%~dp0.venv"
+  ) else (
+    py -3 -m venv "%~dp0.venv"
   )
-  py -3 -m venv "%~dp0.venv"
   if errorlevel 1 (
     echo [ERROR] Could not create .venv.
     pause
