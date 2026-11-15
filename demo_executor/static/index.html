@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="uz"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#07111e"><title>OSH · Binance Futures Demo</title>
+<meta name="theme-color" content="#07111e"><title>OSH · Binance Futures Testnet</title>
 <style>
 :root{color-scheme:dark;--bg:#07111e;--panel:#102237;--line:#29445d;--ink:#eaf3fb;--muted:#9ab0c4;--cyan:#6bd8d1;--green:#65d9a4;--red:#ff8089;--amber:#f0c26b}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 8% 0,#17384d,transparent 35%),var(--bg);color:var(--ink);font:15px/1.55 system-ui,Segoe UI,sans-serif}
@@ -20,10 +20,10 @@ footer{margin-top:24px;border-top:1px solid var(--line);padding-top:15px;color:v
 @media(max-width:440px){.grid{grid-template-columns:1fr 1fr}.value{font-size:18px}}
 </style></head>
 <body><main>
-<header><div class="brand">OSH <span class="cyan">QUANT LAB</span></div><div class="badge">USDⓈ-M FUTURES · DEMO ONLY</div></header>
-<h1>H96 C2 · Demo terminal</h1>
+<header><div class="brand">OSH <span class="cyan">QUANT LAB</span></div><div class="badge">USDⓈ-M FUTURES · TESTNET ONLY</div></header>
+<h1>H96 C2 · Futures Testnet terminal</h1>
 <p>Mahalliy panel. API kalitlari faqat kompyuteringizdagi backendda qoladi; brauzerga berilmaydi.</p>
-<div class="warn"><b>Faqat DEMO:</b> bot orderlarni Binance Demo API'ga yuboradi. Virtual balansdan foydalaniladi. Live Binance URL kodda yo‘q. Demo fill natijalari real bozordagi bajarilishni kafolatlamaydi.</div>
+<div class="warn"><b>Faqat TESTNET:</b> orderlar Binance Futures Testnet hisobiga yuboriladi. Bu virtual balansli alohida sinov muhiti; joriy Binance Futures Demo Trading hisobidan farq qiladi. Live Binance URL kodda yo‘q.</div>
 <div class="grid">
 <div class="card"><div class="label">Credentials</div><div class="value" id="creds">—</div><div class="muted">secret ko‘rsatilmaydi</div></div>
 <div class="card"><div class="label">Engine</div><div class="value" id="engine">STOPPED</div><div class="muted" id="engnote">new entries off</div></div>
@@ -31,13 +31,13 @@ footer{margin-top:24px;border-top:1px solid var(--line);padding-top:15px;color:v
 <div class="card"><div class="label">Max position</div><div class="value">$50</div><div class="muted">notional · 1x isolated</div></div>
 </div>
 <div class="columns">
-<section class="card"><h2>Demo execution</h2>
+<section class="card"><h2>Futures Testnet execution</h2>
 <div class="row"><span>Order sending</span><b id="orders">OFF</b></div>
 <div class="row"><span>Frozen model</span><b id="model">NOT READY</b></div>
 <div class="row"><span>Latest closed candle</span><b id="candle">—</b></div>
 <div class="row"><span>Last decision</span><b id="decision">—</b></div>
 <div class="row"><span>Current position</span><b id="position">NONE</b></div>
-<div class="controls"><button class="primary" id="connect">Demo API check</button><button class="primary" id="start">Start strategy</button><button class="stop" id="stop">Stop new entries</button></div>
+<div class="controls"><button class="primary" id="connect">Check Futures Testnet</button><button class="primary" id="start">Start strategy</button><button class="stop" id="stop">Stop new entries</button></div>
 <div class="muted">Start bosilganda keyingi yangi yopilgan 15m sham kutiladi. Eski sham signaliga kechikib order yuborilmaydi.</div><div id="err"></div>
 </section>
 <section class="card"><h2>Signal & risk</h2>
@@ -79,12 +79,12 @@ function render(s){
 }
 async function refresh(){try{render(await api("/api/status"))}catch(e){setMessage(e.message,true);}}
 $("connect").onclick=async()=>{
- const button=$("connect");button.disabled=true;setMessage("Demo API ulanishi tekshirilmoqda…",false);
- try{const r=await api("/api/connect","POST");setMessage("Demo API ulandi. "+r.base_url+" · Hedge mode: "+r.hedge_mode+" · Available: "+fmt(r.account?.available_balance_usdt,2)+" USDT · BTCUSDT filters: "+JSON.stringify(r.rules),false);}
+ const button=$("connect");button.disabled=true;setMessage("Futures Testnet API ulanishi tekshirilmoqda…",false);
+ try{const r=await api("/api/connect","POST");setMessage("Futures Testnet API ulandi. "+r.base_url+" · Hedge mode: "+r.hedge_mode+" · Available: "+fmt(r.account?.available_balance_usdt,2)+" USDT · BTCUSDT filters: "+JSON.stringify(r.rules),false);}
  catch(e){setMessage(e.message,true);}
  await refresh();button.disabled=false;
 };
-$("start").onclick=async()=>{if(!confirm("Faqat Binance Futures DEMO. Keyingi yangi 15m shamda signal bo‘lsa MARKET entry hamda reduce-only TP/SL orderlari yuboriladi. Davom etasizmi?"))return;setMessage("Demo strategiyasi ishga tushirilmoqda…",false);try{const r=await api("/api/start","POST");setMessage(r.message||"Demo strategiyasi ishga tushdi.",false);}catch(e){setMessage(e.message,true);}await refresh();};
+$("start").onclick=async()=>{if(!confirm("Faqat Binance Futures TESTNET. Keyingi yangi 15m shamda signal bo‘lsa MARKET entry hamda reduce-only TP/SL orderlari yuboriladi. Davom etasizmi?"))return;setMessage("Testnet strategiyasi ishga tushirilmoqda…",false);try{const r=await api("/api/start","POST");setMessage(r.message||"Demo strategiyasi ishga tushdi.",false);}catch(e){setMessage(e.message,true);}await refresh();};
 $("stop").onclick=async()=>{if(!confirm("Yangi entry signallari to‘xtatiladi. Ochiq Demo pozitsiya boshqaruvda qoladi. Davom etasizmi?"))return;setMessage("Yangi entry to‘xtatilmoqda…",false);try{const r=await api("/api/stop","POST");setMessage(r.message||"Yangi entry to‘xtatildi.",false);}catch(e){setMessage(e.message,true);}await refresh();};
 refresh();setInterval(refresh,5000);
 </script></body></html>
