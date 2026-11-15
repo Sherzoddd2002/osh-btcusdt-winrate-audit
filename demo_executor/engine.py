@@ -78,6 +78,7 @@ class DemoEngine:
         self.last_signal = None
         self.last_candle = None
         self.account_state = None
+        self.multi_assets_mode = None
         self.rules = None
         self.model = None
         self.model_sha = None
@@ -272,6 +273,8 @@ class DemoEngine:
         self.rules = symbol_rules(client.exchange_info(SYMBOL), SYMBOL)
         account = client.account()
         mode = client.position_mode()
+        margin_mode = client.multi_asset_mode()
+        self.multi_assets_mode = bool(margin_mode.get("multiAssetsMargin"))
         self.account_state = {
             "available_balance_usdt": safe_float(account.get("availableBalance")),
             "wallet_balance_usdt": safe_float(account.get("totalWalletBalance")),
@@ -284,7 +287,9 @@ class DemoEngine:
             "environment": "BINANCE USDⓈ-M FUTURES LEGACY TESTNET ONLY",
             "symbol": SYMBOL,
             "hedge_mode": bool(mode.get("dualSidePosition")),
+            "multi_assets_mode": self.multi_assets_mode,
             "rules": self.rules,
+            "multi_assets_mode": self.multi_assets_mode,
             "account": self.account_state,
         }
 
@@ -329,6 +334,12 @@ class DemoEngine:
             info = self._connect()
             if info["hedge_mode"]:
                 raise RuntimeError("Futures Testnet is in Hedge Mode. Switch it manually to One-way Mode.")
+            if info.get("multi_assets_mode"):
+                raise RuntimeError(
+                    "Futures Testnet is in Multi-Assets Mode. H96 C2 requires Single-Asset Mode "
+                    "because it uses ISOLATED margin. Switch the Futures M menu to Single-Asset Mode "
+                    "and run Check Futures Testnet again. No orders were sent."
+                )
             client = self._client()
             positions = self.position_amount(client.positions(SYMBOL))
             orders = client.open_orders(SYMBOL)
