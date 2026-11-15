@@ -376,8 +376,8 @@ footer .links{display:flex;gap:16px;flex-wrap:wrap}
       $d("demoConnectionBadge").className = "pill fail";
       const msg = String(error.message || error);
       const hint = msg.includes("Failed to fetch")
-        ? "\nTekshiruv: server PowerShell’da ishlayotgan bo‘lsin. Edge localhost ruxsatini bermagan bo‘lsa edge://settings/content/all sahifasida GitHub Pages manzilingiz uchun Local network access → Allow tanlang. So‘ng sahifani yangilang."
-        : "\nAgar server ishlayotgan bo‘lsa, Edge Local Network Access → Allow va CORS xabarini tekshiring.";
+        ? "\n1) E:\\osh-btcusdt-winrate-audit\\START_DEMO_ENGINE.bat faylini ikki marta bosing. 2) Ochilgan qora server oynasini yopmang. 3) Edge’da edge://settings/content/all sahifasidan sherzoddd2002.github.io uchun Local network access → Allow tanlang. 4) Sahifani Ctrl+F5 bilan yangilang va Connect’ni qayta bosing."
+        : "\nLokal server 127.0.0.1:8765 da ishlayotganini tekshiring. Edge’da sherzoddd2002.github.io uchun Local network access → Allow bo‘lishi kerak. Server oynasidagi xatoni ham tekshiring.";
       setMessage(msg + hint, "error");
     }
   });
