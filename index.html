@@ -350,8 +350,6 @@ footer .links{display:flex;gap:16px;flex-wrap:wrap}
       connected = true;
       await refresh();
       setMessage("Lokal engine ulandi. Endi Demo API kalitlarini saqlashingiz mumkin.", "success");
-      $d("demoSaveKeys").disabled = false;
-      $d("demoCheck").disabled = true;
     } catch (error) {
       connected = false;
       sessionToken = "";
