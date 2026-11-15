@@ -120,9 +120,12 @@ Freeze the H96 C2 model once using only pre-holdout candles. Use the local disco
 
 The local `forward_paper_h96_c2_model.joblib` and `forward_paper_h96_c2_lock.json` files are ignored by Git. Existing artifacts are hash-checked and reused; changed artifacts are not silently retrained.
 
-Start the local engine on your PC:
+Start the local engine on your PC with one click: double-click `START_DEMO_ENGINE.bat` in the repository folder. The script creates `.venv` if needed, installs missing dependencies, pins the local port to `8765`, keeps Demo order sending OFF, and starts the local API. Keep its console window open while using the GitHub Pages controls.
+
+Manual alternative:
 
 ~~~powershell
+$env:OSH_LOCAL_PORT = "8765"
 $env:OSH_ENABLE_DEMO_ORDERS = "false"
 .\.venv\Scripts\python.exe -m demo_executor.app
 ~~~
