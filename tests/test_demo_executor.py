@@ -81,7 +81,7 @@ class DemoLogicTests(unittest.TestCase):
     def test_start_requires_explicit_demo_order_confirmation(self):
         engine = DemoEngine()
         engine.orders_enabled = False
-        with self.assertRaisesRegex(RuntimeError, "Explicit Demo order confirmation"):
+        with self.assertRaisesRegex(RuntimeError, "Explicit Testnet order confirmation"):
             engine.start()
 
     def test_reset_refuses_to_remove_credentials_when_bot_tracks_position(self):
