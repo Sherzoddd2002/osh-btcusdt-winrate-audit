@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#07101d">
+<title>OSH Quant Lab · HF Model Arena</title>
+<meta name="description" content="BTCUSDT 15m: 6 ta model bir vaqtda, har biri $100 dan, real komissiya bilan, faqat Futures Testnet / paper.">
+<style>
+:root{color-scheme:dark;--bg:#07101d;--panel:#0d1a2b;--line:#20364d;--ink:#edf5ff;--muted:#94a9be;--cyan:#55d6d0;--green:#55d6a2;--red:#ff7c86;--amber:#f5c36a}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(ellipse at 12% 0%,rgba(41,115,154,.18),transparent 34%),var(--bg);color:var(--ink);font:15px/1.65 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}
+.shell{width:min(1200px,calc(100% - 36px));margin:auto}
+nav{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:22px 0;border-bottom:1px solid rgba(148,169,190,.16);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.08em}
+.logo{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(135deg,#1e9f9b,#437cf0);color:#06121c;font-size:16px;font-weight:900}
+.navlinks{display:flex;gap:19px;flex-wrap:wrap;font-size:13px}.navlinks a{color:var(--muted)}
+.pill{display:inline-flex;gap:8px;align-items:center;padding:6px 12px;border:1px solid rgba(85,214,162,.28);border-radius:999px;color:#8ae7c0;background:rgba(85,214,162,.08);font-size:11px;font-weight:800}
+.hero{padding:40px 0 18px}h1{font-size:clamp(25px,4vw,38px);line-height:1.2;margin:0 0 12px;letter-spacing:-.02em}
+.sub{color:var(--muted);max-width:860px;margin:0}
+.banner{margin:22px 0;padding:18px 20px;border:1px solid rgba(255,124,134,.35);border-left:4px solid var(--red);border-radius:14px;background:rgba(255,124,134,.07)}
+.banner b{color:var(--red)}.banner p{margin:8px 0 0;color:var(--muted);font-size:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;margin:22px 0}
+.kpi{padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.kpi .v{font-size:23px;font-weight:800;letter-spacing:-.02em}.kpi .l{color:var(--muted);font-size:12px;margin-top:3px}
+section{margin:34px 0}h2{font-size:21px;margin:0 0 8px}h3{font-size:15px;margin:20px 0 8px}
+.lead{color:var(--muted);margin:0 0 16px;max-width:920px}
+.card{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:18px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:820px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid rgba(148,169,190,.13);vertical-align:top}
+th{color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+td.nm{font-weight:650;white-space:nowrap}
+.tag{display:inline-block;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:800;white-space:nowrap}
+.tag.bad{color:#ffb3ba;background:rgba(255,124,134,.13);border:1px solid rgba(255,124,134,.3)}
+.tag.ok{color:#8ae7c0;background:rgba(85,214,162,.12);border:1px solid rgba(85,214,162,.3)}
+.tag.warn{color:#f8dca1;background:rgba(245,195,106,.12);border:1px solid rgba(245,195,106,.3)}
+.note{border-left:3px solid var(--cyan);padding:13px 17px;background:rgba(85,214,208,.06);border-radius:0 12px 12px 0;margin:16px 0;color:var(--muted)}
+.note b{color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:900px){.two{grid-template-columns:1fr}}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px}
+input,select{width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:#08182a;color:var(--ink);font:14px/1.4 inherit}
+input:focus,select:focus{outline:1px solid var(--cyan)}
+button{padding:10px 15px;border-radius:9px;border:1px solid var(--line);background:rgba(85,214,208,.1);color:var(--ink);font:600 13px/1 inherit;cursor:pointer;margin:6px 6px 0 0}
+button:hover{border-color:var(--cyan)}button.danger{background:rgba(255,124,134,.12);border-color:rgba(255,124,134,.4)}
+button.ghost{background:transparent}button:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}.row>div{flex:1;min-width:200px}
+.statusline{margin-top:12px;padding:11px 14px;border-radius:9px;background:rgba(7,16,29,.7);border:1px solid var(--line);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--muted);white-space:pre-wrap;word-break:break-word}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:rgba(7,16,29,.7);padding:1px 6px;border-radius:5px;color:var(--cyan)}
+.chk{display:flex;gap:9px;align-items:center;margin:12px 0;color:var(--muted);font-size:13px}.chk input{width:auto}
+ul{padding-left:20px;color:var(--muted)}li{margin:6px 0}li b{color:var(--ink)}
+footer{border-top:1px solid rgba(148,169,190,.16);margin-top:48px;padding:22px 0 40px;color:var(--muted);font-size:12px}
+.best{background:rgba(85,214,208,.07)}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav>
+  <div class="brand"><span class="logo">OSH</span><span>QUANT LAB · HF ARENA</span></div>
+  <div class="navlinks">
+    <a href="./">Asosiy</a><a href="research-hub.html">Research Hub</a>
+    <a href="external-audit.html">Tashqi audit</a><a href="#leaderboard">Leaderboard</a>
+    <a href="#terminal">Terminal</a>
+  </div>
+  <span class="pill">● DEMO / TESTNET ONLY</span>
+</nav>
+
+<div class="hero">
+  <h1>HF Model Arena — 6 ta model, 6 ta $100</h1>
+  <p class="sub">Bir xil shamlar, bir xil muzlatilgan model ehtimollari, bir xil komissiya, bir xil boshlang'ich $100.
+  Faqat <b>cooldown</b>, <b>selektivlik</b> va <b>ishonchlilikka qarab pozitsiya hajmi</b> farq qiladi.
+  Qaysi model yaxshiroq — jonli leaderboard ko'rsatadi.</p>
+</div>
+
+<div class="banner">
+  <b>⚠️ Bu foyda kafolati emas. Tarixiy paper / Testnet demo, real kapital yo'q.</b>
+  <p>Oldingi barcha eksperimentlarda (34 ta konfiguratsiya) mustaqil 180 kunlik holdout'da foyda tasdiqlanmagan.
+  Bu tizim &laquo;qaysi model yaxshiroq&raquo; degan savolni <b>o'lchash</b> uchun, foyda va'da qilish uchun emas.</p>
+  <p><b>Komissiya olib tashlanmadi.</b> Siz so'raganingizdek komissiyani hisobdan chiqarib tashlasak $100 &laquo;ko'payadi&raquo;,
+  lekin bu yolg'on natija bo'lardi. Shuning uchun har modelda <b>net</b> (komissiyadan keyin, asosiy qaror)
+  va <b>gross</b> (komissiyasiz, faqat diagnostika) alohida ko'rsatiladi. 90 kunlik sinovda gross ham deyarli $100 atrofida chiqdi —
+  ya'ni komissiyani olib tashlash ham bu modellarni foydali qilmadi.</p>
+  <p><b>Alohidalik:</b> bu sahifa va <code>hf_arena/</code> sizning H96 C2 terminalingizga (port 8765),
+  <code>forward_paper_h96_c2_lock.json</code>, frozen model va mavjud API kalitlaringizga <b>tegmadi</b>.
+  Yangi dvigatel alohida <code>127.0.0.1:8766</code> portida va alohida Windows Credential Manager yozuvida ishlaydi.</p>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="v">6</div><div class="l">model bir vaqtda</div></div>
+  <div class="kpi"><div class="v">$100</div><div class="l">har model uchun, 1x, ISOLATED</div></div>
+  <div class="kpi"><div class="v">12 bps</div><div class="l">round-trip komissiya (olib tashlanmagan)</div></div>
+  <div class="kpi"><div class="v">1 363</div><div class="l">90 kunlik replay savdosi</div></div>
+  <div class="kpi"><div class="v" style="color:var(--red)">NO-GO</div><div class="l">tarixiy holdout bo'yicha umumiy hukm</div></div>
+</div>
+
+<section id="leaderboard">
+  <h2>1 · Leaderboard — 90 kunlik offline replay (paper, order yo'q)</h2>
+  <p class="lead">2026-08-10 → 2026-11-14, 9 240 ta 15m sham, muzlatilgan H96 C2 modeli. Hech qanday API kalit yoki tarmoq ishlatilmagan.
+  <b>Net</b> — haqiqiy komissiya va slippage'dan keyingi balans. <b>Gross</b> — komissiyasiz, faqat taqqoslash uchun.</p>
+  <div class="card"><table id="tbl-replay">
+    <thead><tr><th>#</th><th>Model</th><th>Savdo</th><th>WR net</th><th>PF net</th>
+      <th>Net balans</th><th>Gross balans</th><th>To'langan komissiya</th><th>Max DD</th><th>Izoh</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+  <div class="note"><b>Asosiy xulosa:</b> 6 modeldan birortasi ham $100 ni oshirmadi. Eng yaxshisi
+  <b>E_HF12_TIGHT</b>: $99.09 net / $100.76 gross. Tez savdo (D_HF6, 426 savdo) ko'proq komissiya to'ladi va
+  $98.29 ga tushdi. <b>Komissiyani olib tashlaganda ham eng yaxshi natija atigi +$0.76</b> — demak muammo
+  komissiyada emas, signalning o'zida edge yo'qligida. Bu aynan professional audit ko'rsatadigan natija.</div>
+</section>
+
+<section>
+  <h2>2 · Nima uchun &laquo;tez savdo + $100 ko'payishi&raquo; kafolatlanmaydi</h2>
+  <div class="two">
+    <div class="card">
+      <h3 style="margin-top:0">Iqtisodiy chegara</h3>
+      <p class="lead" style="margin:0">$100 va 1x da bir vaqtdagi jami notional ≤ $100. Savdoni tezlashtirsak
+      pozitsiya hajmi shuncha kichrayadi, komissiya esa har savdoda olinadi. Natija: <b>ko'p savdo = ko'p komissiya</b>,
+      lekin qo'shimcha signallar sifati pastroq.</p>
+      <div class="note" style="margin-bottom:0">Kunlik PnL ≈ (savdo/kun) × (hajm) × (expectancy) − (savdo/kun) × komissiya</div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Ishonchlilikka qarab narx/hajm</h3>
+      <p class="lead" style="margin:0">Siz so'raganingizdek: model ehtimoli thresholddan qancha oshsa, pozitsiya
+      shuncha katta (<code>hajm = baza × (0.5 + 0.5×ishonch)</code>), lekin hech qachon $100 dan oshmaydi.
+      Shuningdek har savdoda TP/SL narxlari sham volatilligi (<code>σ·√hold</code>) bo'yicha belgilanadi —
+      qo'lda narx o'ylab topilmaydi.</p>
+      <div class="note" style="margin-bottom:0">TP = 0.75σ · SL = 1.0σ · hold = cooldown×4 (max 96 sham)</div>
+    </div>
+  </div>
+</section>
+
+<section id="terminal">
+  <h2>3 · Jonli Testnet terminali (alohida, siz API kalitlarni o'zingiz kiritasiz)</h2>
+  <p class="lead">Bu sahifa statik — kalitlarni hech qayerga yubormaydi. Kiritilgan kalitlar faqat sizning
+  kompyuteringizdagi <code>127.0.0.1:8766</code> lokal dvigatelga POST bo'ladi va
+  <b>Windows Credential Manager</b> da saqlanadi. GitHub'ga, brauzer localStorage'ga yoki log faylga tushmaydi.</p>
+
+  <div class="two">
+    <div class="card">
+      <h3 style="margin-top:0">1) Lokal dvigatelni ishga tushiring</h3>
+      <p class="lead" style="margin:0">Repozitoriydagi <code>START_HF_ARENA.bat</code> ni ikki marta bosing.
+      U alohida <code>.venv</code> tekshiradi, port 8766 ni ochadi va <b>order yuborishni OFF</b> holda boshlaydi.
+      Konsol oynasini ochiq qoldiring. Mavjud H96 C2 terminali (8765) o'z ishini davom ettiradi.</p>
+      <div class="note" style="margin-bottom:0">Host qat'iy <code>testnet.binancefuture.com</code> ga biriktirilgan.
+      Production/live URL yo'q, fallback yo'q, environment override yo'q.</div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">2) Kalitlar (faqat Futures TESTNET)</h3>
+      <label>API Key</label><input id="apiKey" type="password" autocomplete="off" placeholder="Testnet API key">
+      <label>API Secret</label><input id="apiSecret" type="password" autocomplete="off" placeholder="Testnet API secret">
+      <div style="margin-top:10px">
+        <button id="btnSave">Kalitlarni shu PC ga saqlash</button>
+        <button id="btnReset" class="ghost">O'chirish</button>
+      </div>
+      <div class="note" style="margin-bottom:0">Faqat <b>Testnet</b> kalitlarini kiriting. Real/Live kalitlarni
+      kiritmang — ular bu hostda ishlamaydi, lekin xavfsizlik odatini buzadi.
+      Eslatma: muzlatilgan <code>forward_paper_h96_c2_model.joblib</code> fayli repoga kiritilmagan —
+      u sizning lokal OSH papkangizda bo'lishi kerak (allaqachon mavjud). Replay aynan shu fayldan foydalanadi.</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3 style="margin-top:0">3) Ulanish va boshqarish</h3>
+    <div class="row">
+      <div><label>Champion model (faqat shu real order yuboradi)</label>
+        <select id="champion">
+          <option value="E_HF12_TIGHT">E · HF-12 kuchli signallar</option>
+          <option value="A_H96_BASE">A · H96 C2 baseline</option>
+          <option value="B_HF24">B · HF-24</option>
+          <option value="C_HF12">C · HF-12</option>
+          <option value="D_HF6">D · HF-6 (eng tez)</option>
+          <option value="F_HF12_MAKER">F · HF-12 maker</option>
+        </select></div>
+      <div><label>Replay kunlari (tarixiy, order yo'q)</label>
+        <select id="replayDays"><option>30</option><option selected>90</option><option>180</option></select></div>
+    </div>
+    <div style="margin-top:8px">
+      <button id="btnConnect">1. Local engine'ga ulanish</button>
+      <button id="btnCheck" class="ghost">2. Testnet tekshiruvi (read-only)</button>
+      <button id="btnReplay" class="ghost">3. Offline replay</button>
+      <button id="btnStartPaper" class="ghost">4. Demo PAPER start</button>
+      <button id="btnStop" class="ghost">Stop</button>
+      <button id="btnKill" class="danger">KILL</button>
+    </div>
+    <label class="chk"><input type="checkbox" id="confirmOrders"> Testnet'ga <b>haqiqiy demo order</b> yuborishni tasdiqlayman (faqat champion, 1x, ISOLATED, max $100)</label>
+    <button id="btnStartOrders" class="danger">5. Tasdiq bilan demo order'larni yoqish</button>
+    <div class="statusline" id="statusln">Holat: lokal dvigatelga ulanmagan. Avval START_HF_ARENA.bat ni ishga tushiring, keyin &laquo;Local engine'ga ulanish&raquo; tugmasini bosing.</div>
+  </div>
+
+  <div class="note"><b>Xavfsizlik kafolatlari:</b> har bir order noyob <code>clientOrderId</code> bilan yuboriladi;
+  yangi kirishdan oldin ochiq pozitsiya/orderlar reconcile qilinadi; 3 ta ketma-ket API xatosida order yo'li avtomatik yopiladi;
+  KILL barcha arena order'larini bekor qiladi; 15% drawdown yoki kunlik $10 zararda model to'xtatiladi;
+  Multi-Assets Mode va Hedge Mode yoqilgan bo'lsa start rad etiladi.</div>
+</section>
+
+<section id="live">
+  <h2>4 · Jonli leaderboard</h2>
+  <p class="lead">Dvigatel ishlaganda har 20 soniyada yangilanadi. Barcha 6 model paper hisobda yuradi;
+  real Testnet order faqat tanlangan champion uchun yuboriladi.</p>
+  <div class="card"><table id="tbl-live">
+    <thead><tr><th>#</th><th>Model</th><th>Savdo</th><th>WR net</th><th>PF net</th>
+      <th>Net balans</th><th>Gross balans</th><th>Komissiya</th><th>DD</th><th>Ochiq</th></tr></thead>
+    <tbody><tr><td colspan="10" style="color:var(--muted)">Lokal dvigatelga ulanmagan — ma'lumot yo'q.</td></tr></tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>5 · Qanday qilib &laquo;ideal&raquo; deb baholanadi (GO mezonlari)</h2>
+  <p class="lead">Bu mezonlar <b>oldindan e'lon qilingan</b> va natijaga qarab o'zgartirilmaydi. Ular faqat
+  kelajakdagi forward/demo davriga qo'llanadi, tarixiy replay'ga emas.</p>
+  <div class="card"><table><thead><tr><th>Mezon</th><th>Talab</th><th>Nega</th></tr></thead><tbody>
+    <tr><td class="nm">Forward savdo soni</td><td>≥ 30</td><td>Kam namunada win rate tasodifiy</td></tr>
+    <tr><td class="nm">Net win rate</td><td>≥ 55%</td><td>Komissiyadan keyingi haqiqiy yutuq</td></tr>
+    <tr><td class="nm">Net Profit Factor</td><td>≥ 1.10</td><td>Yutuq hajmi zarardan katta bo'lishi shart</td></tr>
+    <tr><td class="nm">Yakuniy balans</td><td>&gt; $100</td><td>$100 ko'payishi — asosiy maqsad</td></tr>
+    <tr><td class="nm">Max drawdown</td><td>≤ 15%</td><td>Risk chegarasi</td></tr>
+    <tr><td class="nm">Komissiya</td><td>hisobga olingan</td><td>Gross hech qachon GO uchun ishlatilmaydi</td></tr>
+  </tbody></table></div>
+  <div class="note"><b>Professional qoida:</b> biror model forward'da bu mezonlarning barchasini o'tsa ham,
+  darhol real pulga o'tilmaydi — avval 6–8 hafta shadow/paper kuzatuvi, keyin juda kichik kapital.
+  Hozirgi holat: <b>NO-GO</b>.</div>
+</section>
+
+<footer>
+  <div>OSH Quant Lab · HF Model Arena · barcha raqamlar tarixiy paper-backtest yoki Testnet demo · investitsiya maslahati emas.</div>
+  <div style="margin-top:6px"><code>live_orders=false</code> · production URL yo'q · API kalitlar faqat Windows Credential Manager'da · order yuborish default OFF.</div>
+  <div style="margin-top:6px">Alohida artifact: <code>hf-arena.html</code> + <code>hf_arena/</code> · mavjud H96 C2 terminali (8765) o'zgartirilmadi.</div>
+</footer>
+</div>
+
+<script id="arena-data" type="application/json">
+{"replay":[{"rank":1,"model":"E_HF12_TIGHT","label":"HF-12 · kuchli signallar","trades":201,"wr":55.22,"pf":0.8154,"net":99.09,"gross":100.76,"fees":1.67,"dd":1.18},{"rank":2,"model":"F_HF12_MAKER","label":"HF-12 · maker urinish","trades":259,"wr":50.97,"pf":0.7938,"net":98.59,"gross":99.63,"fees":1.047,"dd":2.08},{"rank":3,"model":"D_HF6","label":"HF-6 · 16/kun","trades":426,"wr":50.7,"pf":0.6037,"net":98.29,"gross":100.03,"fees":1.735,"dd":1.86},{"rank":4,"model":"C_HF12","label":"HF-12 · 8/kun","trades":259,"wr":50.58,"pf":0.6674,"net":97.54,"gross":99.63,"fees":2.093,"dd":3.03},{"rank":5,"model":"B_HF24","label":"HF-24 · 4/kun","trades":158,"wr":49.37,"pf":0.6631,"net":95.45,"gross":97.99,"fees":2.537,"dd":6.75},{"rank":6,"model":"A_H96_BASE","label":"H96 C2 · baseline","trades":60,"wr":46.67,"pf":0.5687,"net":90.63,"gross":94.23,"fees":3.6,"dd":13.83}],"port":8766}
+</script>
+<script>
+(function(){
+  var DATA = JSON.parse(document.getElementById('arena-data').textContent);
+  var BASE = 'http://127.0.0.1:' + DATA.port;
+  var session = null, timer = null, connected = false;
+  function $(id){ return document.getElementById(id); }
+  function say(msg){ $('statusln').textContent = 'Holat: ' + msg; }
+  function esc(s){ return String(s == null ? '—' : s).replace(/[&<>"]/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  function renderReplay(){
+    var html = '';
+    DATA.replay.forEach(function(r){
+      var best = r.rank === 1 ? ' class="best"' : '';
+      html += '<tr' + best + '><td>' + r.rank + '</td><td class="nm">' + esc(r.model) +
+        '<div style="color:var(--muted);font-size:11px;font-weight:400">' + esc(r.label) + '</div></td>' +
+        '<td>' + r.trades + '</td><td>' + r.wr + '%</td><td>' + r.pf + '</td>' +
+        '<td style="color:' + (r.net >= 100 ? 'var(--green)' : 'var(--red)') + ';font-weight:700">$' + r.net.toFixed(2) + '</td>' +
+        '<td style="color:var(--muted)">$' + r.gross.toFixed(2) + '</td>' +
+        '<td style="color:var(--amber)">$' + r.fees.toFixed(3) + '</td>' +
+        '<td>' + r.dd + '%</td><td><span class="tag ' + (r.net >= 100 ? 'ok' : 'bad') + '">' +
+        (r.net >= 100 ? 'FOYDA' : 'NO-GO') + '</span></td></tr>';
+    });
+    $('tbl-replay').querySelector('tbody').innerHTML = html;
+  }
+
+  function renderLive(rows){
+    if(!rows || !rows.length){
+      $('tbl-live').querySelector('tbody').innerHTML =
+        '<tr><td colspan="10" style="color:var(--muted)">Savdolar hali yo\'q.</td></tr>';
+      return;
+    }
+    var html = '';
+    rows.forEach(function(r){
+      var net = r.balance_net_usd, gross = r.balance_gross_usd;
+      html += '<tr' + (r.rank === 1 ? ' class="best"' : '') + '><td>' + r.rank + '</td>' +
+        '<td class="nm">' + esc(r.model_id) + '</td><td>' + r.trades + '</td>' +
+        '<td>' + esc(r.win_rate_net_pct) + '</td><td>' + esc(r.profit_factor_net) + '</td>' +
+        '<td style="color:' + (net >= 100 ? 'var(--green)' : 'var(--red)') + ';font-weight:700">$' + Number(net).toFixed(2) + '</td>' +
+        '<td style="color:var(--muted)">$' + Number(gross).toFixed(2) + '</td>' +
+        '<td style="color:var(--amber)">$' + Number(r.fees_paid_usd).toFixed(3) + '</td>' +
+        '<td>' + esc(r.max_drawdown_pct) + '%</td><td>' + r.open_positions + '</td></tr>';
+    });
+    $('tbl-live').querySelector('tbody').innerHTML = html;
+  }
+
+  function headers(json){
+    var h = { 'X-OSH-HF-Session': session || '' };
+    if(json) h['Content-Type'] = 'application/json';
+    return h;
+  }
+  async function call(path, method, body){
+    var res = await fetch(BASE + path, {
+      method: method || 'GET', headers: headers(!!body),
+      body: body ? JSON.stringify(body) : undefined
+    });
+    var text = await res.text();
+    var out;
+    try { out = JSON.parse(text); } catch(e) { out = { detail: text.slice(0, 200) }; }
+    if(!res.ok) throw new Error(out.detail || out.message || ('HTTP ' + res.status));
+    return out;
+  }
+  async function connect(){
+    try {
+      say('lokal dvigatelga ulanmoqda…');
+      var s = await fetch(BASE + '/api/session', {
+        headers: { 'Origin': location.origin } }).then(function(r){
+          if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+      session = s.session;
+      var st = await call('/api/status');
+      connected = true;
+      say('ULANDI · port ' + DATA.port + ' · mode=' + st.mode + ' · kalitlar=' +
+        (st.credentials_saved ? 'saqlangan' : 'yo\'q') + ' · order=' +
+        (st.orders_enabled ? 'ON' : 'OFF') + ' · host=' + st.host);
+      renderLive(st.leaderboard);
+      if(timer) clearInterval(timer);
+      timer = setInterval(async function(){
+        try { var s2 = await call('/api/status'); renderLive(s2.leaderboard); }
+        catch(e) { /* engine may be stopped */ }
+      }, 20000);
+    } catch(e){
+      connected = false;
+      say('ULANIB BO\'LMADI: ' + e.message +
+        '  → START_HF_ARENA.bat ishga tushirilganini va brauzer localhost ruxsatini tekshiring.');
+    }
+  }
+  function need(){ if(!connected){ say('Avval «Local engine\'ga ulanish» tugmasini bosing.'); return false; } return true; }
+  async function action(fn, label){
+    if(!need()) return;
+    try { say(label + '…'); var out = await fn();
+      say(label + ' → ' + JSON.stringify(out).slice(0, 420));
+      var st = await call('/api/status'); renderLive(st.leaderboard);
+    } catch(e){ say(label + ' XATO: ' + e.message); }
+  }
+
+  renderReplay();
+  $('btnConnect').onclick = connect;
+  $('btnSave').onclick = function(){
+    if(!need()) return;
+    var k = $('apiKey').value, s = $('apiSecret').value;
+    if(!k || !s){ say('Kalit va secret kiriting.'); return; }
+    action(function(){ return call('/api/credentials','POST',{api_key:k,api_secret:s}); }, 'Kalitlarni saqlash');
+    $('apiKey').value = ''; $('apiSecret').value = '';
+  };
+  $('btnReset').onclick = function(){ action(function(){ return call('/api/reset','POST',{}); }, 'Kalitlarni o\'chirish'); };
+  $('btnCheck').onclick = function(){ action(function(){ return call('/api/connect','POST',{}); }, 'Testnet tekshiruvi'); };
+  $('btnReplay').onclick = function(){
+    var d = parseInt($('replayDays').value,10);
+    action(function(){ return call('/api/replay','POST',{days:d}); }, d + ' kunlik offline replay');
+  };
+  $('btnStartPaper').onclick = function(){
+    action(function(){ return call('/api/start','POST',{champion:$('champion').value,confirm_orders:false}); },'Demo PAPER start');
+  };
+  $('btnStartOrders').onclick = function(){
+    if(!$('confirmOrders').checked){ say('Avval tasdiq katakchasini belgilang.'); return; }
+    action(function(){ return call('/api/start','POST',{champion:$('champion').value,confirm_orders:true}); },'Demo ORDER start');
+  };
+  $('btnStop').onclick = function(){ action(function(){ return call('/api/stop','POST',{}); },'Stop'); };
+  $('btnKill').onclick = function(){ action(function(){ return call('/api/kill','POST',{}); },'KILL'); };
+})();
+</script>
+</body>
+</html>
