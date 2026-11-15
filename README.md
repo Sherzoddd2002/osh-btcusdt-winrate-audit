@@ -10,6 +10,8 @@
 
 Yangi statik dashboard: [OSH Quant Lab — H96 C2](https://sherzoddd2002.github.io/osh-btcusdt-winrate-audit/)
 
+**Binance Futures Demo terminal:** dashboarddagi Demo bo‘limi API kalitlarini GitHub’ga saqlamaydi. U faqat foydalanuvchining kompyuterida `127.0.0.1:8765` manzilida ishlaydigan lokal engine bilan bog‘lanadi; kalitlar Windows Credential Manager’da saqlanadi. Lokal engine ishlayotgan bo‘lishi va brauzer localhost ruxsatini berishi kerak. GitHub Pages o‘zi Python modelni ishlatmaydi yoki Binance bilan bevosita bog‘lanmaydi.
+
 Mashina o‘qiy oladigan agregat snapshot: [h96_c2_results_snapshot.json](h96_c2_results_snapshot.json).
 
 Frozen forward paper runner hozircha alohida [PR #4](https://github.com/Sherzoddd2002/osh-btcusdt-winrate-audit/pull/4) branchida. U hali bu `main` branchga qo‘shilmagan; forward natija ham hali yo‘q. Runner stale candle va stale funding holatida fail-closed ishlaydi. Final 180 kunlik holdout parametr tanlash uchun ishlatilmagan.
