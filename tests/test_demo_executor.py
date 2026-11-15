@@ -21,6 +21,14 @@ class DemoLogicTests(unittest.TestCase):
         self.assertNotIn("https://fapi.binance.com", DEMO_FUTURES_URL)
         self.assertNotIn("https://demo-fapi.binance.com", DEMO_FUTURES_URL)
 
+    def test_multi_asset_mode_reads_account_setting(self):
+        client = BinanceDemoClient("testnet-key", "testnet-secret")
+        with patch.object(client, "_request", return_value={"multiAssetsMargin": True}) as request:
+            result = client.multi_asset_mode()
+        self.assertTrue(result["multiAssetsMargin"])
+        request.assert_called_once_with("GET", "/fapi/v1/multiAssetsMargin", signed=True)
+        client.close()
+
     def test_conditional_stop_uses_algo_endpoint(self):
         client = BinanceDemoClient("demo-key", "demo-secret")
         with patch.object(client, "_request", return_value={"algoStatus": "NEW"}) as request:
@@ -77,6 +85,16 @@ class DemoLogicTests(unittest.TestCase):
         self.assertNotIn("demo-secret", repr(result))
         self.assertEqual(store.get_password("OSH_Quant_Lab_Binance_Demo", "api_secret"), "demo-secret")
         engine.client.close()
+
+    def test_start_refuses_multi_asset_mode_before_margin_or_order_changes(self):
+        engine = DemoEngine()
+        engine.orders_enabled = True
+        with patch.object(engine, "_load_model", return_value={}):
+            with patch.object(engine, "_connect", return_value={"hedge_mode": False, "multi_assets_mode": True}):
+                with self.assertRaisesRegex(RuntimeError, "requires Single-Asset Mode"):
+                    engine.start(confirm_demo_orders=True)
+        self.assertFalse(engine.accept_entries)
+        self.assertFalse(engine.thread)
 
     def test_start_requires_explicit_demo_order_confirmation(self):
         engine = DemoEngine()
