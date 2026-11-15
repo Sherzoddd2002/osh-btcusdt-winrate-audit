@@ -147,7 +147,8 @@ The local Python engine must remain running on your computer while the GitHub Pa
 
 - The process binds only to `127.0.0.1`; the browser receives no API key or secret.
 - The only exchange host is `https://testnet.binancefuture.com`, the non-production Futures Testnet REST host. It is separate from current Binance Futures Demo Trading (`demo.binance.com` / `demo-fapi.binance.com`). No Live endpoint, URL override or production fallback exists.
-- One-way position mode is required. The app uses isolated margin and 1x leverage; it does not change position mode.
+- One-way position mode is required. The app uses Single-Asset Mode, isolated margin and 1x leverage; it does not change account-wide position or margin modes automatically.
+- Multi-Assets Mode supports Cross margin only. Before starting, switch the Futures Testnet account to Single-Asset Mode from the Futures page `M` menu. The app reads `/fapi/v1/multiAssetsMargin` and refuses to start while Multi-Assets Mode is enabled; it never changes this account-wide setting on your behalf.
 - It skips signals when Binance's current minimum quantity/notional exceeds the $50 position cap. It never silently increases order size.
 - Market entry is followed by a reduce-only STOP_MARKET Algo order (`POST /fapi/v1/algoOrder`, `triggerPrice`) and a post-only GTX LIMIT take-profit (`POST /fapi/v1/order`). The conditional stop is queried/canceled through the Algo API; the 96-bar time exit uses a reduce-only market close. Binance moved USDⓈ-M conditional order types to the Algo service from 2025-12-09.
 - One entry per 96 completed 15m bars; a 15% Testnet-equity drawdown disables new entries. Existing positions remain under management.
