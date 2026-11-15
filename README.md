@@ -104,7 +104,7 @@ The public GitHub Pages dashboard is informational only. It cannot access a loca
 
 ### Setup (Windows PowerShell)
 
-Use Binance USDⓈ-M Futures **Demo Trading API keys only**. Do not paste Live keys. The API host is hard-coded to `https://testnet.binancefuture.com` (non-production Futures Testnet/Demo-compatible REST host).
+Use API keys created specifically for the **legacy USDⓈ-M Futures Testnet** environment. Current Binance Futures Demo Trading keys and Live keys are different environments; do not use them here unless Binance explicitly confirms compatibility. The API host is hard-coded to `https://testnet.binancefuture.com` (non-production Futures Testnet/Demo-compatible REST host).
 
 Install the dependencies (including Windows Credential Manager support):
 
@@ -136,9 +136,9 @@ Open the GitHub Pages dashboard at `https://sherzoddd2002.github.io/osh-btcusdt-
 
 1. Press **Connect local engine**. In Microsoft Edge, allow this GitHub Pages origin to access localhost/local network when prompted. The browser talks only to `127.0.0.1:8765`.
 2. Enter API Key and Secret created for the Futures Testnet environment and press **Save API on this PC**. The backend stores them in Windows Credential Manager; they are not written to GitHub, browser local storage, or the repository.
-3. Press **Check Binance Demo**. Verify the fixed Demo URL, available balance, BTCUSDT exchange filters, and One-way position mode.
+3. Press **Check Futures Testnet**. Verify the fixed Testnet URL, available balance, BTCUSDT exchange filters, and One-way position mode.
 4. Press **Start H96 C2** and explicitly confirm Testnet order sending. This button is the only normal path that enables Testnet entries for the current app process. No Live endpoint exists.
-5. **Stop new entries** prevents new trades while the engine continues managing an existing Demo position.
+5. **Stop new entries** prevents new trades while the engine continues managing an existing Testnet position.
 6. **Reset saved API** first disables new entries, then checks the Demo account. It refuses to delete credentials if a position or regular/Algo order is present. On a safe reset, only the API credentials are deleted; model, cooldown state and audit log are preserved.
 
 The local Python engine must remain running on your computer while the GitHub Pages controls are in use. If the engine or PC stops, open Testnet orders at Binance may remain; inspect the account before restarting.
@@ -150,8 +150,8 @@ The local Python engine must remain running on your computer while the GitHub Pa
 - One-way position mode is required. The app uses isolated margin and 1x leverage; it does not change position mode.
 - It skips signals when Binance's current minimum quantity/notional exceeds the $50 position cap. It never silently increases order size.
 - Market entry is followed by a reduce-only STOP_MARKET Algo order (`POST /fapi/v1/algoOrder`, `triggerPrice`) and a post-only GTX LIMIT take-profit (`POST /fapi/v1/order`). The conditional stop is queried/canceled through the Algo API; the 96-bar time exit uses a reduce-only market close. Binance moved USDⓈ-M conditional order types to the Algo service from 2025-12-09.
-- One entry per 96 completed 15m bars; a 15% Demo-equity drawdown disables new entries. Existing positions remain under management.
+- One entry per 96 completed 15m bars; a 15% Testnet-equity drawdown disables new entries. Existing positions remain under management.
 - Unknown order responses are reconciled by client order ID rather than blindly retrying market orders.
 - If the process or PC stops, open Demo orders may remain at Binance. Check the Testnet account manually before restarting.
 
-This is a Futures Testnet execution integration test, not validation of profitability. H96 C2 remains DISCOVERY ONLY / NO-GO (58.92% historical OOS win rate, PF 1.1596, 5/8 development gates). Demo fills do not demonstrate real-market Maker priority or live performance. Keep all actual credentials, the root `.env`, model artifacts and runtime state off GitHub.
+This is a Futures Testnet execution integration test, not validation of profitability. H96 C2 remains DISCOVERY ONLY / NO-GO (58.92% historical OOS win rate, PF 1.1596, 5/8 development gates). Testnet fills do not demonstrate real-market Maker priority or live performance. Keep all actual credentials, the root `.env`, model artifacts and runtime state off GitHub.
