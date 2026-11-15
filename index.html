@@ -278,8 +278,8 @@ footer .links{display:flex;gap:16px;flex-wrap:wrap}
 
 <script>
 (() => {
-  // Explicit localhost origin lets Edge classify this fetch as loopback.
-  const LOCAL_API = "http://localhost:8765";
+  // Use the exact IPv4 loopback address the local engine binds to.
+  const LOCAL_API = "http://127.0.0.1:8765";
   let sessionToken = "";
   let connected = false;
   let actionMessage = "";
