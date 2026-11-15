@@ -399,6 +399,7 @@ footer .links{display:flex;gap:16px;flex-wrap:wrap}
     try {
       const result = await request("/api/connect", "POST");
       setMessage("Futures Testnet API ulandi · " + result.base_url + " · Hedge mode: " + result.hedge_mode +
+        " · Multi-Assets mode: " + (result.multi_assets_mode ? "ON" : "OFF") +
         " · Available balance: " + format(result.account?.available_balance_usdt, 2) +
         " USDT · Position: " + result.position_amount + " · Open orders: " + result.open_orders_count, "success");
       await refresh();
