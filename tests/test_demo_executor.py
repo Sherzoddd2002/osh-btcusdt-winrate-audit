@@ -17,8 +17,9 @@ from demo_executor.logic import (
 
 class DemoLogicTests(unittest.TestCase):
     def test_only_demo_url_is_configured(self):
-        self.assertEqual(DEMO_FUTURES_URL, "https://demo-fapi.binance.com")
+        self.assertEqual(DEMO_FUTURES_URL, "https://testnet.binancefuture.com")
         self.assertNotIn("https://fapi.binance.com", DEMO_FUTURES_URL)
+        self.assertNotIn("https://demo-fapi.binance.com", DEMO_FUTURES_URL)
 
     def test_conditional_stop_uses_algo_endpoint(self):
         client = BinanceDemoClient("demo-key", "demo-secret")
