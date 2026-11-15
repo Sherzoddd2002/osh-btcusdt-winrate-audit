@@ -19,7 +19,8 @@ from datetime import datetime, timezone
 
 from .client import DemoAPIError, DemoClient
 from .config import (
-    LEVERAGE, MARGIN_TYPE, MAX_NOTIONAL_USD, SYMBOL,
+    LEVERAGE, MARGIN_TYPE, MAX_NOTIONAL_USD, ORDER_EXECUTION_LOCK_REASON,
+    SYMBOL, TESTNET_ORDER_EXECUTION_ENABLED,
 )
 
 
@@ -116,6 +117,8 @@ class DemoExecutor:
         return report
 
     def arm(self, champion: str, confirm: bool) -> None:
+        if not TESTNET_ORDER_EXECUTION_ENABLED:
+            raise RuntimeError(ORDER_EXECUTION_LOCK_REASON)
         if not confirm:
             raise ValueError("Explicit confirmation is required to enable Testnet orders.")
         if self.client is None or self.rules is None:
