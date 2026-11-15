@@ -278,7 +278,8 @@ footer .links{display:flex;gap:16px;flex-wrap:wrap}
 
 <script>
 (() => {
-  const LOCAL_API = "http://127.0.0.1:8765";
+  // Explicit localhost origin lets Edge classify this fetch as loopback.
+  const LOCAL_API = "http://localhost:8765";
   let sessionToken = "";
   let connected = false;
   let actionMessage = "";
@@ -298,7 +299,9 @@ footer .links{display:flex;gap:16px;flex-wrap:wrap}
     if (needsAuth && sessionToken) headers["X-OSH-Session"] = sessionToken;
     if (body !== undefined) headers["Content-Type"] = "application/json";
     const response = await fetch(LOCAL_API + path, {
-      method, mode: "cors", cache: "no-store", headers,
+      method, mode: "cors", cache: "no-store", credentials: "omit",
+      targetAddressSpace: "loopback",
+      headers,
       body: body === undefined ? undefined : JSON.stringify(body)
     });
     const payload = await response.json().catch(() => ({ detail: "Server javobini JSON sifatida o‘qib bo‘lmadi." }));
@@ -343,19 +346,39 @@ footer .links{display:flex;gap:16px;flex-wrap:wrap}
     catch (error) { setMessage(error.message, "error"); }
   }
   $d("demoConnectLocal").addEventListener("click", async () => {
-    setMessage("Lokal engine bilan bog‘lanilmoqda…");
+    setMessage("Lokal engine bilan bog‘lanilmoqda… Edge localhost uchun ruxsat so‘rashi mumkin.");
     try {
+      if (navigator.permissions && navigator.permissions.query) {
+        try {
+          const permission = await navigator.permissions.query({ name: "local-network-access" });
+          if (permission.state === "denied") {
+            throw new Error("Edge Local Network Access ruxsati DENIED. Edge Settings → Privacy, search, and services → Site permissions → All permissions → Local network access bo‘limida ushbu saytga Allow bering.");
+          }
+          if (permission.state === "prompt") {
+            setMessage("Edge oynasida localhost / local network access so‘rovini kuting va Allow bosing.");
+          }
+        } catch (permissionError) {
+          if (String(permissionError.message || "").includes("DENIED")) throw permissionError;
+          // Older browsers may not expose the local-network-access permission descriptor.
+        }
+      }
       const data = await request("/api/session", "GET", undefined, false);
+      if (!data.session) throw new Error("Local engine session token was empty.");
       sessionToken = data.session;
       connected = true;
-      await refresh();
-      setMessage("Lokal engine ulandi. Endi Demo API kalitlarini saqlashingiz mumkin.", "success");
+      const status = await request("/api/status");
+      render(status);
+      setMessage("Lokal engine ulandi. Endi Binance Futures DEMO API kalitlarini xavfsiz saqlashingiz mumkin.", "success");
     } catch (error) {
       connected = false;
       sessionToken = "";
       $d("demoConnectionBadge").textContent = "LOCAL ENGINE DISCONNECTED";
       $d("demoConnectionBadge").className = "pill fail";
-      setMessage(error.message + "\nAgar localhost ishlamayotgan bo‘lsa, lokal backendni ishga tushiring va Edge Local Network Access ruxsatini bering.", "error");
+      const msg = String(error.message || error);
+      const hint = msg.includes("Failed to fetch")
+        ? "\nTekshiruv: server PowerShell’da ishlayotgan bo‘lsin. Edge localhost ruxsatini bermagan bo‘lsa edge://settings/content/all sahifasida GitHub Pages manzilingiz uchun Local network access → Allow tanlang. So‘ng sahifani yangilang."
+        : "\nAgar server ishlayotgan bo‘lsa, Edge Local Network Access → Allow va CORS xabarini tekshiring.";
+      setMessage(msg + hint, "error");
     }
   });
   $d("demoSaveKeys").addEventListener("click", async () => {
