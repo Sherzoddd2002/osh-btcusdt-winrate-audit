@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import os
 import unittest
 from decimal import Decimal
 import httpx
 from unittest.mock import patch
+
+from demo_executor.engine import DemoEngine
 
 from demo_executor.client import BinanceDemoClient, DEMO_FUTURES_URL
 from demo_executor.logic import (
@@ -44,6 +47,30 @@ class DemoLogicTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "ConnectError.*DNS lookup failed"):
                 client._request("GET", "/fapi/v1/time")
         client.close()
+    def test_generic_binance_environment_keys_are_not_used_as_demo_keys(self):
+        with patch.object(DemoEngine, "_read_keyring_credentials", return_value=None):
+            with patch.dict(os.environ, {"BINANCE_API_KEY": "possibly-live", "BINANCE_API_SECRET": "possibly-live-secret"}):
+                engine = DemoEngine()
+        self.assertFalse(engine.credentials_configured)
+        self.assertIsNone(engine.client)
+
+    def test_start_requires_explicit_demo_order_confirmation(self):
+        engine = DemoEngine()
+        engine.orders_enabled = False
+        with self.assertRaisesRegex(RuntimeError, "Explicit Demo order confirmation"):
+            engine.start()
+
+    def test_reset_refuses_to_remove_credentials_when_bot_tracks_position(self):
+        engine = DemoEngine()
+        engine.credentials_configured = True
+        engine.client = object()
+        engine.state["trade"] = {"side": "LONG", "quantity": 0.001}
+        with self.assertRaisesRegex(RuntimeError, "position exists"):
+            engine.reset_credentials()
+        self.assertFalse(engine.accept_entries)
+        self.assertTrue(engine.credentials_configured)
+        self.assertIsNotNone(engine.client)
+
     def test_algo_order_status_uses_client_algo_id(self):
         client = BinanceDemoClient("demo-key", "demo-secret")
         with patch.object(client, "_request", return_value={"algoStatus": "NEW"}) as request:
