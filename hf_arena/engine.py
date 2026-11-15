@@ -26,7 +26,8 @@ from .client import DemoClient
 from .config import (
     AUDIT_PATH, CRED_USERS, DEMO_FUTURES_URL, INITIAL_CAPITAL_USD,
     KEYRING_SERVICE, LEDGER_PATH, LOCAL_PORT, MAX_NOTIONAL_USD, MODEL_ARTIFACT,
-    MODELS, ROUND_TRIP_TAKER_BPS, SYMBOL,
+    MODELS, ORDER_EXECUTION_LOCK_REASON, ROUND_TRIP_TAKER_BPS,
+    SYMBOL, TESTNET_ORDER_EXECUTION_ENABLED,
 )
 from .executor import DemoExecutor
 
@@ -226,6 +227,8 @@ class ArenaEngine:
 
     # ------------------------------------------------------------- demo loop
     def start_demo(self, champion: str, confirm_orders: bool) -> dict:
+        if confirm_orders and not TESTNET_ORDER_EXECUTION_ENABLED:
+            raise RuntimeError(ORDER_EXECUTION_LOCK_REASON)
         if champion not in {m["id"] for m in MODELS}:
             raise ValueError("Unknown champion model.")
         if self.running:
@@ -347,6 +350,8 @@ class ArenaEngine:
             "connected": self.connect_report is not None,
             "preflight": self.connect_report,
             "orders_enabled": self.executor.enabled,
+            "testnet_order_execution_allowed": TESTNET_ORDER_EXECUTION_ENABLED,
+            "order_execution_lock_reason": ORDER_EXECUTION_LOCK_REASON,
             "champion": self.executor.champion,
             "last_order_action": self.executor.last_action,
             "api_error_count": self.api_error_count,
