@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "generated_on": "2026-11-14",
+  "strategy_id": "H96_C2_BASE_TP_0.75_BOTH",
+  "data_scope": "Development-only purged walk-forward OOS; final 180-day holdout excluded.",
+  "paper_only": true,
+  "live_orders": false,
+  "verdict": "DISCOVERY_ONLY_NO_GO",
+  "strategy": {
+    "tp_long_sigma": 0.75,
+    "tp_short_sigma": 0.75,
+    "stop_loss_sigma": 1,
+    "time_exit_bars": 96,
+    "time_exit_hours": 24,
+    "volatility_horizon_bars": 96,
+    "entry_cooldown_bars": 96,
+    "maker_fee_bps_per_side": 2,
+    "taker_fee_bps_per_side": 5,
+    "round_trip_slippage_bps": 2,
+    "bnb_discount_pct": 0,
+    "primary_execution": "Taker entry; TP Maker conditional on passive limit fill; SL and TIME exits Taker.",
+    "stress_execution": "Taker entry and Taker exit for every exit reason."
+  },
+  "pooled_oos_primary": {
+    "trades": 241,
+    "wins": 142,
+    "losses_or_breakeven": 99,
+    "win_rate_pct": 58.921,
+    "expectancy_bps": 9.463,
+    "profit_factor": 1.15955,
+    "avg_win_net_bps": 116.725,
+    "avg_loss_net_bps": 144.388,
+    "payoff_ratio": 0.80842,
+    "positive_folds": 4,
+    "total_folds": 5,
+    "positive_folds_pct": 80,
+    "median_fold_expectancy_bps": 7.621,
+    "bootstrap_repetitions": 10000,
+    "bootstrap_familywise_test_count": 6,
+    "bootstrap_alpha_per_test": 0.008333333333333333,
+    "bootstrap_lower_bound_gt_zero": false
+  },
+  "pooled_oos_all_taker": {
+    "expectancy_bps": 7.875,
+    "positive_expectancy": true
+  },
+  "capital_paths": {
+    "initial_capital_usd": 100,
+    "primary": [
+      {
+        "position_cap_usd": 25,
+        "final_balance_usd": 105.7,
+        "pnl_usd": 5.7,
+        "return_pct": 5.7,
+        "max_drawdown_pct": 4.65
+      },
+      {
+        "position_cap_usd": 50,
+        "final_balance_usd": 111.4,
+        "pnl_usd": 11.4,
+        "return_pct": 11.4,
+        "max_drawdown_pct": 8.74
+      },
+      {
+        "position_cap_usd": 100,
+        "final_balance_usd": 121.06,
+        "pnl_usd": 21.06,
+        "return_pct": 21.06,
+        "max_drawdown_pct": 15.84
+      }
+    ],
+    "all_taker": [
+      {
+        "position_cap_usd": 25,
+        "final_balance_usd": 104.74,
+        "pnl_usd": 4.74,
+        "return_pct": 4.74,
+        "max_drawdown_pct": 4.77
+      },
+      {
+        "position_cap_usd": 50,
+        "final_balance_usd": 109.49,
+        "pnl_usd": 9.49,
+        "return_pct": 9.49,
+        "max_drawdown_pct": 9.02
+      },
+      {
+        "position_cap_usd": 100,
+        "final_balance_usd": 117.02,
+        "pnl_usd": 17.02,
+        "return_pct": 17.02,
+        "max_drawdown_pct": 16.38
+      }
+    ]
+  },
+  "folds": [
+    {
+      "fold": 1,
+      "trades": 50,
+      "win_rate_pct": 56,
+      "expectancy_bps": 25.2,
+      "profit_factor": 1.3946,
+      "start_utc": "2024-12-12",
+      "end_utc": "2025-03-12"
+    },
+    {
+      "fold": 2,
+      "trades": 47,
+      "win_rate_pct": 61.7,
+      "expectancy_bps": 7.621,
+      "profit_factor": 1.1391,
+      "start_utc": "2025-03-12",
+      "end_utc": "2025-06-10"
+    },
+    {
+      "fold": 3,
+      "trades": 47,
+      "win_rate_pct": 59.57,
+      "expectancy_bps": 2.829,
+      "profit_factor": 1.0713,
+      "start_utc": "2025-06-10",
+      "end_utc": "2025-09-08"
+    },
+    {
+      "fold": 4,
+      "trades": 57,
+      "win_rate_pct": 56.14,
+      "expectancy_bps": -10.759,
+      "profit_factor": 0.8581,
+      "start_utc": "2025-09-08",
+      "end_utc": "2025-12-07"
+    },
+    {
+      "fold": 5,
+      "trades": 40,
+      "win_rate_pct": 62.5,
+      "expectancy_bps": 28.568,
+      "profit_factor": 1.4883,
+      "start_utc": "2025-12-07",
+      "end_utc": "2026-03-07"
+    }
+  ],
+  "by_side": [
+    {
+      "side": "LONG",
+      "trades": 117,
+      "wins": 70,
+      "win_rate_pct": 59.829,
+      "expectancy_bps": 5.482,
+      "profit_factor": 1.11224
+    },
+    {
+      "side": "SHORT",
+      "trades": 124,
+      "wins": 72,
+      "win_rate_pct": 58.065,
+      "expectancy_bps": 13.22,
+      "profit_factor": 1.19105
+    }
+  ],
+  "by_exit_reason": [
+    {
+      "exit": "Take Profit",
+      "trades": 128,
+      "share_pct": 53.112,
+      "win_rate_pct": 100,
+      "expectancy_bps": 126.593
+    },
+    {
+      "exit": "Stop Loss",
+      "trades": 66,
+      "share_pct": 27.386,
+      "win_rate_pct": 0,
+      "expectancy_bps": -183.378
+    },
+    {
+      "exit": "TIME",
+      "trades": 47,
+      "share_pct": 19.502,
+      "win_rate_pct": 29.787,
+      "expectancy_bps": -38.732
+    }
+  ],
+  "checks": {
+    "net_win_rate_ge_60pct": false,
+    "net_expectancy_positive": true,
+    "profit_factor_ge_1_25": false,
+    "positive_oos_folds_ge_80pct": true,
+    "bootstrap_lower_gt_zero": false,
+    "taker_stress_expectancy_positive": true,
+    "half_pct_risk_drawdown_below_15pct": true,
+    "at_least_100_oos_trades": true,
+    "passed": 5,
+    "total": 8
+  },
+  "limitations": [
+    "Historical development OOS only; not a live or forward result.",
+    "The untouched final 180-day holdout was excluded and must remain unused for tuning.",
+    "15m OHLC cannot prove passive Maker queue execution or actual Maker fills.",
+    "Funding mark-price calculations use the previous completed BTCUSDT 15m close as a proxy, not the exchange Mark Price.",
+    "The $100 position-cap drawdown exceeds the 15% guardrail in both Primary and All-Taker simulations.",
+    "The frozen forward paper run has not yet produced a report; no exchange orders are sent."
+  ]
+}

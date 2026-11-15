@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#07101d">
+<title>OSH Quant Lab · Tadqiqotlar registri va Frequency Lab</title>
+<meta name="description" content="BTCUSDT 15m bo'yicha barcha paper-backtest eksperimentlari registri va savdo soni/kapital tadqiqoti. Faqat tadqiqot, real buyurtma yo'q.">
+<style>
+:root{color-scheme:dark;--bg:#07101d;--panel:#0d1a2b;--line:#20364d;--ink:#edf5ff;--muted:#94a9be;--cyan:#55d6d0;--green:#55d6a2;--red:#ff7c86;--amber:#f5c36a}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(ellipse at 12% 0%,rgba(41,115,154,.18),transparent 34%),var(--bg);color:var(--ink);font:15px/1.65 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}
+.shell{width:min(1160px,calc(100% - 36px));margin:auto}
+nav{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:22px 0;border-bottom:1px solid rgba(148,169,190,.16);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.08em}
+.logo{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(135deg,#1e9f9b,#437cf0);color:#06121c;font-size:16px;font-weight:900}
+.navlinks{display:flex;gap:19px;flex-wrap:wrap;font-size:13px}.navlinks a{color:var(--muted)}
+.hero{padding:46px 0 22px}h1{font-size:clamp(26px,4vw,40px);line-height:1.18;margin:0 0 14px;letter-spacing:-.02em}
+.sub{color:var(--muted);max-width:800px;margin:0}
+.banner{margin:26px 0;padding:20px 22px;border:1px solid rgba(255,124,134,.35);border-left:4px solid var(--red);border-radius:14px;background:rgba(255,124,134,.07)}
+.banner b{color:var(--red)}.banner p{margin:8px 0 0;color:var(--muted);font-size:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin:26px 0}
+.kpi{padding:18px 20px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.kpi .v{font-size:26px;font-weight:800;letter-spacing:-.02em}.kpi .l{color:var(--muted);font-size:12px;margin-top:4px}
+section{margin:38px 0}h2{font-size:22px;margin:0 0 8px}h3{font-size:16px;margin:24px 0 8px}
+.lead{color:var(--muted);margin:0 0 18px;max-width:900px}
+.card{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:20px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:760px}
+th,td{text-align:left;padding:10px 11px;border-bottom:1px solid rgba(148,169,190,.13);vertical-align:top}
+th{color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;position:sticky;top:0;background:var(--panel)}
+tr.grp td{color:var(--cyan);font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding-top:18px;background:rgba(85,214,208,.04)}
+td.nm{font-weight:650;white-space:nowrap}td.dt{color:var(--muted)}
+.tag{display:inline-block;padding:3px 9px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.06em;white-space:nowrap}
+.tag.bad{color:#ffb3ba;background:rgba(255,124,134,.13);border:1px solid rgba(255,124,134,.3)}
+.tag.ok{color:#8ae7c0;background:rgba(85,214,162,.12);border:1px solid rgba(85,214,162,.3)}
+.tag.warn{color:#f8dca1;background:rgba(245,195,106,.12);border:1px solid rgba(245,195,106,.3)}
+.note{border-left:3px solid var(--cyan);padding:14px 18px;background:rgba(85,214,208,.06);border-radius:0 12px 12px 0;margin:18px 0;color:var(--muted)}
+.note b{color:var(--ink)}
+.formula{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:rgba(7,16,29,.7);padding:14px 16px;border-radius:10px;border:1px solid var(--line);color:var(--cyan);font-size:13px;overflow-x:auto}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:860px){.two{grid-template-columns:1fr}}
+ul{padding-left:20px;color:var(--muted)}li{margin:6px 0}li b{color:var(--ink)}
+footer{border-top:1px solid rgba(148,169,190,.16);margin-top:52px;padding:24px 0 40px;color:var(--muted);font-size:12px}
+.pill{display:inline-flex;gap:8px;align-items:center;padding:6px 12px;border:1px solid rgba(85,214,162,.28);border-radius:999px;color:#8ae7c0;background:rgba(85,214,162,.08);font-size:11px;font-weight:800}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav>
+  <div class="brand"><span class="logo">OSH</span><span>QUANT LAB · RESEARCH HUB</span></div>
+  <div class="navlinks">
+    <a href="./">Asosiy dashboard</a>
+    <a href="external-audit.html">Tashqi ma'lumotlar</a>
+    <a href="research-v3.html">Research v3</a>
+    <a href="#registry">Registr</a>
+    <a href="#freq">Frequency Lab</a>
+  </div>
+  <span class="pill">● PAPER ONLY · live_orders=false</span>
+</nav>
+
+<div class="hero">
+  <h1>Tadqiqotlar registri &amp; Savdo soni × Kapital</h1>
+  <p class="sub">BTCUSDT 15m bo'yicha shu paytgacha qilingan barcha eksperimentlar, ularning aniq natijalari
+  va yangi, <b>alohida</b> Frequency &amp; Capital Lab tadqiqoti. Yangilangan: 2026-11-15 16:02 UTC.</p>
+</div>
+
+<div class="banner">
+  <b>⚠️ YAKUNIY QAROR: NO-GO — real pul bilan savdo yo'q.</b>
+  <p>34 ta hisoblangan eksperiment/konfiguratsiyadan <b>0 tasi GO</b>. OOS (development) davrida ijobiy
+  ko'ringan har bir nomzod mustaqil holdout'da yoki statistik eshiklarda yutqazgan. Bu sahifa faqat tadqiqot uchun.</p>
+  <p><b>Alohidalik kafolati:</b> ushbu sahifa va uning eksperimenti siz ishlatayotgan H96 C2 forward-paper modeliga,
+  <code>forward_paper_h96_c2_lock.json</code> ga, lokal engine'ga, Windows Credential Manager'dagi kalitlarga va
+  Testnet terminaliga <b>tegmadi</b>. Faqat yangi fayllar qo'shildi; order yuborish kodi yo'q.</p>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="v">34</div><div class="l">eksperiment / konfiguratsiya</div></div>
+  <div class="kpi"><div class="v">240 672</div><div class="l">15m sham · 2020→2026 · 0 strukturaviy xato</div></div>
+  <div class="kpi"><div class="v">58.92%</div><div class="l">eng yaxshi OOS win rate (H96 C2)</div></div>
+  <div class="kpi"><div class="v" style="color:var(--red)">0 / 34</div><div class="l">barcha GO mezonlaridan o'tgan</div></div>
+</div>
+
+<section id="registry">
+  <h2>1 · Barcha natijalar ro'yxati</h2>
+  <p class="lead">Har bir qator qayta hisoblangan JSON hisobotdan olingan. "DISCOVERY" = development OOS'da ijobiy,
+  lekin holdout ochilmagan yoki statistik eshiklardan o'tmagan. "NO-GO" = foydali strategiya emas.</p>
+  <div class="card"><table>
+    <thead><tr><th style="width:230px">Eksperiment</th><th>Asosiy natija</th><th style="width:110px">Hukm</th></tr></thead>
+    <tbody><tr class="grp"><td colspan="4">V3 tuzatilgan eksperiment</td></tr>
+<tr><td class="nm">1h · BASE</td><td class="dt">2018 savdo · median -8.76 bps · PF 0.61 · holdout -9.50 bps</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr><td class="nm">1h · BASE_XASSET_STALE_AWARE</td><td class="dt">1968 savdo · median -8.19 bps · PF 0.61 · holdout -8.73 bps</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr><td class="nm">4h · BASE</td><td class="dt">795 savdo · median -11.56 bps · PF 0.71 · holdout -11.12 bps</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr><td class="nm">4h · BASE_XASSET_STALE_AWARE</td><td class="dt">800 savdo · median -13.13 bps · PF 0.68 · holdout -8.54 bps</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr><td class="nm">1d · BASE</td><td class="dt">222 savdo · median 7.62 bps · PF 1.00 · holdout 4.96 bps</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr><td class="nm">1d · BASE_XASSET_STALE_AWARE</td><td class="dt">189 savdo · median 3.69 bps · PF 1.04 · holdout -18.76 bps</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr class="grp"><td colspan="4">Ma&#x27;lumot auditi</td></tr>
+<tr><td class="nm">BTCUSDT 15m strukturaviy tekshiruv</td><td class="dt">240 672 sham · 0 dublikat · 0 haqiqiy uzilish · 0 OHLC xatosi · 16 nol-hajm</td><td><span class="tag ok">PASS</span></td></tr>
+<tr class="grp"><td colspan="4">Tashqi ma&#x27;lumotlar</td></tr>
+<tr><td class="nm">Xasset / news 6-fold ablatsiya</td><td class="dt">Baza −11.24 bps → +oltin/makro −8.26 (+2.98) → +news −12.07 → ikkalasi −11.19 bps; 0/6 musbat</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr class="grp"><td colspan="4">Selektivlik sweep (1d)</td></tr>
+<tr><td class="nm">top 2% har tomonga</td><td class="dt">OOS -6.58 bps, WR 50.8% | Holdout -14.77 bps, WR 51.9%</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr><td class="nm">top 5% har tomonga</td><td class="dt">OOS 3.18 bps, WR 52.1% | Holdout -0.05 bps, WR 58.1%</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr><td class="nm">top 10% har tomonga</td><td class="dt">OOS 7.78 bps, WR 52.4% | Holdout -10.62 bps, WR 47.4%</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr class="grp"><td colspan="4">High-winrate hunt (1d)</td></tr>
+<tr><td class="nm">C1_sym_1.00_1.00</td><td class="dt">OOS WR 52.4% / 13.24 bps | Holdout WR 46.6% / -10.06 bps / $100→$87.90</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr><td class="nm">C2_asym_0.75_1.00</td><td class="dt">OOS WR 58.6% / 15.78 bps | Holdout WR 55.7% / -11.04 bps / $100→$88.26</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr><td class="nm">C3_asym_0.50_1.00</td><td class="dt">OOS WR 67.2% / 10.89 bps | Holdout WR 58.0% / -14.58 bps / $100→$84.34</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr><td class="nm">C4_asym_0.75_1.50</td><td class="dt">OOS WR 62.8% / 11.79 bps | Holdout WR 61.5% / -6.86 bps / $100→$93.23</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr><td class="nm">C5_asym_0.50_1.50</td><td class="dt">OOS WR 67.4% / -3.98 bps | Holdout WR 58.8% / -17.95 bps / $100→$82.68</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr><td class="nm">C6_naive_0.25_3.00_TRAP</td><td class="dt">OOS WR 81.0% / -10.98 bps | Holdout WR 79.4% / -3.72 bps / $100→$95.78</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr><td class="nm">C7_asym_0.75_1.00_FUND</td><td class="dt">OOS WR 59.2% / 12.93 bps | Holdout WR 50.9% / -26.32 bps / $100→$74.60</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr class="grp"><td colspan="4">Time-exit sweep (dev OOS)</td></tr>
+<tr><td class="nm">H48_C2_BASE_TP_0.75_BOTH</td><td class="dt">277 savdo · 0.62/kun · WR 52.7% · -0.13 bps · PF 0.998</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr><td class="nm">H48_C3_BASE_TP_0.50_BOTH</td><td class="dt">291 savdo · 0.65/kun · WR 56.0% · -7.69 bps · PF 0.853</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr><td class="nm">H64_C2_BASE_TP_0.75_BOTH</td><td class="dt">245 savdo · 0.54/kun · WR 48.6% · -8.12 bps · PF 0.866</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr><td class="nm">H64_C3_BASE_TP_0.50_BOTH</td><td class="dt">270 savdo · 0.60/kun · WR 60.0% · -1.73 bps · PF 0.966</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr><td class="nm">H96_C2_BASE_TP_0.75_BOTH</td><td class="dt">241 savdo · 0.54/kun · WR 58.9% · 9.46 bps · PF 1.159</td><td><span class="tag warn">DISCOVERY</span></td></tr>
+<tr><td class="nm">H96_C3_BASE_TP_0.50_BOTH</td><td class="dt">277 savdo · 0.62/kun · WR 66.1% · 3.38 bps · PF 1.065</td><td><span class="tag warn">DISCOVERY</span></td></tr>
+<tr class="grp"><td colspan="4">Side-hybrid (dev OOS)</td></tr>
+<tr><td class="nm">C2_BASE_TP_0.75_BOTH</td><td class="dt">241 savdo · WR 58.9% · 9.46 bps · PF 1.159</td><td><span class="tag warn">DISCOVERY</span></td></tr>
+<tr><td class="nm">C3_BASE_TP_0.50_BOTH</td><td class="dt">277 savdo · WR 66.1% · 3.38 bps · PF 1.065</td><td><span class="tag warn">DISCOVERY</span></td></tr>
+<tr><td class="nm">H1_HYBRID_LONG_0.50_SHORT_0.75</td><td class="dt">260 savdo · WR 64.2% · 6.46 bps · PF 1.114</td><td><span class="tag warn">DISCOVERY</span></td></tr>
+<tr class="grp"><td colspan="4">Eng yaxshi nomzod</td></tr>
+<tr><td class="nm">H96 C2 (frozen, forward-paper)</td><td class="dt">OOS 241 savdo · WR 58.92% · PF 1.1596 · 9.463 bps · 4/5 fold · bootstrap pastki ≤ 0 · holdout OCHILMAGAN</td><td><span class="tag bad">NO-GO</span></td></tr>
+<tr class="grp"><td colspan="4">Kapital / xarajat stress</td></tr>
+<tr><td class="nm">27 ta kombinatsiya (fee × slip × selektivlik)</td><td class="dt">Maker/Maker 0bps 10%: OOS +$37.69, lekin Holdout −$10.06; 0/27 GO</td><td><span class="tag bad">NO-GO</span></td></tr></tbody>
+  </table></div>
+</section>
+
+<section id="freq">
+  <h2>2 · Yangi: savdo sonini oshirish $100 ga foyda keltiradimi?</h2>
+  <p class="lead">Sizning H96 C2 konfiguratsiyangizda <code>entry_cooldown_bars = 96</code> — bu kuniga maksimum
+  <b>1 ta</b> savdo degani (amalda ~0.54/kun). Time-exit sweep'da bu cooldown o'zgarmagani uchun savdo soni
+  0.54→0.65/kun dan oshmagan. Yangi eksperimentda faqat cooldown o'zgartirildi: 96 → 48 → 24 → 12 → 6 bar.
+  $100 va 1x leverage shartini buzmaslik uchun har bir pozitsiya hajmi
+  <code>100 × cooldown / 96</code> qilib belgilandi, shunda bir vaqtdagi jami notional hech qachon $100 dan oshmaydi.</p>
+  <div class="note"><b>Pre-registration:</b> Oldindan e&#x27;lon qilingan: cooldown [96, 48, 24, 12, 6] bar · tp=0.75sigma sl=1.0sigma h=96 · frozen train-tail top 0.1 per side · notional = capital * cooldown / horizon; 1x, no leverage. Holdout: each config evaluated once; no selection or retuning on holdout. Har bir konfiguratsiya holdout'ga bir marta tegdi;
+  natijalarga qarab qayta sozlash yoki eng yaxshisini tanlash qilinmadi.</div>
+  <div class="card"><table>
+    <thead><tr>
+      <th>Konfig</th><th>Cooldown</th><th>Pozitsiya</th><th>Savdo/kun</th><th>OOS N</th>
+      <th>OOS WR</th><th>OOS exp</th><th>OOS $100</th><th>HLD WR</th><th>HLD exp</th>
+      <th>HLD $100</th><th>Max DD</th><th>Max notional</th><th>Hukm</th>
+    </tr></thead><tbody><tr><td class="nm">C96_max01perday</td><td>96 bar / 1/kun</td><td>$100.00</td><td>0.54</td><td>241</td><td>59.3%</td><td>13.87</td><td>$135.93</td><td>53.3%</td><td>-15.14</td><td>$86.41</td><td>18.5%</td><td>$100.00</td><td><span class="tag bad">NO-GO 4/11</span></td></tr>
+<tr><td class="nm">C48_max02perday</td><td>48 bar / 2/kun</td><td>$50.00</td><td>0.84</td><td>378</td><td>58.7%</td><td>6.71</td><td>$112.38</td><td>55.9%</td><td>-10.26</td><td>$92.60</td><td>11.4%</td><td>$100.00</td><td><span class="tag bad">NO-GO 3/11</span></td></tr>
+<tr><td class="nm">C24_max04perday</td><td>24 bar / 4/kun</td><td>$25.00</td><td>1.38</td><td>619</td><td>56.4%</td><td>-0.13</td><td>$99.41</td><td>54.9%</td><td>-16.07</td><td>$90.83</td><td>10.1%</td><td>$100.00</td><td><span class="tag bad">NO-GO 3/11</span></td></tr>
+<tr><td class="nm">C12_max08perday</td><td>12 bar / 8/kun</td><td>$12.50</td><td>2.31</td><td>1038</td><td>58.5%</td><td>6.11</td><td>$108.09</td><td>54.9%</td><td>-16.68</td><td>$92.06</td><td>9.3%</td><td>$100.00</td><td><span class="tag bad">NO-GO 5/11</span></td></tr>
+<tr><td class="nm">C06_max16perday</td><td>6 bar / 16/kun</td><td>$6.25</td><td>4.03</td><td>1813</td><td>57.7%</td><td>2.91</td><td>$103.28</td><td>56.5%</td><td>-11.95</td><td>$94.98</td><td>6.9%</td><td>$100.00</td><td><span class="tag bad">NO-GO 5/11</span></td></tr></tbody>
+  </table></div>
+  <p class="lead" style="margin-top:14px"><b>Savdo soni 7.5 barobar oshdi</b>: 0.54/kun (241 savdo) → <b>4.03/kun</b> (1813 savdo). Lekin OOS $100 balansi <b>$135.93 → $103.28</b> ga <i>pasaydi</i>, holdout balansi esa barcha holatda $100 dan past (eng yaxshisi <b>$94.98</b>). Yagona haqiqiy yaxshilanish — max drawdown <b>18.5% → 6.9%</b> ga tushdi (pozitsiyalar maydalangani uchun). Barcha 5 konfiguratsiya: <b>0 ta GO</b>.</p>
+  <div class="note"><b>Statistik quvvat yetarli bo'ldi:</b> eng zich konfiguratsiyada holdout'da <b>688 ta savdo</b> to'plandi — avvalgi 92 ta emas. Shunga qaramay expectancy manfiy (-11.95 bps, WR 56.5%). Demak muammo namuna kichikligida emas, <b>edge yo'qligida</b>. Har bir konfiguratsiyada maksimal bir vaqtdagi notional aynan <b>$100</b> — 1x sharti buzilmadi, leverage ishlatilmadi.</div><div class="note"><b>Xarajat modeli haqida ogohlantirish:</b> Primary ssenariy maker/maker (2 bps/tomon + 2 bps slippage ≈ 6 bps round-trip) — bu H96 C2 ning taker-entry Primary modelidan <b>arzonroq</b>, ya'ni OOS raqamlari biroz optimistik. Stress (taker/taker ≈ 10 bps) da holdout yana yomonlashadi: masalan C96 da −15.15 → −19.15 bps, C06 da −11.95 → −15.95 bps. Xulosa o'zgarmaydi.</div>
+  <h3>Savdo soni × $100 balansi</h3>
+  <div class="card" style="text-align:center"><svg viewBox="0 0 680 300" width="100%" height="auto" role="img" aria-label="Savdo soni va 100 dollar balansi" style="max-width:680px"><rect x="0" y="0" width="680" height="300" fill="#0d1a2b" rx="12"/><line x1="58" y1="254.0" x2="660" y2="254.0" stroke="#20364d" stroke-width="1"/><text x="50" y="258.0" text-anchor="end" fill="#94a9be" font-size="11">$82</text><line x1="58" y1="196.5" x2="660" y2="196.5" stroke="#20364d" stroke-width="1"/><text x="50" y="200.5" text-anchor="end" fill="#94a9be" font-size="11">$97</text><line x1="58" y1="139.0" x2="660" y2="139.0" stroke="#20364d" stroke-width="1"/><text x="50" y="143.0" text-anchor="end" fill="#94a9be" font-size="11">$111</text><line x1="58" y1="81.5" x2="660" y2="81.5" stroke="#20364d" stroke-width="1"/><text x="50" y="85.5" text-anchor="end" fill="#94a9be" font-size="11">$126</text><line x1="58" y1="24.0" x2="660" y2="24.0" stroke="#20364d" stroke-width="1"/><text x="50" y="28.0" text-anchor="end" fill="#94a9be" font-size="11">$140</text><line x1="58" y1="183.7" x2="660" y2="183.7" stroke="#f5c36a" stroke-width="1.5" stroke-dasharray="5 4"/><text x="656" y="177.7" text-anchor="end" fill="#f5c36a" font-size="10">$100 (zararsizlik)</text><text x="58.0" y="274" text-anchor="middle" fill="#94a9be" font-size="11">0.0</text><text x="178.4" y="274" text-anchor="middle" fill="#94a9be" font-size="11">0.9</text><text x="298.8" y="274" text-anchor="middle" fill="#94a9be" font-size="11">1.8</text><text x="419.2" y="274" text-anchor="middle" fill="#94a9be" font-size="11">2.7</text><text x="539.6" y="274" text-anchor="middle" fill="#94a9be" font-size="11">3.6</text><text x="660.0" y="274" text-anchor="middle" fill="#94a9be" font-size="11">4.5</text><text x="340" y="294" text-anchor="middle" fill="#94a9be" font-size="12">savdo / kun</text><polyline points="129.5,40.0 170.1,134.2 241.6,186.0 365.8,151.3 595.5,170.5" fill="none" stroke="#55d6d0" stroke-width="2.5" stroke-linejoin="round"/><circle cx="129.5" cy="40.0" r="4" fill="#55d6d0"/><circle cx="170.1" cy="134.2" r="4" fill="#55d6d0"/><circle cx="241.6" cy="186.0" r="4" fill="#55d6d0"/><circle cx="365.8" cy="151.3" r="4" fill="#55d6d0"/><circle cx="595.5" cy="170.5" r="4" fill="#55d6d0"/><polyline points="129.5,238.0 170.1,213.3 241.6,220.3 365.8,215.4 595.5,203.7" fill="none" stroke="#ff7c86" stroke-width="2.5" stroke-linejoin="round"/><circle cx="129.5" cy="238.0" r="4" fill="#ff7c86"/><circle cx="170.1" cy="213.3" r="4" fill="#ff7c86"/><circle cx="241.6" cy="220.3" r="4" fill="#ff7c86"/><circle cx="365.8" cy="215.4" r="4" fill="#ff7c86"/><circle cx="595.5" cy="203.7" r="4" fill="#ff7c86"/><g font-size="12" fill="#edf5ff"><rect x="68" y="30" width="10" height="10" fill="#55d6d0"/><text x="84" y="39">OOS (development)</text><rect x="248" y="30" width="10" height="10" fill="#ff7c86"/><text x="264" y="39">Holdout (tegilmagan 180 kun)</text></g></svg></div>
+  <div class="note"><b>Grafikni o'qish:</b> ko'k chiziq — development OOS (odatda yaxshi ko'rinadi),
+  qizil — hech qachon tuning uchun ishlatilmagan 180 kunlik holdout. Sariq chiziq $100 zararsizlik darajasi.
+  Savdo soni oshganda chiziqlar bir-biriga yaqinlashadimi yoki yo'qmi — asosiy savol shu.</div>
+</section>
+
+<section>
+  <h2>3 · Nima uchun "ko'p savdo" o'z-o'zidan "ko'p foyda" emas</h2>
+  <div class="two">
+    <div class="card">
+      <h3 style="margin-top:0">Iqtisodiy formula</h3>
+      <div class="formula">Kunlik PnL ≈ (savdo/kun) × (pozitsiya hajmi) × (expectancy / savdo)</div>
+      <p class="lead" style="margin:14px 0 0">$100 kapital va 1x da bir vaqtdagi jami notional ≤ $100.
+      Pozitsiyalarni maydalab ko'paytirsak, <b>(savdo/kun) × (hajm)</b> deyarli o'zgarmaydi —
+      faqat equity chizig'i silliqlashadi va har bir savdoning riski kichrayadi. Foydani oshirish uchun
+      <b>expectancy</b> yoki <b>kapital</b> oshishi kerak, savdo soni emas.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Qisqa gorizont qimmatga tushadi</h3>
+      <div class="formula">1h o'rtacha |harakat| = 38.4 bps → 10 bps xarajat = 26.0%<br>
+4h = 78.2 bps → 12.8%<br>1d = 207.3 bps → 4.8%</div>
+      <p class="lead" style="margin:14px 0 0">Vaqt ufqini qisqartirganda xarajat deyarli o'zgarmaydi,
+      lekin har bir savdodan kutiladigan harakat kichrayadi. Shu sababli 1h (median −8.76 bps) va
+      4h (−11.56 bps) 1d dan ancha yomon. Sizning H48/H64 time-exit sweep'ingiz ham shuni ko'rsatdi.</p>
+    </div>
+  </div>
+  <div class="note"><b>Win rate ham xuddi shunday tuzoq.</b> TP=0.25σ / SL=3σ qo'yilsa holdout'da
+  <b>79.44% win rate</b> chiqdi — lekin o'rtacha yutuq +31 bps, o'rtacha zarar −138 bps bo'lib,
+  $100 → $95.78 ga tushdi. TP=0.75σ / SL=1.5σ esa <b>61.54% win rate</b> (siz so'ragan 60% dan oshdi),
+  lekin $100 → $93.23. <b>Win rate + payoff + xarajat</b> birga hisoblanmaguncha hech narsa anglatmaydi.</div>
+</section>
+
+<section>
+  <h2>4 · H96 C2 — hozirgi eng yaxshi nomzod (o'zgartirilmadi)</h2>
+  <div class="card"><table><thead><tr><th>Ko'rsatkich</th><th>Qiymat</th><th>Izoh</th></tr></thead><tbody>
+    <tr><td class="nm">OOS win rate</td><td>58.92% (241 savdo)</td><td class="dt">Maqsad ≥60% → FAIL</td></tr>
+    <tr><td class="nm">Profit Factor</td><td>1.1596</td><td class="dt">Maqsad ≥1.25 → FAIL</td></tr>
+    <tr><td class="nm">Expectancy</td><td>+9.463 bps/savdo</td><td class="dt">Musbat → PASS</td></tr>
+    <tr><td class="nm">Ijobiy foldlar</td><td>4 / 5 (80%)</td><td class="dt">PASS; fold 4 zararli (−10.76 bps)</td></tr>
+    <tr><td class="nm">Bootstrap pastki chegara</td><td>≤ 0</td><td class="dt">6 ta test uchun Bonferroni α=0.0083 → FAIL</td></tr>
+    <tr><td class="nm">Holdout</td><td>ochilmagan</td><td class="dt">180 kun faqat yakuniy baholash uchun saqlangan</td></tr>
+    <tr><td class="nm">Kapital ($50 cap, Primary)</td><td>$100 → $111.40</td><td class="dt">Max DD 8.74%; $100 cap'da DD 15.84% (chegaradan oshgan)</td></tr>
+  </tbody></table></div>
+  <p class="lead" style="margin-top:12px">Bu model <b>8 mezondan 5 tasini</b> bajargan. U sizning
+  forward-paper / Testnet terminalingizda ishlatilmoqda — biz unga tegmadik, faqat tadqiqot registriga kiritdik.</p>
+</section>
+
+<section>
+  <h2>5 · Keyingi qadam (halol variantlar)</h2>
+  <ul>
+    <li><b>Eng to'g'ri qaror:</b> shu bosqichda to'xtash. 5 ta mustaqil eksperimentlar oilasi OHLCV asosida
+      barqaror yo'nalish edge'i yo'qligini ko'rsatdi. $100 hozircha xavfsiz.</li>
+    <li><b>Forward-paper davom ettirish:</b> H96 C2 ni 6–8 hafta shadow rejimda yig'ish; holdout'ni
+      faqat oldindan belgilangan yakuniy baholashda ochish. Juma 09:00 monitoring eslatmasi faol.</li>
+    <li><b>Yangi ma'lumot:</b> kripto-native flow — open interest o'zgarishi, taker long/short ratio,
+      likvidatsiyalar (<code>!forceOrders</code>), basis, order-book imbalance. Funding darajasi
+      feature sifatida sinandi va holdout'da eng yomon natija berdi (−26.32 bps).</li>
+    <li><b>Yangi maqsad:</b> yo'nalish emas, volatillik / rejim / execution bashorati; meta-labeling
+      (avval oddiy qoida nomzod chiqaradi, ML faqat "foydalimi?" deb javob beradi).</li>
+    <li><b>Ko'p savdo kerak bo'lsa:</b> bitta BTC emas, bir nechta mustaqil aktiv (ETH, SOL) bo'yicha
+      bir xil qoidani qo'llash — bu leverage'siz haqiqiy diversifikatsiya beradi.</li>
+    <li><b>Hech qachon qilinmasligi kerak:</b> holdout natijasiga qarab parametr tanlash. Bu uni
+      training ma'lumotiga aylantiradi va real pulda yutqazadi.</li>
+  </ul>
+</section>
+
+<footer>
+  <div>Manba: <code>osh-btcusdt-winrate-audit</code> · barcha raqamlar tarixiy paper-backtest · investitsiya maslahati emas.</div>
+  <div style="margin-top:6px"><code>live_orders=false</code> · API kalit yo'q · order yuborish kodi yo'q · tashqi CDN yo'q (oflayn ishlaydi).</div>
+  <div style="margin-top:6px">Sahifa alohida artifact: <code>research-hub.html</code> · generator: <code>build_research_hub.py</code> · ma'lumot: JSON hisobotlar.</div>
+</footer>
+</div>
+</body>
+</html>

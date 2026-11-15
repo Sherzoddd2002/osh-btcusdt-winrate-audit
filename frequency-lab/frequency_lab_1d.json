@@ -1,0 +1,1313 @@
+{
+  "metadata": {
+    "generated_at_utc": "2026-11-15T16:00:14.674703+00:00",
+    "experiment": "OSH-FREQUENCY-CAPITAL-LAB-2026-11-15-v1",
+    "separate_artifact": true,
+    "touches_forward_paper_engine": false,
+    "touches_h96_c2_lock_or_model": false,
+    "paper_only": true,
+    "live_orders": false,
+    "data_end_utc": "2026-10-31 23:45:00+00:00",
+    "holdout_start_utc": "2026-05-05 00:00:00+00:00",
+    "holdout_days": 180,
+    "rows": 239616,
+    "preregistered": {
+      "cooldown_bars": [
+        96,
+        48,
+        24,
+        12,
+        6
+      ],
+      "barrier": "tp=0.75sigma sl=1.0sigma h=96",
+      "selection": "frozen train-tail top 0.1 per side",
+      "position_rule": "notional = capital * cooldown / horizon; 1x, no leverage",
+      "holdout_policy": "each config evaluated once; no selection or retuning on holdout",
+      "fee_model": "maker 2bps/side + 2bps slip (primary); taker 5bps/side (stress)"
+    }
+  },
+  "configs": {
+    "C96_max01perday": {
+      "cooldown_bars": 96,
+      "max_trades_per_day": 1,
+      "position_fraction": 1.0,
+      "folds": [
+        {
+          "trades": 50,
+          "trades_per_day": 0.556,
+          "win_rate_pct": 58.0,
+          "expectancy_bps": 29.642,
+          "avg_win_net_bps": 156.67,
+          "avg_loss_net_bps": 145.78,
+          "payoff_ratio": 1.075,
+          "profit_factor": 1.4841,
+          "benchmark_mean_net_bps": -25.867,
+          "position_notional_usd": 100.0,
+          "max_concurrent_positions": 1,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 115.11,
+          "pnl_usd": 15.11,
+          "max_drawdown_pct": 10.83,
+          "bootstrap_ci95_bps": [
+            -35.43,
+            45.198
+          ],
+          "by_reason": {
+            "take_profit": 26,
+            "stop_loss": 16,
+            "time": 8
+          },
+          "long_trades": 16,
+          "short_trades": 34,
+          "fold": 1
+        },
+        {
+          "trades": 47,
+          "trades_per_day": 0.522,
+          "win_rate_pct": 61.7,
+          "expectancy_bps": 12.086,
+          "avg_win_net_bps": 104.65,
+          "avg_loss_net_bps": 137.04,
+          "payoff_ratio": 0.764,
+          "profit_factor": 1.2303,
+          "benchmark_mean_net_bps": 26.547,
+          "position_notional_usd": 100.0,
+          "max_concurrent_positions": 1,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 105.41,
+          "pnl_usd": 5.41,
+          "max_drawdown_pct": 11.96,
+          "bootstrap_ci95_bps": [
+            -43.042,
+            59.547
+          ],
+          "by_reason": {
+            "take_profit": 24,
+            "stop_loss": 14,
+            "time": 9
+          },
+          "long_trades": 34,
+          "short_trades": 13,
+          "fold": 2
+        },
+        {
+          "trades": 47,
+          "trades_per_day": 0.522,
+          "win_rate_pct": 59.57,
+          "expectancy_bps": 7.232,
+          "avg_win_net_bps": 74.69,
+          "avg_loss_net_bps": 92.18,
+          "payoff_ratio": 0.81,
+          "profit_factor": 1.1941,
+          "benchmark_mean_net_bps": -5.984,
+          "position_notional_usd": 100.0,
+          "max_concurrent_positions": 1,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 103.25,
+          "pnl_usd": 3.25,
+          "max_drawdown_pct": 6.46,
+          "bootstrap_ci95_bps": [
+            1.122,
+            45.587
+          ],
+          "by_reason": {
+            "take_profit": 25,
+            "stop_loss": 9,
+            "time": 13
+          },
+          "long_trades": 33,
+          "short_trades": 14,
+          "fold": 3
+        },
+        {
+          "trades": 57,
+          "trades_per_day": 0.633,
+          "win_rate_pct": 56.14,
+          "expectancy_bps": -6.324,
+          "avg_win_net_bps": 119.05,
+          "avg_loss_net_bps": 166.81,
+          "payoff_ratio": 0.714,
+          "profit_factor": 0.9136,
+          "benchmark_mean_net_bps": -30.568,
+          "position_notional_usd": 100.0,
+          "max_concurrent_positions": 1,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 95.74,
+          "pnl_usd": -4.26,
+          "max_drawdown_pct": 16.03,
+          "bootstrap_ci95_bps": [
+            -54.991,
+            56.891
+          ],
+          "by_reason": {
+            "take_profit": 30,
+            "stop_loss": 17,
+            "time": 10
+          },
+          "long_trades": 18,
+          "short_trades": 39,
+          "fold": 4
+        },
+        {
+          "trades": 40,
+          "trades_per_day": 0.444,
+          "win_rate_pct": 62.5,
+          "expectancy_bps": 32.849,
+          "avg_win_net_bps": 142.56,
+          "avg_loss_net_bps": 150.01,
+          "payoff_ratio": 0.95,
+          "profit_factor": 1.5839,
+          "benchmark_mean_net_bps": -34.381,
+          "position_notional_usd": 100.0,
+          "max_concurrent_positions": 1,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 113.33,
+          "pnl_usd": 13.33,
+          "max_drawdown_pct": 8.17,
+          "bootstrap_ci95_bps": [
+            23.982,
+            89.671
+          ],
+          "by_reason": {
+            "take_profit": 23,
+            "stop_loss": 10,
+            "time": 7
+          },
+          "long_trades": 16,
+          "short_trades": 24,
+          "fold": 5
+        }
+      ],
+      "positive_folds_pct": 80.0,
+      "pooled_oos_primary": {
+        "trades": 241,
+        "trades_per_day": 0.536,
+        "win_rate_pct": 59.34,
+        "expectancy_bps": 13.874,
+        "avg_win_net_bps": 119.18,
+        "avg_loss_net_bps": 139.79,
+        "payoff_ratio": 0.853,
+        "profit_factor": 1.2441,
+        "benchmark_mean_net_bps": -14.051,
+        "position_notional_usd": 100.0,
+        "max_concurrent_positions": 5,
+        "max_notional_usd": 500.0,
+        "final_balance_100usd": 135.93,
+        "pnl_usd": 35.93,
+        "max_drawdown_pct": 17.17,
+        "bootstrap_ci95_bps": [
+          -11.319,
+          33.49
+        ],
+        "by_reason": {
+          "take_profit": 128,
+          "stop_loss": 66,
+          "time": 47
+        },
+        "long_trades": 117,
+        "short_trades": 124
+      },
+      "untouched_holdout_primary": {
+        "trades": 92,
+        "trades_per_day": 0.514,
+        "win_rate_pct": 53.26,
+        "expectancy_bps": -15.145,
+        "avg_win_net_bps": 84.54,
+        "avg_loss_net_bps": 128.74,
+        "payoff_ratio": 0.657,
+        "profit_factor": 0.7483,
+        "benchmark_mean_net_bps": -6.999,
+        "position_notional_usd": 100.0,
+        "max_concurrent_positions": 1,
+        "max_notional_usd": 100.0,
+        "final_balance_100usd": 86.41,
+        "pnl_usd": -13.59,
+        "max_drawdown_pct": 18.54,
+        "bootstrap_ci95_bps": [
+          -38.3,
+          -0.957
+        ],
+        "by_reason": {
+          "take_profit": 43,
+          "stop_loss": 33,
+          "time": 16
+        },
+        "long_trades": 43,
+        "short_trades": 49
+      },
+      "untouched_holdout_all_taker": {
+        "trades": 92,
+        "trades_per_day": 0.514,
+        "win_rate_pct": 53.26,
+        "expectancy_bps": -19.148,
+        "avg_win_net_bps": 80.54,
+        "avg_loss_net_bps": 132.75,
+        "payoff_ratio": 0.607,
+        "profit_factor": 0.6914,
+        "benchmark_mean_net_bps": -6.999,
+        "position_notional_usd": 100.0,
+        "max_concurrent_positions": 1,
+        "max_notional_usd": 100.0,
+        "final_balance_100usd": 83.28,
+        "pnl_usd": -16.72,
+        "max_drawdown_pct": 20.93,
+        "bootstrap_ci95_bps": [
+          -42.307,
+          -4.956
+        ],
+        "by_reason": {
+          "take_profit": 43,
+          "stop_loss": 33,
+          "time": 16
+        },
+        "long_trades": 43,
+        "short_trades": 49
+      }
+    },
+    "C48_max02perday": {
+      "cooldown_bars": 48,
+      "max_trades_per_day": 2,
+      "position_fraction": 0.5,
+      "folds": [
+        {
+          "trades": 78,
+          "trades_per_day": 0.867,
+          "win_rate_pct": 56.41,
+          "expectancy_bps": 11.647,
+          "avg_win_net_bps": 135.48,
+          "avg_loss_net_bps": 148.61,
+          "payoff_ratio": 0.912,
+          "profit_factor": 1.1798,
+          "benchmark_mean_net_bps": -25.867,
+          "position_notional_usd": 50.0,
+          "max_concurrent_positions": 2,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 104.37,
+          "pnl_usd": 4.37,
+          "max_drawdown_pct": 8.57,
+          "bootstrap_ci95_bps": [
+            -35.79,
+            30.471
+          ],
+          "by_reason": {
+            "take_profit": 39,
+            "stop_loss": 26,
+            "time": 13
+          },
+          "long_trades": 25,
+          "short_trades": 53,
+          "fold": 1
+        },
+        {
+          "trades": 76,
+          "trades_per_day": 0.844,
+          "win_rate_pct": 65.79,
+          "expectancy_bps": 19.248,
+          "avg_win_net_bps": 98.14,
+          "avg_loss_net_bps": 132.46,
+          "payoff_ratio": 0.741,
+          "profit_factor": 1.4248,
+          "benchmark_mean_net_bps": 26.547,
+          "position_notional_usd": 50.0,
+          "max_concurrent_positions": 2,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 107.43,
+          "pnl_usd": 7.43,
+          "max_drawdown_pct": 9.12,
+          "bootstrap_ci95_bps": [
+            -47.469,
+            54.619
+          ],
+          "by_reason": {
+            "take_profit": 43,
+            "stop_loss": 19,
+            "time": 14
+          },
+          "long_trades": 57,
+          "short_trades": 19,
+          "fold": 2
+        },
+        {
+          "trades": 75,
+          "trades_per_day": 0.833,
+          "win_rate_pct": 54.67,
+          "expectancy_bps": -3.134,
+          "avg_win_net_bps": 74.44,
+          "avg_loss_net_bps": 96.68,
+          "payoff_ratio": 0.77,
+          "profit_factor": 0.9285,
+          "benchmark_mean_net_bps": -5.984,
+          "position_notional_usd": 50.0,
+          "max_concurrent_positions": 2,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 98.74,
+          "pnl_usd": -1.26,
+          "max_drawdown_pct": 5.83,
+          "bootstrap_ci95_bps": [
+            -20.8,
+            37.046
+          ],
+          "by_reason": {
+            "take_profit": 37,
+            "stop_loss": 19,
+            "time": 19
+          },
+          "long_trades": 48,
+          "short_trades": 27,
+          "fold": 3
+        },
+        {
+          "trades": 91,
+          "trades_per_day": 1.011,
+          "win_rate_pct": 56.04,
+          "expectancy_bps": -8.457,
+          "avg_win_net_bps": 117.88,
+          "avg_loss_net_bps": 169.54,
+          "payoff_ratio": 0.695,
+          "profit_factor": 0.8865,
+          "benchmark_mean_net_bps": -30.568,
+          "position_notional_usd": 50.0,
+          "max_concurrent_positions": 2,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 95.94,
+          "pnl_usd": -4.06,
+          "max_drawdown_pct": 10.1,
+          "bootstrap_ci95_bps": [
+            -38.779,
+            36.827
+          ],
+          "by_reason": {
+            "take_profit": 46,
+            "stop_loss": 31,
+            "time": 14
+          },
+          "long_trades": 27,
+          "short_trades": 64,
+          "fold": 4
+        },
+        {
+          "trades": 58,
+          "trades_per_day": 0.644,
+          "win_rate_pct": 62.07,
+          "expectancy_bps": 20.148,
+          "avg_win_net_bps": 127.83,
+          "avg_loss_net_bps": 156.06,
+          "payoff_ratio": 0.819,
+          "profit_factor": 1.3404,
+          "benchmark_mean_net_bps": -34.381,
+          "position_notional_usd": 50.0,
+          "max_concurrent_positions": 2,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 105.8,
+          "pnl_usd": 5.8,
+          "max_drawdown_pct": 6.02,
+          "bootstrap_ci95_bps": [
+            23.375,
+            83.772
+          ],
+          "by_reason": {
+            "take_profit": 33,
+            "stop_loss": 16,
+            "time": 9
+          },
+          "long_trades": 26,
+          "short_trades": 32,
+          "fold": 5
+        }
+      ],
+      "positive_folds_pct": 60.0,
+      "pooled_oos_primary": {
+        "trades": 378,
+        "trades_per_day": 0.84,
+        "win_rate_pct": 58.73,
+        "expectancy_bps": 6.707,
+        "avg_win_net_bps": 110.51,
+        "avg_loss_net_bps": 141.02,
+        "payoff_ratio": 0.784,
+        "profit_factor": 1.1152,
+        "benchmark_mean_net_bps": -14.051,
+        "position_notional_usd": 50.0,
+        "max_concurrent_positions": 7,
+        "max_notional_usd": 350.0,
+        "final_balance_100usd": 112.38,
+        "pnl_usd": 12.38,
+        "max_drawdown_pct": 12.23,
+        "bootstrap_ci95_bps": [
+          -12.285,
+          27.853
+        ],
+        "by_reason": {
+          "take_profit": 198,
+          "stop_loss": 111,
+          "time": 69
+        },
+        "long_trades": 183,
+        "short_trades": 195
+      },
+      "untouched_holdout_primary": {
+        "trades": 145,
+        "trades_per_day": 0.81,
+        "win_rate_pct": 55.86,
+        "expectancy_bps": -10.259,
+        "avg_win_net_bps": 81.03,
+        "avg_loss_net_bps": 125.79,
+        "payoff_ratio": 0.644,
+        "profit_factor": 0.8152,
+        "benchmark_mean_net_bps": -6.999,
+        "position_notional_usd": 50.0,
+        "max_concurrent_positions": 2,
+        "max_notional_usd": 100.0,
+        "final_balance_100usd": 92.6,
+        "pnl_usd": -7.4,
+        "max_drawdown_pct": 11.37,
+        "bootstrap_ci95_bps": [
+          -29.475,
+          5.571
+        ],
+        "by_reason": {
+          "take_profit": 70,
+          "stop_loss": 49,
+          "time": 26
+        },
+        "long_trades": 62,
+        "short_trades": 83
+      },
+      "untouched_holdout_all_taker": {
+        "trades": 145,
+        "trades_per_day": 0.81,
+        "win_rate_pct": 55.86,
+        "expectancy_bps": -14.261,
+        "avg_win_net_bps": 77.03,
+        "avg_loss_net_bps": 129.81,
+        "payoff_ratio": 0.593,
+        "profit_factor": 0.7511,
+        "benchmark_mean_net_bps": -6.999,
+        "position_notional_usd": 50.0,
+        "max_concurrent_positions": 2,
+        "max_notional_usd": 100.0,
+        "final_balance_100usd": 89.95,
+        "pnl_usd": -10.05,
+        "max_drawdown_pct": 12.46,
+        "bootstrap_ci95_bps": [
+          -33.479,
+          1.574
+        ],
+        "by_reason": {
+          "take_profit": 70,
+          "stop_loss": 49,
+          "time": 26
+        },
+        "long_trades": 62,
+        "short_trades": 83
+      }
+    },
+    "C24_max04perday": {
+      "cooldown_bars": 24,
+      "max_trades_per_day": 4,
+      "position_fraction": 0.25,
+      "folds": [
+        {
+          "trades": 138,
+          "trades_per_day": 1.533,
+          "win_rate_pct": 54.35,
+          "expectancy_bps": 2.955,
+          "avg_win_net_bps": 132.89,
+          "avg_loss_net_bps": 151.73,
+          "payoff_ratio": 0.876,
+          "profit_factor": 1.0427,
+          "benchmark_mean_net_bps": -25.867,
+          "position_notional_usd": 25.0,
+          "max_concurrent_positions": 4,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 100.9,
+          "pnl_usd": 0.9,
+          "max_drawdown_pct": 6.9,
+          "bootstrap_ci95_bps": [
+            -30.008,
+            29.446
+          ],
+          "by_reason": {
+            "take_profit": 69,
+            "stop_loss": 48,
+            "time": 21
+          },
+          "long_trades": 39,
+          "short_trades": 99,
+          "fold": 1
+        },
+        {
+          "trades": 127,
+          "trades_per_day": 1.411,
+          "win_rate_pct": 60.63,
+          "expectancy_bps": 3.599,
+          "avg_win_net_bps": 96.33,
+          "avg_loss_net_bps": 139.21,
+          "payoff_ratio": 0.692,
+          "profit_factor": 1.0657,
+          "benchmark_mean_net_bps": 26.547,
+          "position_notional_usd": 25.0,
+          "max_concurrent_positions": 4,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 101.08,
+          "pnl_usd": 1.08,
+          "max_drawdown_pct": 8.1,
+          "bootstrap_ci95_bps": [
+            -51.904,
+            36.919
+          ],
+          "by_reason": {
+            "take_profit": 66,
+            "stop_loss": 43,
+            "time": 18
+          },
+          "long_trades": 89,
+          "short_trades": 38,
+          "fold": 2
+        },
+        {
+          "trades": 119,
+          "trades_per_day": 1.322,
+          "win_rate_pct": 53.78,
+          "expectancy_bps": -2.513,
+          "avg_win_net_bps": 74.94,
+          "avg_loss_net_bps": 92.64,
+          "payoff_ratio": 0.809,
+          "profit_factor": 0.9413,
+          "benchmark_mean_net_bps": -5.984,
+          "position_notional_usd": 25.0,
+          "max_concurrent_positions": 4,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 99.22,
+          "pnl_usd": -0.78,
+          "max_drawdown_pct": 4.46,
+          "bootstrap_ci95_bps": [
+            -26.577,
+            38.229
+          ],
+          "by_reason": {
+            "take_profit": 59,
+            "stop_loss": 34,
+            "time": 26
+          },
+          "long_trades": 77,
+          "short_trades": 42,
+          "fold": 3
+        },
+        {
+          "trades": 142,
+          "trades_per_day": 1.578,
+          "win_rate_pct": 54.93,
+          "expectancy_bps": -12.192,
+          "avg_win_net_bps": 107.03,
+          "avg_loss_net_bps": 157.5,
+          "payoff_ratio": 0.68,
+          "profit_factor": 0.8282,
+          "benchmark_mean_net_bps": -30.568,
+          "position_notional_usd": 25.0,
+          "max_concurrent_positions": 4,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 95.67,
+          "pnl_usd": -4.33,
+          "max_drawdown_pct": 8.03,
+          "bootstrap_ci95_bps": [
+            -52.758,
+            35.26
+          ],
+          "by_reason": {
+            "take_profit": 69,
+            "stop_loss": 52,
+            "time": 21
+          },
+          "long_trades": 45,
+          "short_trades": 97,
+          "fold": 4
+        },
+        {
+          "trades": 93,
+          "trades_per_day": 1.033,
+          "win_rate_pct": 59.14,
+          "expectancy_bps": 11.657,
+          "avg_win_net_bps": 114.75,
+          "avg_loss_net_bps": 137.55,
+          "payoff_ratio": 0.834,
+          "profit_factor": 1.2074,
+          "benchmark_mean_net_bps": -34.381,
+          "position_notional_usd": 25.0,
+          "max_concurrent_positions": 4,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 102.68,
+          "pnl_usd": 2.68,
+          "max_drawdown_pct": 3.5,
+          "bootstrap_ci95_bps": [
+            -1.444,
+            52.563
+          ],
+          "by_reason": {
+            "take_profit": 50,
+            "stop_loss": 28,
+            "time": 15
+          },
+          "long_trades": 45,
+          "short_trades": 48,
+          "fold": 5
+        }
+      ],
+      "positive_folds_pct": 60.0,
+      "pooled_oos_primary": {
+        "trades": 619,
+        "trades_per_day": 1.376,
+        "win_rate_pct": 56.38,
+        "expectancy_bps": -0.132,
+        "avg_win_net_bps": 105.56,
+        "avg_loss_net_bps": 136.75,
+        "payoff_ratio": 0.772,
+        "profit_factor": 0.9978,
+        "benchmark_mean_net_bps": -14.051,
+        "position_notional_usd": 25.0,
+        "max_concurrent_positions": 11,
+        "max_notional_usd": 275.0,
+        "final_balance_100usd": 99.41,
+        "pnl_usd": -0.59,
+        "max_drawdown_pct": 9.57,
+        "bootstrap_ci95_bps": [
+          -15.189,
+          19.415
+        ],
+        "by_reason": {
+          "take_profit": 313,
+          "stop_loss": 205,
+          "time": 101
+        },
+        "long_trades": 295,
+        "short_trades": 324
+      },
+      "untouched_holdout_primary": {
+        "trades": 237,
+        "trades_per_day": 1.324,
+        "win_rate_pct": 54.85,
+        "expectancy_bps": -16.072,
+        "avg_win_net_bps": 74.39,
+        "avg_loss_net_bps": 125.98,
+        "payoff_ratio": 0.591,
+        "profit_factor": 0.7174,
+        "benchmark_mean_net_bps": -6.999,
+        "position_notional_usd": 25.0,
+        "max_concurrent_positions": 4,
+        "max_notional_usd": 100.0,
+        "final_balance_100usd": 90.83,
+        "pnl_usd": -9.17,
+        "max_drawdown_pct": 10.11,
+        "bootstrap_ci95_bps": [
+          -35.628,
+          0.186
+        ],
+        "by_reason": {
+          "take_profit": 114,
+          "stop_loss": 84,
+          "time": 39
+        },
+        "long_trades": 106,
+        "short_trades": 131
+      },
+      "untouched_holdout_all_taker": {
+        "trades": 237,
+        "trades_per_day": 1.324,
+        "win_rate_pct": 54.43,
+        "expectancy_bps": -20.073,
+        "avg_win_net_bps": 70.97,
+        "avg_loss_net_bps": 128.82,
+        "payoff_ratio": 0.551,
+        "profit_factor": 0.658,
+        "benchmark_mean_net_bps": -6.999,
+        "position_notional_usd": 25.0,
+        "max_concurrent_positions": 4,
+        "max_notional_usd": 100.0,
+        "final_balance_100usd": 88.7,
+        "pnl_usd": -11.3,
+        "max_drawdown_pct": 12.16,
+        "bootstrap_ci95_bps": [
+          -39.632,
+          -3.814
+        ],
+        "by_reason": {
+          "take_profit": 114,
+          "stop_loss": 84,
+          "time": 39
+        },
+        "long_trades": 106,
+        "short_trades": 131
+      }
+    },
+    "C12_max08perday": {
+      "cooldown_bars": 12,
+      "max_trades_per_day": 8,
+      "position_fraction": 0.125,
+      "folds": [
+        {
+          "trades": 230,
+          "trades_per_day": 2.556,
+          "win_rate_pct": 56.96,
+          "expectancy_bps": 4.133,
+          "avg_win_net_bps": 123.02,
+          "avg_loss_net_bps": 153.18,
+          "payoff_ratio": 0.803,
+          "profit_factor": 1.0627,
+          "benchmark_mean_net_bps": -25.867,
+          "position_notional_usd": 12.5,
+          "max_concurrent_positions": 8,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 101.15,
+          "pnl_usd": 1.15,
+          "max_drawdown_pct": 4.22,
+          "bootstrap_ci95_bps": [
+            -21.767,
+            30.648
+          ],
+          "by_reason": {
+            "take_profit": 122,
+            "stop_loss": 76,
+            "time": 32
+          },
+          "long_trades": 60,
+          "short_trades": 170,
+          "fold": 1
+        },
+        {
+          "trades": 217,
+          "trades_per_day": 2.411,
+          "win_rate_pct": 62.21,
+          "expectancy_bps": 11.696,
+          "avg_win_net_bps": 97.49,
+          "avg_loss_net_bps": 129.56,
+          "payoff_ratio": 0.753,
+          "profit_factor": 1.2389,
+          "benchmark_mean_net_bps": 26.547,
+          "position_notional_usd": 12.5,
+          "max_concurrent_positions": 8,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 103.2,
+          "pnl_usd": 3.2,
+          "max_drawdown_pct": 4.49,
+          "bootstrap_ci95_bps": [
+            -22.779,
+            35.865
+          ],
+          "by_reason": {
+            "take_profit": 120,
+            "stop_loss": 69,
+            "time": 28
+          },
+          "long_trades": 155,
+          "short_trades": 62,
+          "fold": 2
+        },
+        {
+          "trades": 205,
+          "trades_per_day": 2.278,
+          "win_rate_pct": 57.07,
+          "expectancy_bps": 3.82,
+          "avg_win_net_bps": 72.38,
+          "avg_loss_net_bps": 87.33,
+          "payoff_ratio": 0.829,
+          "profit_factor": 1.1019,
+          "benchmark_mean_net_bps": -5.984,
+          "position_notional_usd": 12.5,
+          "max_concurrent_positions": 8,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 100.97,
+          "pnl_usd": 0.97,
+          "max_drawdown_pct": 2.93,
+          "bootstrap_ci95_bps": [
+            -16.878,
+            30.181
+          ],
+          "by_reason": {
+            "take_profit": 107,
+            "stop_loss": 55,
+            "time": 43
+          },
+          "long_trades": 134,
+          "short_trades": 71,
+          "fold": 3
+        },
+        {
+          "trades": 234,
+          "trades_per_day": 2.6,
+          "win_rate_pct": 56.41,
+          "expectancy_bps": -0.428,
+          "avg_win_net_bps": 111.15,
+          "avg_loss_net_bps": 144.83,
+          "payoff_ratio": 0.767,
+          "profit_factor": 0.9932,
+          "benchmark_mean_net_bps": -30.568,
+          "position_notional_usd": 12.5,
+          "max_concurrent_positions": 8,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 99.84,
+          "pnl_usd": -0.16,
+          "max_drawdown_pct": 4.69,
+          "bootstrap_ci95_bps": [
+            -33.77,
+            39.72
+          ],
+          "by_reason": {
+            "take_profit": 121,
+            "stop_loss": 80,
+            "time": 33
+          },
+          "long_trades": 77,
+          "short_trades": 157,
+          "fold": 4
+        },
+        {
+          "trades": 152,
+          "trades_per_day": 1.689,
+          "win_rate_pct": 60.53,
+          "expectancy_bps": 14.301,
+          "avg_win_net_bps": 108.61,
+          "avg_loss_net_bps": 130.31,
+          "payoff_ratio": 0.833,
+          "profit_factor": 1.278,
+          "benchmark_mean_net_bps": -34.381,
+          "position_notional_usd": 12.5,
+          "max_concurrent_positions": 8,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 102.73,
+          "pnl_usd": 2.73,
+          "max_drawdown_pct": 1.91,
+          "bootstrap_ci95_bps": [
+            -2.439,
+            53.112
+          ],
+          "by_reason": {
+            "take_profit": 87,
+            "stop_loss": 47,
+            "time": 18
+          },
+          "long_trades": 80,
+          "short_trades": 72,
+          "fold": 5
+        }
+      ],
+      "positive_folds_pct": 80.0,
+      "pooled_oos_primary": {
+        "trades": 1038,
+        "trades_per_day": 2.307,
+        "win_rate_pct": 58.48,
+        "expectancy_bps": 6.113,
+        "avg_win_net_bps": 102.82,
+        "avg_loss_net_bps": 130.08,
+        "payoff_ratio": 0.79,
+        "profit_factor": 1.1132,
+        "benchmark_mean_net_bps": -14.051,
+        "position_notional_usd": 12.5,
+        "max_concurrent_positions": 17,
+        "max_notional_usd": 212.5,
+        "final_balance_100usd": 108.09,
+        "pnl_usd": 8.09,
+        "max_drawdown_pct": 5.9,
+        "bootstrap_ci95_bps": [
+          -5.188,
+          21.075
+        ],
+        "by_reason": {
+          "take_profit": 557,
+          "stop_loss": 327,
+          "time": 154
+        },
+        "long_trades": 506,
+        "short_trades": 532
+      },
+      "untouched_holdout_primary": {
+        "trades": 395,
+        "trades_per_day": 2.207,
+        "win_rate_pct": 54.94,
+        "expectancy_bps": -16.675,
+        "avg_win_net_bps": 70.74,
+        "avg_loss_net_bps": 123.24,
+        "payoff_ratio": 0.574,
+        "profit_factor": 0.6998,
+        "benchmark_mean_net_bps": -6.999,
+        "position_notional_usd": 12.5,
+        "max_concurrent_positions": 8,
+        "max_notional_usd": 100.0,
+        "final_balance_100usd": 92.06,
+        "pnl_usd": -7.94,
+        "max_drawdown_pct": 9.32,
+        "bootstrap_ci95_bps": [
+          -34.277,
+          -1.077
+        ],
+        "by_reason": {
+          "take_profit": 201,
+          "stop_loss": 137,
+          "time": 57
+        },
+        "long_trades": 184,
+        "short_trades": 211
+      },
+      "untouched_holdout_all_taker": {
+        "trades": 395,
+        "trades_per_day": 2.207,
+        "win_rate_pct": 54.68,
+        "expectancy_bps": -20.677,
+        "avg_win_net_bps": 67.07,
+        "avg_loss_net_bps": 126.56,
+        "payoff_ratio": 0.53,
+        "profit_factor": 0.6395,
+        "benchmark_mean_net_bps": -6.999,
+        "position_notional_usd": 12.5,
+        "max_concurrent_positions": 8,
+        "max_notional_usd": 100.0,
+        "final_balance_100usd": 90.26,
+        "pnl_usd": -9.74,
+        "max_drawdown_pct": 10.01,
+        "bootstrap_ci95_bps": [
+          -38.286,
+          -5.076
+        ],
+        "by_reason": {
+          "take_profit": 201,
+          "stop_loss": 137,
+          "time": 57
+        },
+        "long_trades": 184,
+        "short_trades": 211
+      }
+    },
+    "C06_max16perday": {
+      "cooldown_bars": 6,
+      "max_trades_per_day": 16,
+      "position_fraction": 0.0625,
+      "folds": [
+        {
+          "trades": 402,
+          "trades_per_day": 4.467,
+          "win_rate_pct": 56.22,
+          "expectancy_bps": -0.487,
+          "avg_win_net_bps": 117.8,
+          "avg_loss_net_bps": 152.38,
+          "payoff_ratio": 0.773,
+          "profit_factor": 0.9927,
+          "benchmark_mean_net_bps": -25.867,
+          "position_notional_usd": 6.25,
+          "max_concurrent_positions": 16,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 99.86,
+          "pnl_usd": -0.14,
+          "max_drawdown_pct": 4.37,
+          "bootstrap_ci95_bps": [
+            -28.047,
+            25.971
+          ],
+          "by_reason": {
+            "take_profit": 210,
+            "stop_loss": 140,
+            "time": 52
+          },
+          "long_trades": 104,
+          "short_trades": 298,
+          "fold": 1
+        },
+        {
+          "trades": 385,
+          "trades_per_day": 4.278,
+          "win_rate_pct": 58.7,
+          "expectancy_bps": 2.905,
+          "avg_win_net_bps": 95.12,
+          "avg_loss_net_bps": 128.16,
+          "payoff_ratio": 0.742,
+          "profit_factor": 1.0549,
+          "benchmark_mean_net_bps": 26.547,
+          "position_notional_usd": 6.25,
+          "max_concurrent_positions": 16,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 100.69,
+          "pnl_usd": 0.69,
+          "max_drawdown_pct": 5.0,
+          "bootstrap_ci95_bps": [
+            -25.313,
+            28.514
+          ],
+          "by_reason": {
+            "take_profit": 204,
+            "stop_loss": 131,
+            "time": 50
+          },
+          "long_trades": 278,
+          "short_trades": 107,
+          "fold": 2
+        },
+        {
+          "trades": 365,
+          "trades_per_day": 4.056,
+          "win_rate_pct": 57.81,
+          "expectancy_bps": 4.64,
+          "avg_win_net_bps": 70.12,
+          "avg_loss_net_bps": 85.07,
+          "payoff_ratio": 0.824,
+          "profit_factor": 1.1293,
+          "benchmark_mean_net_bps": -5.984,
+          "position_notional_usd": 6.25,
+          "max_concurrent_positions": 16,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 101.06,
+          "pnl_usd": 1.06,
+          "max_drawdown_pct": 2.6,
+          "bootstrap_ci95_bps": [
+            -15.317,
+            27.212
+          ],
+          "by_reason": {
+            "take_profit": 193,
+            "stop_loss": 98,
+            "time": 74
+          },
+          "long_trades": 240,
+          "short_trades": 125,
+          "fold": 3
+        },
+        {
+          "trades": 397,
+          "trades_per_day": 4.411,
+          "win_rate_pct": 56.68,
+          "expectancy_bps": 0.99,
+          "avg_win_net_bps": 108.08,
+          "avg_loss_net_bps": 139.1,
+          "payoff_ratio": 0.777,
+          "profit_factor": 1.0164,
+          "benchmark_mean_net_bps": -30.568,
+          "position_notional_usd": 6.25,
+          "max_concurrent_positions": 16,
+          "max_notional_usd": 100.0,
+          "final_balance_100usd": 100.23,
+          "pnl_usd": 0.23,
+          "max_drawdown_pct": 3.68,
+          "bootstrap_ci95_bps": [
+            -25.732,
+            32.616
+          ],
+          "by_reason": {
+            "take_profit": 209,
+            "stop_loss": 135,
+            "time": 53
+          },
+          "long_trades": 137,
+          "short_trades": 260,
+          "fold": 4
+        },
+        {
+          "trades": 264,
+          "trades_per_day": 2.933,
+          "win_rate_pct": 59.85,
+          "expectancy_bps": 8.557,
+          "avg_win_net_bps": 100.03,
+          "avg_loss_net_bps": 127.79,
+          "payoff_ratio": 0.783,
+          "profit_factor": 1.1668,
+          "benchmark_mean_net_bps": -34.381,
+          "position_notional_usd": 6.25,
+          "max_concurrent_positions": 15,
+          "max_notional_usd": 93.75,
+          "final_balance_100usd": 101.41,
+          "pnl_usd": 1.41,
+          "max_drawdown_pct": 1.84,
+          "bootstrap_ci95_bps": [
+            -9.742,
+            41.581
+          ],
+          "by_reason": {
+            "take_profit": 150,
+            "stop_loss": 87,
+            "time": 27
+          },
+          "long_trades": 146,
+          "short_trades": 118,
+          "fold": 5
+        }
+      ],
+      "positive_folds_pct": 80.0,
+      "pooled_oos_primary": {
+        "trades": 1813,
+        "trades_per_day": 4.029,
+        "win_rate_pct": 57.69,
+        "expectancy_bps": 2.906,
+        "avg_win_net_bps": 98.51,
+        "avg_loss_net_bps": 127.47,
+        "payoff_ratio": 0.773,
+        "profit_factor": 1.0539,
+        "benchmark_mean_net_bps": -14.051,
+        "position_notional_usd": 6.25,
+        "max_concurrent_positions": 31,
+        "max_notional_usd": 193.75,
+        "final_balance_100usd": 103.28,
+        "pnl_usd": 3.28,
+        "max_drawdown_pct": 5.0,
+        "bootstrap_ci95_bps": [
+          -8.624,
+          15.317
+        ],
+        "by_reason": {
+          "take_profit": 966,
+          "stop_loss": 591,
+          "time": 256
+        },
+        "long_trades": 905,
+        "short_trades": 908
+      },
+      "untouched_holdout_primary": {
+        "trades": 688,
+        "trades_per_day": 3.844,
+        "win_rate_pct": 56.54,
+        "expectancy_bps": -11.949,
+        "avg_win_net_bps": 68.75,
+        "avg_loss_net_bps": 116.94,
+        "payoff_ratio": 0.588,
+        "profit_factor": 0.7649,
+        "benchmark_mean_net_bps": -6.999,
+        "position_notional_usd": 6.25,
+        "max_concurrent_positions": 16,
+        "max_notional_usd": 100.0,
+        "final_balance_100usd": 94.98,
+        "pnl_usd": -5.02,
+        "max_drawdown_pct": 6.88,
+        "bootstrap_ci95_bps": [
+          -27.182,
+          2.596
+        ],
+        "by_reason": {
+          "take_profit": 366,
+          "stop_loss": 232,
+          "time": 90
+        },
+        "long_trades": 331,
+        "short_trades": 357
+      },
+      "untouched_holdout_all_taker": {
+        "trades": 688,
+        "trades_per_day": 3.844,
+        "win_rate_pct": 56.4,
+        "expectancy_bps": -15.951,
+        "avg_win_net_bps": 64.93,
+        "avg_loss_net_bps": 120.56,
+        "payoff_ratio": 0.539,
+        "profit_factor": 0.6966,
+        "benchmark_mean_net_bps": -6.999,
+        "position_notional_usd": 6.25,
+        "max_concurrent_positions": 16,
+        "max_notional_usd": 100.0,
+        "final_balance_100usd": 93.36,
+        "pnl_usd": -6.64,
+        "max_drawdown_pct": 7.44,
+        "bootstrap_ci95_bps": [
+          -31.185,
+          -1.399
+        ],
+        "by_reason": {
+          "take_profit": 366,
+          "stop_loss": 232,
+          "time": 90
+        },
+        "long_trades": 331,
+        "short_trades": 357
+      }
+    }
+  },
+  "gates": [
+    {
+      "config": "C96_max01perday",
+      "checks": {
+        "trades_per_day_ge_1": false,
+        "oos_expectancy_positive": true,
+        "oos_pf_ge_1_2": true,
+        "oos_bootstrap_lower_gt_0": false,
+        "positive_folds_ge_80": true,
+        "holdout_expectancy_positive": false,
+        "holdout_pf_gt_1": false,
+        "holdout_100usd_profit": false,
+        "max_drawdown_le_15pct": false,
+        "max_notional_le_100usd": true,
+        "holdout_stress_expectancy_positive": false
+      },
+      "checks_passed": 4,
+      "checks_total": 11,
+      "verdict": "NO-GO"
+    },
+    {
+      "config": "C48_max02perday",
+      "checks": {
+        "trades_per_day_ge_1": false,
+        "oos_expectancy_positive": true,
+        "oos_pf_ge_1_2": false,
+        "oos_bootstrap_lower_gt_0": false,
+        "positive_folds_ge_80": false,
+        "holdout_expectancy_positive": false,
+        "holdout_pf_gt_1": false,
+        "holdout_100usd_profit": false,
+        "max_drawdown_le_15pct": true,
+        "max_notional_le_100usd": true,
+        "holdout_stress_expectancy_positive": false
+      },
+      "checks_passed": 3,
+      "checks_total": 11,
+      "verdict": "NO-GO"
+    },
+    {
+      "config": "C24_max04perday",
+      "checks": {
+        "trades_per_day_ge_1": true,
+        "oos_expectancy_positive": false,
+        "oos_pf_ge_1_2": false,
+        "oos_bootstrap_lower_gt_0": false,
+        "positive_folds_ge_80": false,
+        "holdout_expectancy_positive": false,
+        "holdout_pf_gt_1": false,
+        "holdout_100usd_profit": false,
+        "max_drawdown_le_15pct": true,
+        "max_notional_le_100usd": true,
+        "holdout_stress_expectancy_positive": false
+      },
+      "checks_passed": 3,
+      "checks_total": 11,
+      "verdict": "NO-GO"
+    },
+    {
+      "config": "C12_max08perday",
+      "checks": {
+        "trades_per_day_ge_1": true,
+        "oos_expectancy_positive": true,
+        "oos_pf_ge_1_2": false,
+        "oos_bootstrap_lower_gt_0": false,
+        "positive_folds_ge_80": true,
+        "holdout_expectancy_positive": false,
+        "holdout_pf_gt_1": false,
+        "holdout_100usd_profit": false,
+        "max_drawdown_le_15pct": true,
+        "max_notional_le_100usd": true,
+        "holdout_stress_expectancy_positive": false
+      },
+      "checks_passed": 5,
+      "checks_total": 11,
+      "verdict": "NO-GO"
+    },
+    {
+      "config": "C06_max16perday",
+      "checks": {
+        "trades_per_day_ge_1": true,
+        "oos_expectancy_positive": true,
+        "oos_pf_ge_1_2": false,
+        "oos_bootstrap_lower_gt_0": false,
+        "positive_folds_ge_80": true,
+        "holdout_expectancy_positive": false,
+        "holdout_pf_gt_1": false,
+        "holdout_100usd_profit": false,
+        "max_drawdown_le_15pct": true,
+        "max_notional_le_100usd": true,
+        "holdout_stress_expectancy_positive": false
+      },
+      "checks_passed": 5,
+      "checks_total": 11,
+      "verdict": "NO-GO"
+    }
+  ]
+}

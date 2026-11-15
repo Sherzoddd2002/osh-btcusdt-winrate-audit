@@ -1,0 +1,780 @@
+{
+  "cost_bps": 10.0,
+  "top_pct": 0.05,
+  "holdout_days": 180,
+  "horizons": {
+    "1h": {
+      "bars": 4,
+      "configs": {
+        "BASE": {
+          "feature_count": 37,
+          "folds": [
+            {
+              "trades": 396,
+              "expectancy_bps": -7.6796599400505565,
+              "win_rate_pct": 47.72727272727273,
+              "avg_win_gross_bps": 44.85267181923231,
+              "avg_loss_gross_bps": 36.51352806809144,
+              "expectancy_decomposition_bps": -7.679659940050558,
+              "profit_factor": 0.6841451514478119,
+              "benchmark_mean_net_bps": -10.521429047296044,
+              "edge_vs_benchmark_bps": 2.8417691072454874,
+              "no_trade_pct": 95.4,
+              "fold": 1,
+              "start": "2024-12-13",
+              "frozen_thr_up": 0.48214,
+              "frozen_thr_dn": 0.50245,
+              "test_pass_rate_pct": 9.99
+            },
+            {
+              "trades": 429,
+              "expectancy_bps": -6.560303523131194,
+              "win_rate_pct": 48.484848484848484,
+              "avg_win_gross_bps": 36.37834884587821,
+              "avg_loss_gross_bps": 27.561388105728284,
+              "expectancy_decomposition_bps": -6.5603035231311955,
+              "profit_factor": 0.660962826954809,
+              "benchmark_mean_net_bps": -9.11398847438646,
+              "edge_vs_benchmark_bps": 2.553684951255267,
+              "no_trade_pct": 95.0,
+              "fold": 2,
+              "start": "2025-03-13",
+              "frozen_thr_up": 0.46461,
+              "frozen_thr_dn": 0.51311,
+              "test_pass_rate_pct": 10.78
+            },
+            {
+              "trades": 380,
+              "expectancy_bps": -9.790317603251088,
+              "win_rate_pct": 45.26315789473684,
+              "avg_win_gross_bps": 31.26958840104459,
+              "avg_loss_gross_bps": 25.474470645264823,
+              "expectancy_decomposition_bps": -9.790317603251085,
+              "profit_factor": 0.4958019997354601,
+              "benchmark_mean_net_bps": -10.602597464704122,
+              "edge_vs_benchmark_bps": 0.8122798614530334,
+              "no_trade_pct": 95.6,
+              "fold": 3,
+              "start": "2025-06-11",
+              "frozen_thr_up": 0.47869,
+              "frozen_thr_dn": 0.50244,
+              "test_pass_rate_pct": 9.1
+            },
+            {
+              "trades": 418,
+              "expectancy_bps": -8.757142006335012,
+              "win_rate_pct": 45.933014354066984,
+              "avg_win_gross_bps": 37.89452149740191,
+              "avg_loss_gross_bps": 29.8948384342885,
+              "expectancy_decomposition_bps": -8.75714200633501,
+              "profit_factor": 0.5940116940991715,
+              "benchmark_mean_net_bps": -10.504263195165178,
+              "edge_vs_benchmark_bps": 1.7471211888301643,
+              "no_trade_pct": 95.2,
+              "fold": 4,
+              "start": "2025-09-09",
+              "frozen_thr_up": 0.46381,
+              "frozen_thr_dn": 0.50776,
+              "test_pass_rate_pct": 10.3
+            },
+            {
+              "trades": 395,
+              "expectancy_bps": -10.205870985271616,
+              "win_rate_pct": 47.08860759493671,
+              "avg_win_gross_bps": 44.39124637316375,
+              "avg_loss_gross_bps": 39.89517160091266,
+              "expectancy_decomposition_bps": -10.205870985271616,
+              "profit_factor": 0.6134173463264603,
+              "benchmark_mean_net_bps": -10.66093150012021,
+              "edge_vs_benchmark_bps": 0.45506051484859406,
+              "no_trade_pct": 95.4,
+              "fold": 5,
+              "start": "2025-12-08",
+              "frozen_thr_up": 0.46695,
+              "frozen_thr_dn": 0.50041,
+              "test_pass_rate_pct": 10.38
+            }
+          ],
+          "positive_folds_pct": 0.0,
+          "median_fold_expectancy_bps": -8.757,
+          "pooled_expectancy_bps": -8.557,
+          "pooled_profit_factor": 0.614,
+          "bootstrap_ci95_bps": [
+            -10.231,
+            -7.014
+          ],
+          "total_trades": 2018,
+          "untouched_holdout": {
+            "trades": 834,
+            "expectancy_bps": -9.500278394652042,
+            "win_rate_pct": 44.12470023980815,
+            "avg_win_gross_bps": 33.16980251752543,
+            "avg_loss_gross_bps": 25.29982726950465,
+            "expectancy_decomposition_bps": -9.500278394652053,
+            "profit_factor": 0.5183363353104969,
+            "benchmark_mean_net_bps": -10.80142671551785,
+            "edge_vs_benchmark_bps": 1.301148320865807,
+            "no_trade_pct": 95.2,
+            "note": "frozen model + frozen thresholds, no refit, no tuning"
+          }
+        },
+        "BASE_XASSET_STALE_AWARE": {
+          "feature_count": 61,
+          "folds": [
+            {
+              "trades": 378,
+              "expectancy_bps": -6.890592640400448,
+              "win_rate_pct": 48.94179894179894,
+              "avg_win_gross_bps": 45.522883819116664,
+              "avg_loss_gross_bps": 37.54599753682876,
+              "expectancy_decomposition_bps": -6.890592640400447,
+              "profit_factor": 0.7161577091737354,
+              "benchmark_mean_net_bps": -10.521429047296044,
+              "edge_vs_benchmark_bps": 3.6308364068955963,
+              "no_trade_pct": 95.6,
+              "fold": 1,
+              "start": "2024-12-13",
+              "frozen_thr_up": 0.48534,
+              "frozen_thr_dn": 0.49646,
+              "test_pass_rate_pct": 9.59
+            },
+            {
+              "trades": 417,
+              "expectancy_bps": -8.187481700586009,
+              "win_rate_pct": 47.721822541966425,
+              "avg_win_gross_bps": 35.225982458470014,
+              "avg_loss_gross_bps": 28.68876320357752,
+              "expectancy_decomposition_bps": -8.187481700586016,
+              "profit_factor": 0.5951957558290311,
+              "benchmark_mean_net_bps": -9.11398847438646,
+              "edge_vs_benchmark_bps": 0.9265067738004518,
+              "no_trade_pct": 95.2,
+              "fold": 2,
+              "start": "2025-03-13",
+              "frozen_thr_up": 0.47725,
+              "frozen_thr_dn": 0.50504,
+              "test_pass_rate_pct": 10.19
+            },
+            {
+              "trades": 399,
+              "expectancy_bps": -9.839753099979177,
+              "win_rate_pct": 44.611528822055135,
+              "avg_win_gross_bps": 31.153508333573004,
+              "avg_loss_gross_bps": 24.802651449175052,
+              "expectancy_decomposition_bps": -9.83975309997918,
+              "profit_factor": 0.48955084271306537,
+              "benchmark_mean_net_bps": -10.602597464704122,
+              "edge_vs_benchmark_bps": 0.7628443647249447,
+              "no_trade_pct": 95.4,
+              "fold": 3,
+              "start": "2025-06-11",
+              "frozen_thr_up": 0.48126,
+              "frozen_thr_dn": 0.50831,
+              "test_pass_rate_pct": 9.91
+            },
+            {
+              "trades": 384,
+              "expectancy_bps": -7.85452307886905,
+              "win_rate_pct": 46.35416666666667,
+              "avg_win_gross_bps": 38.95599246994915,
+              "avg_loss_gross_bps": 29.661667582216815,
+              "expectancy_decomposition_bps": -7.854523078869046,
+              "profit_factor": 0.6308415159623373,
+              "benchmark_mean_net_bps": -10.504263195165178,
+              "edge_vs_benchmark_bps": 2.649740116296127,
+              "no_trade_pct": 95.6,
+              "fold": 4,
+              "start": "2025-09-09",
+              "frozen_thr_up": 0.46982,
+              "frozen_thr_dn": 0.5113,
+              "test_pass_rate_pct": 9.48
+            },
+            {
+              "trades": 390,
+              "expectancy_bps": -10.719649566510261,
+              "win_rate_pct": 44.871794871794876,
+              "avg_win_gross_bps": 45.14382413479538,
+              "avg_loss_gross_bps": 38.05038397454974,
+              "expectancy_decomposition_bps": -10.719649566510265,
+              "profit_factor": 0.5953217411208024,
+              "benchmark_mean_net_bps": -10.66093150012021,
+              "edge_vs_benchmark_bps": -0.058718066390051143,
+              "no_trade_pct": 95.5,
+              "fold": 5,
+              "start": "2025-12-08",
+              "frozen_thr_up": 0.46677,
+              "frozen_thr_dn": 0.49406,
+              "test_pass_rate_pct": 10.12
+            }
+          ],
+          "positive_folds_pct": 0.0,
+          "median_fold_expectancy_bps": -8.187,
+          "pooled_expectancy_bps": -8.71,
+          "pooled_profit_factor": 0.609,
+          "bootstrap_ci95_bps": [
+            -10.48,
+            -6.996
+          ],
+          "total_trades": 1968,
+          "untouched_holdout": {
+            "trades": 902,
+            "expectancy_bps": -8.734259442861202,
+            "win_rate_pct": 44.90022172949002,
+            "avg_win_gross_bps": 33.20661196861119,
+            "avg_loss_gross_bps": 24.76253493913146,
+            "expectancy_decomposition_bps": -8.734259442861202,
+            "profit_factor": 0.5440000463544231,
+            "benchmark_mean_net_bps": -10.80142671551785,
+            "edge_vs_benchmark_bps": 2.067167272656648,
+            "no_trade_pct": 94.8,
+            "note": "frozen model + frozen thresholds, no refit, no tuning"
+          }
+        }
+      }
+    },
+    "4h": {
+      "bars": 16,
+      "configs": {
+        "BASE": {
+          "feature_count": 37,
+          "folds": [
+            {
+              "trades": 159,
+              "expectancy_bps": -18.007592153285625,
+              "win_rate_pct": 43.39622641509434,
+              "avg_win_gross_bps": 76.845687280349,
+              "avg_loss_gross_bps": 73.06177305240548,
+              "expectancy_decomposition_bps": -18.007592153285618,
+              "profit_factor": 0.6169909257286602,
+              "benchmark_mean_net_bps": -11.437706048574798,
+              "edge_vs_benchmark_bps": -6.569886104710828,
+              "no_trade_pct": 98.2,
+              "fold": 1,
+              "start": "2024-12-13",
+              "frozen_thr_up": 0.50984,
+              "frozen_thr_dn": 0.50457,
+              "test_pass_rate_pct": 10.96
+            },
+            {
+              "trades": 160,
+              "expectancy_bps": 2.28223641654493,
+              "win_rate_pct": 52.5,
+              "avg_win_gross_bps": 67.62578552183452,
+              "avg_loss_gross_bps": 48.88694943666984,
+              "expectancy_decomposition_bps": 2.282236416544948,
+              "profit_factor": 1.081592072459535,
+              "benchmark_mean_net_bps": -5.899160213224567,
+              "edge_vs_benchmark_bps": 8.181396629769496,
+              "no_trade_pct": 98.1,
+              "fold": 2,
+              "start": "2025-03-13",
+              "frozen_thr_up": 0.48791,
+              "frozen_thr_dn": 0.5216,
+              "test_pass_rate_pct": 11.97
+            },
+            {
+              "trades": 165,
+              "expectancy_bps": -11.55764616186044,
+              "win_rate_pct": 44.84848484848485,
+              "avg_win_gross_bps": 52.07413935997457,
+              "avg_loss_gross_bps": 45.17030691588011,
+              "expectancy_decomposition_bps": -11.557646161860433,
+              "profit_factor": 0.6201548843272333,
+              "benchmark_mean_net_bps": -10.446068436706636,
+              "edge_vs_benchmark_bps": -1.1115777251538042,
+              "no_trade_pct": 98.1,
+              "fold": 3,
+              "start": "2025-06-11",
+              "frozen_thr_up": 0.51233,
+              "frozen_thr_dn": 0.50601,
+              "test_pass_rate_pct": 10.59
+            },
+            {
+              "trades": 169,
+              "expectancy_bps": -10.543447520051473,
+              "win_rate_pct": 49.70414201183432,
+              "avg_win_gross_bps": 61.73029073255752,
+              "avg_loss_gross_bps": 62.0845535579239,
+              "expectancy_decomposition_bps": -10.543447520051478,
+              "profit_factor": 0.709190756599488,
+              "benchmark_mean_net_bps": -14.555373727403673,
+              "edge_vs_benchmark_bps": 4.0119262073522,
+              "no_trade_pct": 98.0,
+              "fold": 4,
+              "start": "2025-09-09",
+              "frozen_thr_up": 0.5171,
+              "frozen_thr_dn": 0.50298,
+              "test_pass_rate_pct": 10.25
+            },
+            {
+              "trades": 142,
+              "expectancy_bps": -17.642092760827104,
+              "win_rate_pct": 44.36619718309859,
+              "avg_win_gross_bps": 72.66517608001973,
+              "avg_loss_gross_bps": 71.68459829213533,
+              "expectancy_decomposition_bps": -17.642092760827094,
+              "profit_factor": 0.6117860146645884,
+              "benchmark_mean_net_bps": -12.689342744606417,
+              "edge_vs_benchmark_bps": -4.952750016220687,
+              "no_trade_pct": 98.4,
+              "fold": 5,
+              "start": "2025-12-08",
+              "frozen_thr_up": 0.50922,
+              "frozen_thr_dn": 0.50753,
+              "test_pass_rate_pct": 7.96
+            }
+          ],
+          "positive_folds_pct": 20.0,
+          "median_fold_expectancy_bps": -11.558,
+          "pooled_expectancy_bps": -10.933,
+          "pooled_profit_factor": 0.706,
+          "bootstrap_ci95_bps": [
+            -17.112,
+            -5.65
+          ],
+          "total_trades": 795,
+          "untouched_holdout": {
+            "trades": 316,
+            "expectancy_bps": -11.117613771526237,
+            "win_rate_pct": 45.25316455696203,
+            "avg_win_gross_bps": 56.77146357664074,
+            "avg_loss_gross_bps": 48.96812279342148,
+            "expectancy_decomposition_bps": -11.117613771526235,
+            "profit_factor": 0.6556221110918394,
+            "benchmark_mean_net_bps": -13.613640225283183,
+            "edge_vs_benchmark_bps": 2.4960264537569454,
+            "no_trade_pct": 98.2,
+            "note": "frozen model + frozen thresholds, no refit, no tuning"
+          }
+        },
+        "BASE_XASSET_STALE_AWARE": {
+          "feature_count": 61,
+          "folds": [
+            {
+              "trades": 164,
+              "expectancy_bps": -13.026246146161753,
+              "win_rate_pct": 44.51219512195122,
+              "avg_win_gross_bps": 81.30802866636026,
+              "avg_loss_gross_bps": 70.67901605071236,
+              "expectancy_decomposition_bps": -13.026246146161753,
+              "profit_factor": 0.7090213375836898,
+              "benchmark_mean_net_bps": -11.437706048574798,
+              "edge_vs_benchmark_bps": -1.5885400975869552,
+              "no_trade_pct": 98.1,
+              "fold": 1,
+              "start": "2024-12-13",
+              "frozen_thr_up": 0.52106,
+              "frozen_thr_dn": 0.49288,
+              "test_pass_rate_pct": 11.4
+            },
+            {
+              "trades": 150,
+              "expectancy_bps": -14.33085317544376,
+              "win_rate_pct": 43.333333333333336,
+              "avg_win_gross_bps": 65.37217201136396,
+              "avg_loss_gross_bps": 57.63316655359083,
+              "expectancy_decomposition_bps": -14.330853175443755,
+              "profit_factor": 0.6260748655350483,
+              "benchmark_mean_net_bps": -5.899160213224567,
+              "edge_vs_benchmark_bps": -8.431692962219193,
+              "no_trade_pct": 98.3,
+              "fold": 2,
+              "start": "2025-03-13",
+              "frozen_thr_up": 0.51489,
+              "frozen_thr_dn": 0.50276,
+              "test_pass_rate_pct": 8.69
+            },
+            {
+              "trades": 186,
+              "expectancy_bps": -13.131394560240757,
+              "win_rate_pct": 44.086021505376344,
+              "avg_win_gross_bps": 50.90448951205808,
+              "avg_loss_gross_bps": 45.73661084801484,
+              "expectancy_decomposition_bps": -13.131394560240754,
+              "profit_factor": 0.5786433053600328,
+              "benchmark_mean_net_bps": -10.446068436706636,
+              "edge_vs_benchmark_bps": -2.685326123534123,
+              "no_trade_pct": 97.8,
+              "fold": 3,
+              "start": "2025-06-11",
+              "frozen_thr_up": 0.51543,
+              "frozen_thr_dn": 0.50102,
+              "test_pass_rate_pct": 11.47
+            },
+            {
+              "trades": 156,
+              "expectancy_bps": -2.683838013160783,
+              "win_rate_pct": 50.0,
+              "avg_win_gross_bps": 70.69477754768398,
+              "avg_loss_gross_bps": 56.06245357400554,
+              "expectancy_decomposition_bps": -2.683838013160778,
+              "profit_factor": 0.9187484609497814,
+              "benchmark_mean_net_bps": -14.555373727403673,
+              "edge_vs_benchmark_bps": 11.87153571424289,
+              "no_trade_pct": 98.2,
+              "fold": 4,
+              "start": "2025-09-09",
+              "frozen_thr_up": 0.52508,
+              "frozen_thr_dn": 0.50893,
+              "test_pass_rate_pct": 9.39
+            },
+            {
+              "trades": 144,
+              "expectancy_bps": -19.224504821529376,
+              "win_rate_pct": 40.97222222222222,
+              "avg_win_gross_bps": 76.97388426727059,
+              "avg_loss_gross_bps": 69.05632783610817,
+              "expectancy_decomposition_bps": -19.22450482152937,
+              "profit_factor": 0.5880333204745062,
+              "benchmark_mean_net_bps": -12.689342744606417,
+              "edge_vs_benchmark_bps": -6.535162076922957,
+              "no_trade_pct": 98.3,
+              "fold": 5,
+              "start": "2025-12-08",
+              "frozen_thr_up": 0.51125,
+              "frozen_thr_dn": 0.50098,
+              "test_pass_rate_pct": 8.3
+            }
+          ],
+          "positive_folds_pct": 0.0,
+          "median_fold_expectancy_bps": -13.131,
+          "pooled_expectancy_bps": -12.394,
+          "pooled_profit_factor": 0.678,
+          "bootstrap_ci95_bps": [
+            -18.238,
+            -8.222
+          ],
+          "total_trades": 800,
+          "untouched_holdout": {
+            "trades": 367,
+            "expectancy_bps": -8.539386472248545,
+            "win_rate_pct": 44.95912806539509,
+            "avg_win_gross_bps": 59.06340458467494,
+            "avg_loss_gross_bps": 45.591171246468214,
+            "expectancy_decomposition_bps": -8.539386472248538,
+            "profit_factor": 0.7209156139413819,
+            "benchmark_mean_net_bps": -13.613640225283183,
+            "edge_vs_benchmark_bps": 5.074253753034638,
+            "no_trade_pct": 97.9,
+            "note": "frozen model + frozen thresholds, no refit, no tuning"
+          }
+        }
+      }
+    },
+    "1d": {
+      "bars": 96,
+      "configs": {
+        "BASE": {
+          "feature_count": 37,
+          "folds": [
+            {
+              "trades": 39,
+              "expectancy_bps": 7.621856806278661,
+              "win_rate_pct": 56.41025641025641,
+              "avg_win_gross_bps": 162.19950773666702,
+              "avg_loss_gross_bps": 169.47863263304743,
+              "expectancy_decomposition_bps": 7.62185680627866,
+              "profit_factor": 1.0974234979736508,
+              "benchmark_mean_net_bps": -21.37518897681302,
+              "edge_vs_benchmark_bps": 28.997045783091682,
+              "no_trade_pct": 99.5,
+              "fold": 1,
+              "start": "2024-12-13",
+              "frozen_thr_up": 0.56267,
+              "frozen_thr_dn": 0.52809,
+              "test_pass_rate_pct": 8.48
+            },
+            {
+              "trades": 60,
+              "expectancy_bps": -14.610184731720995,
+              "win_rate_pct": 46.666666666666664,
+              "avg_win_gross_bps": 140.94714557684915,
+              "avg_loss_gross_bps": 131.97284875171988,
+              "expectancy_decomposition_bps": -14.610184731720993,
+              "profit_factor": 0.8070469345875894,
+              "benchmark_mean_net_bps": 2.619543614346782,
+              "edge_vs_benchmark_bps": -17.229728346067777,
+              "no_trade_pct": 99.3,
+              "fold": 2,
+              "start": "2025-03-13",
+              "frozen_thr_up": 0.52717,
+              "frozen_thr_dn": 0.53617,
+              "test_pass_rate_pct": 20.3
+            },
+            {
+              "trades": 46,
+              "expectancy_bps": -27.22149011750771,
+              "win_rate_pct": 41.30434782608695,
+              "avg_win_gross_bps": 98.1112459326889,
+              "avg_loss_gross_bps": 98.38156363431271,
+              "expectancy_decomposition_bps": -27.2214901175077,
+              "profit_factor": 0.5720918578918808,
+              "benchmark_mean_net_bps": -8.281910397434503,
+              "edge_vs_benchmark_bps": -18.93957972007321,
+              "no_trade_pct": 99.5,
+              "fold": 3,
+              "start": "2025-06-11",
+              "frozen_thr_up": 0.57434,
+              "frozen_thr_dn": 0.53048,
+              "test_pass_rate_pct": 12.29
+            },
+            {
+              "trades": 44,
+              "expectancy_bps": 8.833563204979573,
+              "win_rate_pct": 56.81818181818182,
+              "avg_win_gross_bps": 135.38423159842603,
+              "avg_loss_gross_bps": 134.5225794179763,
+              "expectancy_decomposition_bps": 8.83356320497959,
+              "profit_factor": 1.1415465511866678,
+              "benchmark_mean_net_bps": -24.287631897873272,
+              "edge_vs_benchmark_bps": 33.121195102852845,
+              "no_trade_pct": 99.5,
+              "fold": 4,
+              "start": "2025-09-09",
+              "frozen_thr_up": 0.60425,
+              "frozen_thr_dn": 0.52458,
+              "test_pass_rate_pct": 7.95
+            },
+            {
+              "trades": 33,
+              "expectancy_bps": 46.00872489876242,
+              "win_rate_pct": 60.60606060606061,
+              "avg_win_gross_bps": 162.45971800901336,
+              "avg_loss_gross_bps": 107.76203373239288,
+              "expectancy_decomposition_bps": 46.00872489876242,
+              "profit_factor": 1.9917574865815197,
+              "benchmark_mean_net_bps": -23.33968749802917,
+              "edge_vs_benchmark_bps": 69.3484123967916,
+              "no_trade_pct": 99.6,
+              "fold": 5,
+              "start": "2025-12-08",
+              "frozen_thr_up": 0.59143,
+              "frozen_thr_dn": 0.5125,
+              "test_pass_rate_pct": 6.64
+            }
+          ],
+          "positive_folds_pct": 60.0,
+          "median_fold_expectancy_bps": 7.622,
+          "pooled_expectancy_bps": 0.34,
+          "pooled_profit_factor": 1.005,
+          "bootstrap_ci95_bps": [
+            -25.848,
+            15.151
+          ],
+          "total_trades": 222,
+          "untouched_holdout": {
+            "trades": 89,
+            "expectancy_bps": 4.956794611352917,
+            "win_rate_pct": 55.0561797752809,
+            "avg_win_gross_bps": 117.80796938149565,
+            "avg_loss_gross_bps": 111.03589448207191,
+            "expectancy_decomposition_bps": 4.956794611352929,
+            "profit_factor": 1.0911206386952743,
+            "benchmark_mean_net_bps": -24.80332006659876,
+            "edge_vs_benchmark_bps": 29.760114677951677,
+            "no_trade_pct": 99.5,
+            "note": "frozen model + frozen thresholds, no refit, no tuning"
+          }
+        },
+        "BASE_XASSET_STALE_AWARE": {
+          "feature_count": 61,
+          "folds": [
+            {
+              "trades": 36,
+              "expectancy_bps": 4.698988828161364,
+              "win_rate_pct": 52.77777777777778,
+              "avg_win_gross_bps": 155.4233125717797,
+              "avg_loss_gross_bps": 142.58113770882386,
+              "expectancy_decomposition_bps": 4.69898882816136,
+              "profit_factor": 1.0652164482505693,
+              "benchmark_mean_net_bps": -21.37518897681302,
+              "edge_vs_benchmark_bps": 26.074177804974386,
+              "no_trade_pct": 99.6,
+              "fold": 1,
+              "start": "2024-12-13",
+              "frozen_thr_up": 0.54984,
+              "frozen_thr_dn": 0.51338,
+              "test_pass_rate_pct": 8.75
+            },
+            {
+              "trades": 46,
+              "expectancy_bps": -0.1452982217302191,
+              "win_rate_pct": 52.17391304347826,
+              "avg_win_gross_bps": 121.2450587568852,
+              "avg_loss_gross_bps": 111.66205128931065,
+              "expectancy_decomposition_bps": -0.1452982217302074,
+              "profit_factor": 0.9975028748119149,
+              "benchmark_mean_net_bps": 2.619543614346782,
+              "edge_vs_benchmark_bps": -2.7648418360770015,
+              "no_trade_pct": 99.5,
+              "fold": 2,
+              "start": "2025-03-13",
+              "frozen_thr_up": 0.58161,
+              "frozen_thr_dn": 0.50685,
+              "test_pass_rate_pct": 18.4
+            },
+            {
+              "trades": 38,
+              "expectancy_bps": -4.245017993611706,
+              "win_rate_pct": 52.63157894736842,
+              "avg_win_gross_bps": 94.69985337320304,
+              "avg_loss_gross_bps": 93.07265284562807,
+              "expectancy_decomposition_bps": -4.245017993611709,
+              "profit_factor": 0.9130544872401584,
+              "benchmark_mean_net_bps": -8.281910397434503,
+              "edge_vs_benchmark_bps": 4.0368924038227965,
+              "no_trade_pct": 99.6,
+              "fold": 3,
+              "start": "2025-06-11",
+              "frozen_thr_up": 0.60115,
+              "frozen_thr_dn": 0.52664,
+              "test_pass_rate_pct": 11.11
+            },
+            {
+              "trades": 36,
+              "expectancy_bps": 3.6865486407675534,
+              "win_rate_pct": 52.77777777777778,
+              "avg_win_gross_bps": 149.8831647663719,
+              "avg_loss_gross_bps": 138.53319879373137,
+              "expectancy_decomposition_bps": 3.6865486407675756,
+              "profit_factor": 1.0525593533952815,
+              "benchmark_mean_net_bps": -24.287631897873272,
+              "edge_vs_benchmark_bps": 27.974180538640827,
+              "no_trade_pct": 99.6,
+              "fold": 4,
+              "start": "2025-09-09",
+              "frozen_thr_up": 0.61272,
+              "frozen_thr_dn": 0.53015,
+              "test_pass_rate_pct": 6.96
+            },
+            {
+              "trades": 33,
+              "expectancy_bps": 9.394319176735559,
+              "win_rate_pct": 51.515151515151516,
+              "avg_win_gross_bps": 156.1174146036736,
+              "avg_loss_gross_bps": 125.87396971438612,
+              "expectancy_decomposition_bps": 9.394319176735545,
+              "profit_factor": 1.142601142387655,
+              "benchmark_mean_net_bps": -23.33968749802917,
+              "edge_vs_benchmark_bps": 32.73400667476473,
+              "no_trade_pct": 99.6,
+              "fold": 5,
+              "start": "2025-12-08",
+              "frozen_thr_up": 0.59273,
+              "frozen_thr_dn": 0.51233,
+              "test_pass_rate_pct": 7.91
+            }
+          ],
+          "positive_folds_pct": 60.0,
+          "median_fold_expectancy_bps": 3.687,
+          "pooled_expectancy_bps": 2.349,
+          "pooled_profit_factor": 1.038,
+          "bootstrap_ci95_bps": [
+            -7.909,
+            17.712
+          ],
+          "total_trades": 189,
+          "untouched_holdout": {
+            "trades": 115,
+            "expectancy_bps": -18.763236817874876,
+            "win_rate_pct": 45.21739130434783,
+            "avg_win_gross_bps": 116.63909734731871,
+            "avg_loss_gross_bps": 112.2699253351775,
+            "expectancy_decomposition_bps": -18.76323681787486,
+            "profit_factor": 0.7198791703877513,
+            "benchmark_mean_net_bps": -24.80332006659876,
+            "edge_vs_benchmark_bps": 6.040083248723886,
+            "no_trade_pct": 99.3,
+            "note": "frozen model + frozen thresholds, no refit, no tuning"
+          }
+        }
+      }
+    }
+  },
+  "configs": [
+    "BASE",
+    "BASE_XASSET_STALE_AWARE"
+  ],
+  "gates": [
+    {
+      "horizon": "1h",
+      "config": "BASE",
+      "checks": {
+        "median_net_gt_0": false,
+        "positive_folds_ge_75": false,
+        "profit_factor_gt_1": false,
+        "bootstrap_lower_gt_0": false,
+        "beats_benchmark": true
+      },
+      "verdict": "NO-GO"
+    },
+    {
+      "horizon": "1h",
+      "config": "BASE_XASSET_STALE_AWARE",
+      "checks": {
+        "median_net_gt_0": false,
+        "positive_folds_ge_75": false,
+        "profit_factor_gt_1": false,
+        "bootstrap_lower_gt_0": false,
+        "beats_benchmark": true
+      },
+      "verdict": "NO-GO"
+    },
+    {
+      "horizon": "4h",
+      "config": "BASE",
+      "checks": {
+        "median_net_gt_0": false,
+        "positive_folds_ge_75": false,
+        "profit_factor_gt_1": false,
+        "bootstrap_lower_gt_0": false,
+        "beats_benchmark": false
+      },
+      "verdict": "NO-GO"
+    },
+    {
+      "horizon": "4h",
+      "config": "BASE_XASSET_STALE_AWARE",
+      "checks": {
+        "median_net_gt_0": false,
+        "positive_folds_ge_75": false,
+        "profit_factor_gt_1": false,
+        "bootstrap_lower_gt_0": false,
+        "beats_benchmark": false
+      },
+      "verdict": "NO-GO"
+    },
+    {
+      "horizon": "1d",
+      "config": "BASE",
+      "checks": {
+        "median_net_gt_0": true,
+        "positive_folds_ge_75": false,
+        "profit_factor_gt_1": true,
+        "bootstrap_lower_gt_0": false,
+        "beats_benchmark": true
+      },
+      "verdict": "NO-GO"
+    },
+    {
+      "horizon": "1d",
+      "config": "BASE_XASSET_STALE_AWARE",
+      "checks": {
+        "median_net_gt_0": true,
+        "positive_folds_ge_75": false,
+        "profit_factor_gt_1": true,
+        "bootstrap_lower_gt_0": false,
+        "beats_benchmark": true
+      },
+      "verdict": "NO-GO"
+    }
+  ],
+  "lookahead_checks": {
+    "threshold_frozen_from_train_and_used": true,
+    "causal_chronological_selection": true,
+    "early_stopping_purged": true,
+    "barriers_use_high_low": true,
+    "external_staleness_capped": true,
+    "untouched_holdout": true
+  }
+}
