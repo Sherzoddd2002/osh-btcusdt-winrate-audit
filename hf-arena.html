@@ -182,8 +182,9 @@ footer{border-top:1px solid rgba(148,169,190,.16);margin-top:48px;padding:22px 0
       <button id="btnStop" class="ghost">Stop</button>
       <button id="btnKill" class="danger">KILL</button>
     </div>
-    <label class="chk"><input type="checkbox" id="confirmOrders"> Testnet'ga <b>haqiqiy demo order</b> yuborishni tasdiqlayman (faqat champion, 1x, ISOLATED, max $100)</label>
-    <button id="btnStartOrders" class="danger">5. Tasdiq bilan demo order'larni yoqish</button>
+    <div class="note" style="margin-top:12px"><b>Testnet order execution: LOCKED.</b> 6 ta taktikaning barchasi komissiya va slippage hisoblangan replay’da NO-GO. Hozir faqat PAPER/SHADOW ishlaydi; buyurtma tugmasi UI va backend darajasida bloklangan.</div>
+    <label class="chk"><input type="checkbox" id="confirmOrders" disabled> Testnet order yuborish — hozircha bloklangan (GO tekshiruvidan o‘tmagan)</label>
+    <button id="btnStartOrders" class="danger" disabled>5. Testnet order yuborish bloklangan</button>
     <div class="statusline" id="statusln">Holat: lokal dvigatelga ulanmagan. Avval START_HF_ARENA.bat ni ishga tushiring, keyin &laquo;Local engine'ga ulanish&raquo; tugmasini bosing.</div>
   </div>
 
@@ -195,8 +196,7 @@ footer{border-top:1px solid rgba(148,169,190,.16);margin-top:48px;padding:22px 0
 
 <section id="live">
   <h2>4 · Jonli leaderboard</h2>
-  <p class="lead">Dvigatel ishlaganda har 20 soniyada yangilanadi. Barcha 6 model paper hisobda yuradi;
-  real Testnet order faqat tanlangan champion uchun yuboriladi.</p>
+  <p class="lead">Dvigatel ishlaganda har 20 soniyada yangilanadi. Barcha 6 taktika bir xil shamlar va muzlatilgan signal ehtimollarida PAPER/SHADOW hisobida yuradi. Testnet order yuborish research NO-GO sabab bloklangan.</p>
   <div class="card"><table id="tbl-live">
     <thead><tr><th>#</th><th>Model</th><th>Savdo</th><th>WR net</th><th>PF net</th>
       <th>Net balans</th><th>Gross balans</th><th>Komissiya</th><th>DD</th><th>Ochiq</th></tr></thead>
