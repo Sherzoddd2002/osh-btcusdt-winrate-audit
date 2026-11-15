@@ -104,35 +104,39 @@ The public GitHub Pages dashboard is informational only. It cannot access a loca
 
 ### Setup (Windows PowerShell)
 
-Use Demo Trading API credentials only. Existing local environment names supported by the app are `BINANCE_DEMO_API_KEY` / `BINANCE_DEMO_API_SECRET`, `BINANCE_FUTURES_API_KEY` / `BINANCE_FUTURES_API_SECRET`, or `BINANCE_API_KEY` / `BINANCE_API_SECRET` (also `BINANCE_SECRET_KEY`). The API host is hard-coded to `https://demo-fapi.binance.com`; these names do not provide a way to select the Live API.
+Use Binance USDⓈ-M Futures **Demo Trading API keys only**. Do not paste Live keys. The API host is hard-coded to `https://demo-fapi.binance.com`.
 
-Install the additional dependencies:
+Install the dependencies (including Windows Credential Manager support):
 
 ~~~powershell
-python -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ~~~
 
-Freeze the H96 C2 model once using only pre-holdout candles. Use the local discovery-report path that was generated during the time-exit sweep:
+Freeze the H96 C2 model once using only pre-holdout candles. Use the local discovery-report path generated during the time-exit sweep:
 
 ~~~powershell
-python -m demo_executor.prepare_model --table public.btcusdt_15m --discovery-report .\development_time_exit_sweep_1d.json --historical-data-end-utc "2026-10-31T23:45:00Z" --forward-start-utc "2026-11-01T00:00:00Z"
+.\.venv\Scripts\python.exe -m demo_executor.prepare_model --table public.btcusdt_15m --discovery-report .\development_time_exit_sweep_1d.json --historical-data-end-utc "2026-10-31T23:45:00Z" --forward-start-utc "2026-11-01T00:00:00Z"
 ~~~
 
 The local `forward_paper_h96_c2_model.joblib` and `forward_paper_h96_c2_lock.json` files are ignored by Git. Existing artifacts are hash-checked and reused; changed artifacts are not silently retrained.
 
-First check the Demo API connection with order sending disabled:
-
-~~~dotenv
-OSH_ENABLE_DEMO_ORDERS=false
-~~~
-
-Then start the local app:
+Start the local engine on your PC:
 
 ~~~powershell
-python -m demo_executor.app
+$env:OSH_ENABLE_DEMO_ORDERS = "false"
+.\.venv\Scripts\python.exe -m demo_executor.app
 ~~~
 
-Open `http://127.0.0.1:8765` and press **Demo API check**. Confirm that it reports the Futures Demo base URL, the expected BTCUSDT filters, One-way position mode, and your Demo balance. Only after this check, set `OSH_ENABLE_DEMO_ORDERS=true` in the local `.env`, restart the app, and press **Start strategy**.
+Open the GitHub Pages dashboard at `https://sherzoddd2002.github.io/osh-btcusdt-winrate-audit/` and use its **H96 C2 Demo terminal** section:
+
+1. Press **Connect local engine**. In Microsoft Edge, allow this GitHub Pages origin to access localhost/local network when prompted. The browser talks only to `127.0.0.1:8765`.
+2. Enter your Demo API Key and Secret and press **Save API on this PC**. The backend stores them in Windows Credential Manager; they are not written to GitHub, browser local storage, or the repository.
+3. Press **Check Binance Demo**. Verify the fixed Demo URL, available balance, BTCUSDT exchange filters, and One-way position mode.
+4. Press **Start H96 C2** and explicitly confirm Demo order sending. This button is the only normal path that enables Demo entries for the current app process. No Live endpoint exists.
+5. **Stop new entries** prevents new trades while the engine continues managing an existing Demo position.
+6. **Reset saved API** first disables new entries, then checks the Demo account. It refuses to delete credentials if a position or regular/Algo order is present. On a safe reset, only the API credentials are deleted; model, cooldown state and audit log are preserved.
+
+The local Python engine must remain running on your computer while the GitHub Pages controls are in use. If the engine or PC stops, open Demo orders at Binance may remain; inspect the account before restarting.
 
 ### Execution controls
 
