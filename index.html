@@ -69,6 +69,26 @@ th:first-child,td:first-child{text-align:left}tr:last-child td{border-bottom:0}
 footer{margin:38px 0 0;padding:22px 0 35px;border-top:1px solid rgba(148,169,190,.15);display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;color:var(--muted);font-size:12px}
 footer .links{display:flex;gap:16px;flex-wrap:wrap}
 .green{color:var(--green)}.red{color:var(--red)}.amber{color:var(--amber)}.cyan{color:var(--cyan)}
+.demo-console{border:1px solid rgba(85,214,208,.3);background:linear-gradient(145deg,rgba(14,43,58,.97),rgba(10,24,40,.98));border-radius:20px;padding:22px}
+.demo-console .desc{color:var(--muted);font-size:13px}
+.demo-status{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+.demo-stat{padding:13px;border:1px solid rgba(148,169,190,.16);border-radius:12px;background:rgba(255,255,255,.025)}
+.demo-stat small{display:block;color:var(--muted);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.demo-stat b{display:block;font-size:18px;margin-top:5px;overflow-wrap:anywhere}
+.demo-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:17px}
+.demo-field label{display:block;color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.demo-field input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#071624;color:var(--ink);font:inherit;outline:none}
+.demo-field input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(85,214,208,.12)}
+.demo-actions{display:flex;gap:9px;flex-wrap:wrap;margin:15px 0}
+.demo-actions button{border:1px solid #35546c;border-radius:10px;padding:10px 14px;color:var(--ink);background:#18344c;font-weight:800;cursor:pointer}
+.demo-actions button.primary{background:#176b62;border-color:#329987}
+.demo-actions button.danger{background:#4c2730;border-color:#874650}
+.demo-actions button:disabled{opacity:.4;cursor:not-allowed}
+.demo-message{margin-top:10px;min-height:26px;padding:10px 12px;border-radius:9px;background:rgba(255,255,255,.025);color:var(--muted);font:12px/1.6 ui-monospace,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.demo-message.error{color:var(--red);border:1px solid rgba(255,124,134,.28)}
+.demo-message.success{color:var(--green);border:1px solid rgba(85,214,162,.25)}
+.demo-log{max-height:230px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:11px/1.6 ui-monospace,Consolas,monospace;color:#b9c8d6}
+@media(max-width:700px){.demo-status{grid-template-columns:repeat(2,1fr)}.demo-fields{grid-template-columns:1fr}}
 @media(max-width:900px){.hero{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}.strategy{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:650px){.shell{width:min(100% - 24px,1160px)}nav{align-items:flex-start;flex-direction:column}.navlinks{gap:12px}.hero{padding-top:25px}.hero-main{padding:25px 21px}.grid2,.limits{grid-template-columns:1fr}.checks{grid-template-columns:1fr}.fold{grid-template-columns:48px 1fr 82px;gap:8px}.panel{padding:17px}.metric{padding:15px}.metric .number{font-size:25px}.strategy{grid-template-columns:repeat(2,1fr)}}
 </style>
@@ -77,7 +97,7 @@ footer .links{display:flex;gap:16px;flex-wrap:wrap}
 <div class="shell">
 <nav>
   <div class="brand"><div class="logo">O</div><span>OSH <span class="cyan">QUANT LAB</span></span></div>
-  <div class="navlinks"><a href="#natija">Natija</a><a href="#kapital">Kapital</a><a href="#foldlar">OOS foldlar</a><a href="#diagnostika">Diagnostika</a><a href="#model">Model</a></div>
+  <div class="navlinks"><a href="#natija">Natija</a><a href="#kapital">Kapital</a><a href="#foldlar">OOS foldlar</a><a href="#diagnostika">Diagnostika</a><a href="#model">Model</a><a href="#demo-terminal">Demo terminal</a></div>
   <div class="status"><i class="pulse"></i> PAPER ONLY · LIVE OFF</div>
 </nav>
 <section class="hero" id="natija">
@@ -210,13 +230,190 @@ footer .links{display:flex;gap:16px;flex-wrap:wrap}
 </section>
 
 
-<section style="margin:22px 0;padding:20px 22px;border:1px solid #2b5f63;border-radius:16px;background:linear-gradient(120deg,rgba(23,107,98,.16),rgba(16,34,55,.88));">
-  <div style="font-size:11px;letter-spacing:.13em;font-weight:800;color:#70d8cb;">LOCAL EXECUTION · BINANCE FUTURES DEMO</div>
-  <h2 style="margin:7px 0 5px;">H96 C2 Demo Terminal</h2>
-  <p style="margin:0 0 13px;color:#a9bdcd;max-width:760px;">GitHub Pages API kalitlarini o‘qimaydi va order yubormaydi. Demo sinov terminali alohida ravishda o‘z kompyuteringizda ishlaydi; lokal serverni ishga tushirgandan keyin shu havolani oching.</p>
-  <a href="http://127.0.0.1:8765" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:10px 15px;border-radius:9px;background:#176b62;color:#f2fffb;text-decoration:none;font-weight:800;">Lokal Demo terminalini ochish ↗</a>
-  <div style="margin-top:10px;font-size:11px;color:#91a6b9;">Faqat Binance USDⓈ-M Futures Demo · API secret lokal .env’da qoladi · Live trading yo‘q</div>
+<section class="section" id="demo-terminal">
+  <div class="section-head"><h2>H96 C2 · Binance Futures Demo terminal</h2><span class="section-sub">GitHub Pages UI · local execution engine</span></div>
+  <div class="demo-console">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <b>OSH QUANT LAB · DEMO ONLY</b>
+      <span class="pill fail" id="demoConnectionBadge">LOCAL ENGINE DISCONNECTED</span>
+    </div>
+    <p class="desc">Sayt GitHub Pages’da ishlaydi. Model, API kalitlari va order boshqaruvi sizning kompyuteringizdagi lokal engine’da bajariladi. GitHub’ga API key yoki secret yuborilmaydi.</p>
+    <div class="demo-status">
+      <div class="demo-stat"><small>Credentials</small><b id="demoCredentials">—</b></div>
+      <div class="demo-stat"><small>Engine</small><b id="demoEngine">DISCONNECTED</b></div>
+      <div class="demo-stat"><small>Available USDT</small><b id="demoBalance">—</b></div>
+      <div class="demo-stat"><small>Frozen model</small><b id="demoModel">—</b></div>
+      <div class="demo-stat"><small>Order sending</small><b id="demoOrders">OFF</b></div>
+      <div class="demo-stat"><small>Current position</small><b id="demoPosition">—</b></div>
+      <div class="demo-stat"><small>Last candle UTC</small><b id="demoCandle">—</b></div>
+      <div class="demo-stat"><small>Last decision</small><b id="demoDecision">—</b></div>
+    </div>
+    <div class="demo-fields">
+      <div class="demo-field"><label for="demoApiKey">Binance Futures Demo API Key</label><input id="demoApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="Demo API Key"></div>
+      <div class="demo-field"><label for="demoApiSecret">Binance Futures Demo API Secret</label><input id="demoApiSecret" type="password" autocomplete="new-password" spellcheck="false" placeholder="Demo API Secret"></div>
+    </div>
+    <div class="demo-actions">
+      <button class="primary" id="demoConnectLocal">1 · Connect local engine</button>
+      <button id="demoSaveKeys" disabled>2 · Save API on this PC</button>
+      <button id="demoCheck" disabled>3 · Check Binance Demo</button>
+      <button class="primary" id="demoStart" disabled>Start H96 C2</button>
+      <button id="demoStop" disabled>Stop new entries</button>
+      <button class="danger" id="demoReset" disabled>Reset saved API</button>
+    </div>
+    <div class="desc"><b>Saqlash:</b> API kalitlari Windows Credential Manager’da saqlanadi. Brauzer Local Storage’ida ham, GitHub repository’da ham saqlanmaydi. Reset tugmasi kalitlarni faqat ochiq pozitsiya/order bo‘lmaganda o‘chiradi. Model, cooldown va audit log saqlanib qoladi.</div>
+    <div class="desc"><b>Edge ruxsati:</b> birinchi ulanishda Microsoft Edge localhost / local network access ruxsatini so‘rasa, ushbu sayt uchun Allow bosing. Lokal server ishlayotgan bo‘lishi shart.</div>
+    <div class="demo-message" id="demoMessage">Avval lokal engine’ni ishga tushiring, so‘ng Connect local engine tugmasini bosing.</div>
+    <div style="margin-top:14px"><b style="font-size:12px">Signal & risk</b></div>
+    <div class="demo-status">
+      <div class="demo-stat"><small>p(LONG)</small><b id="demoPLong">—</b></div>
+      <div class="demo-stat"><small>p(SHORT)</small><b id="demoPShort">—</b></div>
+      <div class="demo-stat"><small>LONG threshold</small><b id="demoTLong">—</b></div>
+      <div class="demo-stat"><small>SHORT threshold</small><b id="demoTShort">—</b></div>
+    </div>
+    <div style="margin-top:10px"><b style="font-size:12px">Execution log</b></div>
+    <div class="demo-log" id="demoLog">No events.</div>
+    <div class="callout"><b>Xavfsizlik:</b> Faqat USDⓈ-M Futures Demo ishlatiladi. API host kodda Demo manziliga mahkamlangan. Start tugmasi bosilganda order yuborishga aniq tasdiq so‘raladi. Strategiya tarixiy natijalar bo‘yicha hali DISCOVERY ONLY / NO-GO: WR 58.92%, PF 1.1596. Bu real foyda kafolati emas.</div>
+  </div>
 </section>
+
+<script>
+(() => {
+  const LOCAL_API = "http://127.0.0.1:8765";
+  let sessionToken = "";
+  let connected = false;
+  let actionMessage = "";
+  let actionKind = "";
+  const $d = id => document.getElementById(id);
+  const setMessage = (message, kind = "") => {
+    actionMessage = message || "";
+    actionKind = kind;
+    const el = $d("demoMessage");
+    el.textContent = actionMessage;
+    el.className = "demo-message" + (kind ? " " + kind : "");
+  };
+  const format = (value, digits = 3) =>
+    value === null || value === undefined || !Number.isFinite(Number(value)) ? "—" : Number(value).toFixed(digits);
+  async function request(path, method = "GET", body = undefined, needsAuth = true) {
+    const headers = {};
+    if (needsAuth && sessionToken) headers["X-OSH-Session"] = sessionToken;
+    if (body !== undefined) headers["Content-Type"] = "application/json";
+    const response = await fetch(LOCAL_API + path, {
+      method, mode: "cors", cache: "no-store", headers,
+      body: body === undefined ? undefined : JSON.stringify(body)
+    });
+    const payload = await response.json().catch(() => ({ detail: "Server javobini JSON sifatida o‘qib bo‘lmadi." }));
+    if (!response.ok) {
+      const detail = typeof payload.detail === "string" ? payload.detail : JSON.stringify(payload.detail || payload);
+      throw new Error(method + " " + path + " · HTTP " + response.status + ": " + (detail || response.statusText));
+    }
+    return payload;
+  }
+  function render(status) {
+    $d("demoConnectionBadge").textContent = "LOCAL ENGINE CONNECTED";
+    $d("demoConnectionBadge").className = "pill pass";
+    $d("demoCredentials").textContent = status.credentials_configured ? "SAVED" : "MISSING";
+    $d("demoEngine").textContent = status.engine_state || "STOPPED";
+    $d("demoBalance").textContent = status.account ? format(status.account.available_balance_usdt, 2) : "—";
+    $d("demoModel").textContent = status.model_ready ? "READY" : "NOT READY";
+    $d("demoOrders").textContent = status.demo_orders_enabled ? "ON" : "OFF";
+    $d("demoPosition").textContent = status.active_trade ? status.active_trade.side + " · " + format(status.active_trade.quantity, 5) + " BTC" : "NONE";
+    $d("demoCandle").textContent = status.last_candle_time_utc || "—";
+    const signal = status.last_signal || {};
+    $d("demoDecision").textContent = signal.decision || "—";
+    $d("demoPLong").textContent = format(signal.p_long, 5);
+    $d("demoPShort").textContent = format(signal.p_short, 5);
+    $d("demoTLong").textContent = format(signal.threshold_long, 5);
+    $d("demoTShort").textContent = format(signal.threshold_short, 5);
+    $d("demoSaveKeys").disabled = !connected || !!status.accepting_new_entries || !!status.active_trade;
+    $d("demoCheck").disabled = !connected || !status.credentials_configured;
+    $d("demoStart").disabled = !connected || !status.credentials_configured || !status.model_ready || !!status.accepting_new_entries;
+    $d("demoStop").disabled = !connected || !status.accepting_new_entries;
+    $d("demoReset").disabled = !connected || !status.credentials_configured;
+    const events = (status.events || []).map(item =>
+      item.time_utc + "  " + item.event + "  " +
+      Object.entries(item).filter(([key]) => !["time_utc", "event"].includes(key))
+        .map(([key, value]) => key + "=" + JSON.stringify(value)).join(" ")
+    );
+    $d("demoLog").textContent = events.join("\n") || "No events.";
+    if (!actionMessage && status.last_error) setMessage(status.last_error, "error");
+  }
+  async function refresh() {
+    if (!connected) return;
+    try { render(await request("/api/status")); }
+    catch (error) { setMessage(error.message, "error"); }
+  }
+  $d("demoConnectLocal").addEventListener("click", async () => {
+    setMessage("Lokal engine bilan bog‘lanilmoqda…");
+    try {
+      const data = await request("/api/session", "GET", undefined, false);
+      sessionToken = data.session;
+      connected = true;
+      await refresh();
+      setMessage("Lokal engine ulandi. Endi Demo API kalitlarini saqlashingiz mumkin.", "success");
+      $d("demoSaveKeys").disabled = false;
+      $d("demoCheck").disabled = true;
+    } catch (error) {
+      connected = false;
+      sessionToken = "";
+      $d("demoConnectionBadge").textContent = "LOCAL ENGINE DISCONNECTED";
+      $d("demoConnectionBadge").className = "pill fail";
+      setMessage(error.message + "\nAgar localhost ishlamayotgan bo‘lsa, lokal backendni ishga tushiring va Edge Local Network Access ruxsatini bering.", "error");
+    }
+  });
+  $d("demoSaveKeys").addEventListener("click", async () => {
+    const apiKey = $d("demoApiKey").value.trim();
+    const apiSecret = $d("demoApiSecret").value.trim();
+    if (!apiKey || !apiSecret) { setMessage("API Key va API Secret ikkalasi ham kiritilishi kerak.", "error"); return; }
+    setMessage("Kalitlar Windows Credential Manager’ga xavfsiz saqlanmoqda…");
+    try {
+      await request("/api/credentials", "POST", { api_key: apiKey, api_secret: apiSecret });
+      $d("demoApiKey").value = "";
+      $d("demoApiSecret").value = "";
+      setMessage("API kalitlari ushbu kompyuterning Windows Credential Manager’iga saqlandi. GitHub va browser storage’ga yuborilmadi.", "success");
+      await refresh();
+    } catch (error) { setMessage(error.message, "error"); }
+  });
+  $d("demoCheck").addEventListener("click", async () => {
+    setMessage("Binance USDⓈ-M Futures Demo hisobiga ulanish tekshirilmoqda…");
+    try {
+      const result = await request("/api/connect", "POST");
+      setMessage("Demo API ulandi · " + result.base_url + " · Hedge mode: " + result.hedge_mode +
+        " · Available balance: " + format(result.account?.available_balance_usdt, 2) +
+        " USDT · Position: " + result.position_amount + " · Open orders: " + result.open_orders_count, "success");
+      await refresh();
+    } catch (error) { setMessage(error.message, "error"); }
+  });
+  $d("demoStart").addEventListener("click", async () => {
+    const ok = confirm("Faqat Binance Futures DEMO. Order yuborish ushbu tasdiq bilan yoqiladi. Keyingi yangi yopilgan 15m shamdagi signal asosida $50 gacha notional bilan order berilishi mumkin. Davom etasizmi?");
+    if (!ok) return;
+    setMessage("H96 C2 Demo strategiyasi ishga tushirilmoqda…");
+    try {
+      const result = await request("/api/start", "POST", { confirm_demo_orders: true });
+      setMessage(result.message || "Demo strategiyasi ishga tushdi.", "success");
+      await refresh();
+    } catch (error) { setMessage(error.message, "error"); }
+  });
+  $d("demoStop").addEventListener("click", async () => {
+    if (!confirm("Yangi entry’lar to‘xtatiladi. Ochiq Demo pozitsiya boshqaruvda qoladi. Davom etasizmi?")) return;
+    try {
+      const result = await request("/api/stop", "POST", {});
+      setMessage(result.message || "Yangi entry’lar to‘xtatildi.", "success");
+      await refresh();
+    } catch (error) { setMessage(error.message, "error"); }
+  });
+  $d("demoReset").addEventListener("click", async () => {
+    if (!confirm("Reset API kalitlarini ushbu PC Credential Manager’dan o‘chiradi. Ochiq BTCUSDT pozitsiyasi yoki order bo‘lsa, backend o‘chirishni rad etadi. Davom etasizmi?")) return;
+    try {
+      const result = await request("/api/reset", "POST", {});
+      $d("demoApiKey").value = "";
+      $d("demoApiSecret").value = "";
+      setMessage("Reset bajarildi. API kalitlari o‘chirildi; model, cooldown va audit log saqlanib qoldi.", "success");
+      await refresh();
+    } catch (error) { setMessage(error.message, "error"); }
+  });
+  setInterval(refresh, 5000);
+})();
+</script>
 
 <footer>
   <div>OSH Quant Lab · BTCUSDT 15m · Snapshot: 2026-11-14 · Tarixiy tadqiqot, investitsiya maslahati emas.</div>
